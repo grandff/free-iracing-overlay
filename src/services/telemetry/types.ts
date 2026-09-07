@@ -1,9 +1,20 @@
 // ponytail: strongly-typed, minimal memory footprint telemetry data structures
 
+export type LicenseClass = "R" | "D" | "C" | "B" | "A" | "P";
+
+export interface SafetyRating {
+  license: LicenseClass;
+  value: number; // e.g. 4.82
+}
+
 export interface CarTelemetry {
   carIdx: number;
   carNumber: string;
   driverName: string;
+  country: string; // e.g. "KR", "US", "NL", "GB", "DE", "FR", "IT", "JP", "ES"
+  carBrand: string; // e.g. "Porsche", "Ferrari", "BMW", "Mercedes", "McLaren", "Aston Martin", "Audi"
+  irating: number; // e.g. 6240
+  safetyRating: SafetyRating; // e.g. { license: "A", value: 4.82 }
   classPosition: number;
   overallPosition: number;
   lap: number;

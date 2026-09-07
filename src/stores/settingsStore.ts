@@ -10,6 +10,8 @@ export interface WidgetTransform {
   x: number;
   y: number;
   scale: number;
+  width?: number;
+  maxRows?: number;
   visible: boolean;
 }
 
@@ -52,7 +54,7 @@ const defaultSettings: SettingsState = {
   tripleMonitorMode: "center-clamp",
   storageTarget: "local-storage",
   widgets: {
-    leaderboard: { x: 0, y: 0, scale: 1.0, visible: true },
+    leaderboard: { x: 0, y: 0, scale: 1.0, width: 460, maxRows: 10, visible: true },
     relative: { x: 0, y: 0, scale: 1.0, visible: true },
     lapDelta: { x: 0, y: 0, scale: 1.0, visible: true },
     revengeTracker: { x: 0, y: 0, scale: 1.0, visible: true },
