@@ -31,6 +31,7 @@ export interface SettingsState {
   setupStep: 1 | 2; // 1 = Theme Selection, 2 = Overlay Preview & Layout
   theme: ThemeType; // currently only 'f1' active, others 'coming soon'
   isEditMode: boolean; // Alt + J toggle
+  showControlPanel: boolean; // true = program settings dashboard visible
   tripleMonitorMode: TripleMonitorMode;
   storageTarget: "disk-file" | "local-storage";
   widgets: Record<WidgetKey, WidgetTransform>;
@@ -43,6 +44,7 @@ const defaultSettings: SettingsState = {
   setupStep: 1,
   theme: "f1",
   isEditMode: false,
+  showControlPanel: false,
   tripleMonitorMode: "center-clamp",
   storageTarget: "local-storage",
   widgets: {
@@ -124,6 +126,18 @@ export function updateWidgetTransform(widgetKey: keyof SettingsState["widgets"],
 
 export function toggleWidgetVisibility(widgetKey: WidgetKey) {
   setSettings("widgets", widgetKey, "visible", (v) => !v);
+}
+
+export function toggleControlPanel() {
+  setSettings("showControlPanel", (prev) => !prev);
+}
+
+export function openControlPanel() {
+  setSettings("showControlPanel", true);
+}
+
+export function closeControlPanel() {
+  setSettings("showControlPanel", false);
 }
 
 export function toggleEditMode() {

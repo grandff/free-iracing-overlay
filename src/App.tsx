@@ -2,6 +2,7 @@ import { Component, onMount, onCleanup, createEffect, Show, createSignal } from 
 import {
   settings,
   toggleEditMode,
+  toggleControlPanel,
   hydrateFromDiskConfig,
   updateWidgetTransform,
   WidgetKey,
@@ -9,6 +10,7 @@ import {
 import { telemetry, initializeTelemetryPipeline } from "./stores/telemetryStore.ts";
 import { HeaderBar } from "./components/common/HeaderBar.tsx";
 import { SetupWizard } from "./components/setup/SetupWizard.tsx";
+import { ControlApp } from "./components/control/ControlApp.tsx";
 import { F1TimingTower } from "./components/f1/F1TimingTower.tsx";
 import { F1Relative } from "./components/f1/F1Relative.tsx";
 import { F1LapDelta } from "./components/f1/F1LapDelta.tsx";
@@ -175,7 +177,35 @@ export const App: Component = () => {
             hudPresence.visible() ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
-          <HeaderBar />
+          {/* Floating Minimal Control Capsule (Always Accessible) */}
+          <div class="fixed top-3 right-6 z-50 flex items-center gap-2 pointer-events-auto">
+            <button
+              onClick={toggleControlPanel}
+              class="px-3 py-1.5 rounded-full bg-[#18181c]/90 hover:bg-[#25252b] text-white/90 border border-white/15 text-xs font-semibold shadow-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+              title="프로그램 설정 제어판 열기 (테마/위젯 On/Off/모니터)"
+            >
+              <span class="text-sm">⚙️</span>
+              <span>프로그램 설정</span>
+            </button>
+
+            <button
+              onClick={toggleEditMode}
+              class={`px-3 py-1.5 rounded-full text-xs font-semibold shadow-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 border ${
+                settings.isEditMode
+                  ? "bg-amber-500 text-black border-amber-400 font-bold"
+                  : "bg-[#18181c]/90 hover:bg-[#25252b] text-white/90 border-white/15"
+              }`}
+              title="오버레이 위젯 직접 크기/위치 조절 (단축키: Alt + J)"
+            >
+              <span>{settings.isEditMode ? "편집 모드 종료" : "오버레이 편집"}</span>
+              <kbd class="text-[9px] font-mono px-1 py-0.2 rounded bg-black/40 text-white">Alt+J</kbd>
+            </button>
+          </div>
+
+          {/* Program Settings Window (프로그램 영역) */}
+          <Show when={settings.showControlPanel}>
+            <ControlApp />
+          </Show>
 
           <div
             class={`relative w-full h-full ${
