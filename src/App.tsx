@@ -1,5 +1,5 @@
 import { Component, onMount, onCleanup, createEffect, Show } from "solid-js";
-import { settings, toggleEditMode } from "./stores/settingsStore.ts";
+import { settings, toggleEditMode, hydrateFromDiskConfig } from "./stores/settingsStore.ts";
 import { initializeTelemetryPipeline } from "./stores/telemetryStore.ts";
 import { HeaderBar } from "./components/common/HeaderBar.tsx";
 import { SpotterBlinker } from "./components/common/SpotterBlinker.tsx";
@@ -8,6 +8,9 @@ import { SetupWizard } from "./components/setup/SetupWizard.tsx";
 
 export const App: Component = () => {
   onMount(() => {
+    // 0. Hydrate config from native disk file (config.json) if running in Tauri desktop app
+    hydrateFromDiskConfig();
+
     // 1. Initialize 60Hz -> 144Hz+ LERP pipeline
     initializeTelemetryPipeline();
 

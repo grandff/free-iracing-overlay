@@ -3,7 +3,36 @@
 
 mod iracing;
 
+use std::fs;
+use std::path::PathBuf;
 use tauri::{AppHandle, Manager};
+
+fn get_config_path(app: &AppHandle) -> Result<PathBuf, String> {
+    let mut path = app.path().app_config_dir().map_err(|e| e.to_string())?;
+    if !path.exists() {
+        fs::create_dir_all(&path).map_err(|e| e.to_string())?;
+    }
+    path.push("config.json");
+    Ok(path)
+}
+
+// ponytail: OS native persistent file storage (config.json) without heavy SQLite dependencies
+#[tauri::command]
+fn save_config(app: AppHandle, config_json: String) -> Result<(), String> {
+    let path = get_config_path(&app)?;
+    fs::write(path, config_json).map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+fn load_config(app: AppHandle) -> Result<Option<String>, String> {
+    let path = get_config_path(&app)?;
+    if !path.exists() {
+        return Ok(None);
+    }
+    let content = fs::read_to_string(path).map_err(|e| e.to_string())?;
+    Ok(Some(content))
+}
 
 #[tauri::command]
 fn set_clickthrough(app: AppHandle, ignore: bool) -> Result<(), String> {
@@ -29,6 +58,8 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .invoke_handler(tauri::generate_handler![
+            save_config,
+            load_config,
             set_clickthrough,
             get_connection_status
         ])

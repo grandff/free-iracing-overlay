@@ -33,6 +33,7 @@
 | **프론트엔드 UI** | **Solid.js** + TypeScript | • Virtual DOM 없음 (컴포넌트 단위 재렌더링 X, 변경된 바인딩만 직접 DOM 갱신)<br>• 60Hz 고주파수 텔레메트리 수신 시 브라우저 렌더링 랙 0<br>• 번들 크기 10KB 미만 |
 | **스타일링/테마** | **CSS Variables** + Tailwind CSS | • CSS 변수 동적 전환을 통한 무지연(Zero-lag) 테마 교체 (F1, WRC, WEC 등)<br>• GPU 가속 CSS Transform/Opacity 기반 애니메이션 |
 | **개발 & 시뮬레이터** | **Mock iRacing Telemetry Engine** | • macOS/Linux 환경에서도 iRacing 주행 없이 실시간 60Hz 텔레메트리/IBT 리플레이 재생 및 UI 검증 가능 |
+| **설정 영구 저장** | **OS 표준 파일 (`config.json`)** | • SQLite 등 무거운 DB 엔진 의존성 0 (포니테일 원칙: YAGNI)<br>• Windows `%APPDATA%`, macOS `Application Support`에 Rust 표준 파일 I/O로 영구 보존<br>• 브라우저 캐시 삭제에도 안전하며 메모장/텍스트 편집기로 직접 열람 및 백업 가능 |
 
 ---
 

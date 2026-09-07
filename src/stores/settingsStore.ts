@@ -1,4 +1,5 @@
 import { createStore } from "solid-js/store";
+import { invoke, isTauri } from "@tauri-apps/api/core";
 
 export type ThemeType = "f1" | "wec" | "wrc" | "indycar" | "gt";
 export type TripleMonitorMode = "center-clamp" | "full-span";
@@ -15,6 +16,7 @@ export interface SettingsState {
   theme: ThemeType; // currently only 'f1' active, others 'coming soon'
   isEditMode: boolean; // Alt + J toggle
   tripleMonitorMode: TripleMonitorMode;
+  storageTarget: "disk-file" | "local-storage";
   widgets: {
     telemetryHub: WidgetTransform;
     leaderboard: WidgetTransform;
@@ -26,11 +28,12 @@ export interface SettingsState {
 const STORAGE_KEY = "iracing_overlay_config_v1";
 
 const defaultSettings: SettingsState = {
-  hasCompletedSetup: false, // initial launch must show setup
+  hasCompletedSetup: false,
   setupStep: 1,
-  theme: "f1", // default F1 theme
+  theme: "f1",
   isEditMode: false,
   tripleMonitorMode: "center-clamp",
+  storageTarget: "local-storage",
   widgets: {
     telemetryHub: { x: 0, y: 0, scale: 1.0 },
     leaderboard: { x: 0, y: 0, scale: 1.0 },
@@ -39,7 +42,7 @@ const defaultSettings: SettingsState = {
   },
 };
 
-function loadSettings(): SettingsState {
+function loadInitialSettings(): SettingsState {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
@@ -47,17 +50,36 @@ function loadSettings(): SettingsState {
       return {
         ...defaultSettings,
         ...parsed,
-        // Ensure F1 is locked as active theme if invalid
-        theme: parsed.theme === "f1" ? "f1" : "f1",
+        theme: "f1",
       };
     }
   } catch (e) {
-    console.error("Failed to load settings:", e);
+    console.error("Failed to load initial settings:", e);
   }
   return defaultSettings;
 }
 
-const [settings, setSettings] = createStore<SettingsState>(loadSettings());
+const [settings, setSettings] = createStore<SettingsState>(loadInitialSettings());
+
+// Asynchronously hydrate from Tauri native disk config.json if available
+export async function hydrateFromDiskConfig() {
+  if (!isTauri()) return;
+  try {
+    const diskContent = await invoke<string | null>("load_config");
+    if (diskContent) {
+      const parsed = JSON.parse(diskContent);
+      setSettings({
+        ...defaultSettings,
+        ...parsed,
+        storageTarget: "disk-file",
+        theme: "f1",
+      });
+      console.log("Loaded configuration from disk file (config.json)");
+    }
+  } catch (e) {
+    console.warn("Failed to load config from native disk file, keeping memory state:", e);
+  }
+}
 
 export function updateSettings<K extends keyof SettingsState>(key: K, value: SettingsState[K]) {
   setSettings(key, value);
@@ -71,14 +93,28 @@ export function toggleEditMode() {
   setSettings("isEditMode", (prev) => !prev);
 }
 
-// Persist settings as default
-export function saveSettingsAsDefault() {
+// Persist settings as default to disk (config.json) + localStorage
+export async function saveSettingsAsDefault() {
   setSettings("hasCompletedSetup", true);
   setSettings("isEditMode", false);
+  const jsonStr = JSON.stringify(settings, null, 2);
+
+  // 1. Native OS file write (Windows %APPDATA% / macOS Application Support)
+  if (isTauri()) {
+    try {
+      await invoke("save_config", { configJson: jsonStr });
+      setSettings("storageTarget", "disk-file");
+      console.log("Configuration saved to native disk file: config.json");
+    } catch (e) {
+      console.error("Failed to write config.json to disk:", e);
+    }
+  }
+
+  // 2. Always persist to localStorage
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    localStorage.setItem(STORAGE_KEY, jsonStr);
   } catch (e) {
-    console.error("Failed to persist settings:", e);
+    console.error("Failed to persist settings to localStorage:", e);
   }
 }
 

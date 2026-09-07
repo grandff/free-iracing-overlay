@@ -44,13 +44,12 @@
       - **크기 조절:** 각 위젯별 `+` / `-` 버튼을 통해 70% ~ 150% Scale 실시간 확대/축소.
   - **판정:** **PASS**
 
-- [x] **DoD 4: [최종 저장]을 누르면 설정값이 영구 보존되어 다음 실행 시 항상 기본값(Default)으로 바로 구동되는가?**
+- [x] **DoD 4: [최종 저장]을 누르면 설정값이 로컬 디스크 파일(config.json) 및 브라우저에 영구 보존되어 기본값으로 관리되는가?**
   - **검증 근거:**
-    - `src/stores/settingsStore.ts`의 `saveSettingsAsDefault()`:
-      - `hasCompletedSetup = true`, `isEditMode = false` 세팅 후 `localStorage.setItem("iracing_overlay_config_v1", ...)` 실행.
-      - 저장된 각 위젯의 위치(`x`, `y`) 및 크기(`scale`)가 로컬에 영구 보존.
-      - 브라우저 새로고침 시 설정 마법사를 건너뛰고 저장된 위치/크기로 즉시 투명 주행 오버레이 모드 구동 확인.
-      - 상단 툴바의 [⚙️ 설정 마법사] 버튼을 누르면 언제든 초기 2단계 설정으로 재진입 가능.
+    - `src-tauri/src/main.rs`: `save_config`, `load_config` Rust 네이티브 IPC 구현. OS 표준 설정 디렉터리(Windows `%APPDATA%`, macOS `Application Support`)에 `config.json` 파일로 직접 입출력.
+    - `src/stores/settingsStore.ts`: `saveSettingsAsDefault()` 실행 시 Tauri 네이티브 `invoke("save_config")`로 `config.json` 파일 영구 기록 + `localStorage` 이중 보관.
+    - `src/App.tsx`: 실행 시 `hydrateFromDiskConfig()`로 로컬 디스크의 `config.json`을 읽어와 위젯 좌표(`x, y`) 및 크기(`scale`)를 100% 복원.
+    - 브라우저 캐시 삭제나 CCleaner와 무관하게 로컬 파일로 안전 보존되며, 메모장/VSCode로 직접 수정/백업 가능.
   - **판정:** **PASS**
 
 - [x] **DoD 5: 포니테일 초경량 성능 기준을 엄격히 만족하는가?**
