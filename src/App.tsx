@@ -34,7 +34,9 @@ export const App: Component = () => {
   return (
     <main
       class={`relative w-full h-full min-h-screen overflow-hidden ${
-        settings.isEditMode ? "pointer-events-auto bg-black/25" : "pointer-events-none bg-transparent"
+        !settings.hasCompletedSetup || settings.isEditMode
+          ? "pointer-events-auto bg-black/25"
+          : "pointer-events-none bg-transparent"
       }`}
     >
       {/* 1. Initial Setup Wizard (Runs when hasCompletedSetup is false) */}
