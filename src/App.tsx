@@ -14,7 +14,8 @@ import { F1TimingTower } from "./components/f1/F1TimingTower.tsx";
 import { F1Relative } from "./components/f1/F1Relative.tsx";
 import { F1LapDelta } from "./components/f1/F1LapDelta.tsx";
 import { F1RevengeTracker } from "./components/f1/F1RevengeTracker.tsx";
-import { F1ProximitySpotter } from "./components/f1/F1ProximitySpotter.tsx";
+import { F1SpotterLeft } from "./components/f1/F1SpotterLeft.tsx";
+import { F1SpotterRight } from "./components/f1/F1SpotterRight.tsx";
 import { F1FuelCalculator } from "./components/f1/F1FuelCalculator.tsx";
 import { F1TireAnalysis } from "./components/f1/F1TireAnalysis.tsx";
 import { F1IncidentHazard } from "./components/f1/F1IncidentHazard.tsx";
@@ -258,26 +259,50 @@ export const App: Component = () => {
               </div>
             </Show>
 
-            {/* 기능 5: 근접 스포터 (Cockpit Sides / Lower Center) */}
-            <Show when={settings.widgets.proximitySpotter?.visible !== false}>
+            {/* 기능 5-L: 좌측 근접 스포터 (Left Screen Edge) */}
+            <Show when={settings.widgets.spotterLeft?.visible !== false}>
               <div
-                onMouseDown={(e) => handleMouseDown("proximitySpotter", e)}
+                onMouseDown={(e) => handleMouseDown("spotterLeft", e)}
                 style={{
-                  transform: `translate3d(calc(-50% + ${settings.widgets.proximitySpotter.x}px), ${settings.widgets.proximitySpotter.y}px, 0) scale(${settings.widgets.proximitySpotter.scale})`,
-                  "transform-origin": "bottom center",
+                  transform: `translate3d(${settings.widgets.spotterLeft.x}px, calc(-50% + ${settings.widgets.spotterLeft.y}px), 0) scale(${settings.widgets.spotterLeft.scale})`,
+                  "transform-origin": "left center",
                 }}
-                class={`fixed bottom-48 left-1/2 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed top-1/2 left-2 z-40 select-none transition-shadow duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-lg rounded-r-xl"
                     : "pointer-events-none"
                 }`}
               >
-                <F1ProximitySpotter
-                  leftCarDistance={telemetry.frame?.spotterLeftDistance}
-                  rightCarDistance={telemetry.frame?.spotterRightDistance}
+                <F1SpotterLeft
+                  distance={telemetry.frame?.spotter?.leftDistanceMeters}
+                  state={telemetry.frame?.spotter?.leftState}
                   isEditMode={settings.isEditMode}
-                  scale={settings.widgets.proximitySpotter.scale}
-                  onScaleChange={(scale) => updateWidgetTransform("proximitySpotter", { scale })}
+                  scale={settings.widgets.spotterLeft.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("spotterLeft", { scale })}
+                />
+              </div>
+            </Show>
+
+            {/* 기능 5-R: 우측 근접 스포터 (Right Screen Edge) */}
+            <Show when={settings.widgets.spotterRight?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("spotterRight", e)}
+                style={{
+                  transform: `translate3d(${settings.widgets.spotterRight.x}px, calc(-50% + ${settings.widgets.spotterRight.y}px), 0) scale(${settings.widgets.spotterRight.scale})`,
+                  "transform-origin": "right center",
+                }}
+                class={`fixed top-1/2 right-2 z-40 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-lg rounded-l-xl"
+                    : "pointer-events-none"
+                }`}
+              >
+                <F1SpotterRight
+                  distance={telemetry.frame?.spotter?.rightDistanceMeters}
+                  state={telemetry.frame?.spotter?.rightState}
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.spotterRight.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("spotterRight", { scale })}
                 />
               </div>
             </Show>

@@ -48,7 +48,7 @@ export const F1MulticlassRadar: Component<Props> = (props) => {
       </Show>
 
       {/* Main Multiclass Alert Card */}
-      <div class="flex items-center justify-between px-3 py-2 bg-[#12131a]/95 border border-cyan-500/50 rounded-lg shadow-[0_0_20px_rgba(6,182,212,0.4)] backdrop-blur-xl text-white">
+      <div class="flex items-center justify-between px-3 py-2 bg-[#12131a]/95 border border-cyan-500/30 rounded-lg shadow-xl backdrop-blur-xl text-white">
         <div class="flex items-center gap-2">
           <IconRadar size={18} class="text-cyan-400 animate-pulse" />
           <div class="flex flex-col">

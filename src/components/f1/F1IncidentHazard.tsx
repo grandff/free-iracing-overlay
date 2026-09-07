@@ -47,7 +47,7 @@ export const F1IncidentHazard: Component<Props> = (props) => {
       </Show>
 
       {/* Main Hazard Banner */}
-      <div class="flex items-center gap-3 px-4 py-2 bg-red-950/90 border-2 border-red-500 rounded-lg shadow-[0_0_30px_rgba(239,68,68,0.7)] backdrop-blur-xl animate-pulse">
+      <div class="flex items-center gap-3 px-4 py-2 bg-red-950/90 border-2 border-red-500 rounded-lg shadow-xl backdrop-blur-xl animate-pulse">
         <IconWarning size={22} class="text-red-400 shrink-0 animate-bounce" />
         <div class="flex flex-col flex-1">
           <div class="flex items-center justify-between">

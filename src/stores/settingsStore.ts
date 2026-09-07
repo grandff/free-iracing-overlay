@@ -16,7 +16,8 @@ export type WidgetKey =
   | "relative"
   | "lapDelta"
   | "revengeTracker"
-  | "proximitySpotter"
+  | "spotterLeft"
+  | "spotterRight"
   | "fuelCalculator"
   | "tireAnalysis"
   | "incidentHazard"
@@ -49,7 +50,8 @@ const defaultSettings: SettingsState = {
     relative: { x: 0, y: 0, scale: 1.0, visible: true },
     lapDelta: { x: 0, y: 0, scale: 1.0, visible: true },
     revengeTracker: { x: 0, y: 0, scale: 1.0, visible: true },
-    proximitySpotter: { x: 0, y: 0, scale: 1.0, visible: true },
+    spotterLeft: { x: 0, y: 0, scale: 1.0, visible: true },
+    spotterRight: { x: 0, y: 0, scale: 1.0, visible: true },
     fuelCalculator: { x: 0, y: 0, scale: 1.0, visible: true },
     tireAnalysis: { x: 0, y: 0, scale: 1.0, visible: true },
     incidentHazard: { x: 0, y: 0, scale: 1.0, visible: true },
@@ -71,6 +73,9 @@ function loadInitialSettings(): SettingsState {
         widgets: {
           ...defaultSettings.widgets,
           ...(parsed.widgets || {}),
+          // Ensure spotterLeft and spotterRight are populated
+          spotterLeft: parsed.widgets?.spotterLeft || defaultSettings.widgets.spotterLeft,
+          spotterRight: parsed.widgets?.spotterRight || defaultSettings.widgets.spotterRight,
         },
         theme: "f1",
       };
@@ -95,6 +100,12 @@ export async function hydrateFromDiskConfig() {
         ...parsed,
         storageTarget: "disk-file",
         theme: "f1",
+        widgets: {
+          ...defaultSettings.widgets,
+          ...(parsed.widgets || {}),
+          spotterLeft: parsed.widgets?.spotterLeft || defaultSettings.widgets.spotterLeft,
+          spotterRight: parsed.widgets?.spotterRight || defaultSettings.widgets.spotterRight,
+        },
       });
       console.log("Loaded configuration from disk file (config.json)");
     }
@@ -112,43 +123,35 @@ export function updateWidgetTransform(widgetKey: keyof SettingsState["widgets"],
 }
 
 export function toggleWidgetVisibility(widgetKey: WidgetKey) {
-  setSettings("widgets", widgetKey, "visible", (prev) => !prev);
+  setSettings("widgets", widgetKey, "visible", (v) => !v);
 }
 
 export function toggleEditMode() {
   setSettings("isEditMode", (prev) => !prev);
 }
 
-// Persist settings as default to disk (config.json) + localStorage
 export async function saveSettingsAsDefault() {
   setSettings("hasCompletedSetup", true);
   setSettings("isEditMode", false);
-  const jsonStr = JSON.stringify(settings, null, 2);
 
-  // 1. Native OS file write (Windows %APPDATA% / macOS Application Support)
+  const snapshot = JSON.parse(JSON.stringify(settings));
+
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    console.log("Saved overlay layout to localStorage");
+  } catch (e) {
+    console.error("Failed to save to localStorage:", e);
+  }
+
   if (isTauri()) {
     try {
-      await invoke("save_config", { configJson: jsonStr });
+      await invoke("save_config", { configJson: JSON.stringify(snapshot, null, 2) });
       setSettings("storageTarget", "disk-file");
-      console.log("Configuration saved to native disk file: config.json");
+      console.log("Saved default configuration to OS native disk file (config.json)");
     } catch (e) {
-      console.error("Failed to write config.json to disk:", e);
+      console.error("Failed to write native config.json:", e);
     }
   }
-
-  // 2. Always persist to localStorage
-  try {
-    localStorage.setItem(STORAGE_KEY, jsonStr);
-  } catch (e) {
-    console.error("Failed to persist settings to localStorage:", e);
-  }
-}
-
-// Reset to setup wizard
-export function restartSetupWizard() {
-  setSettings("hasCompletedSetup", false);
-  setSettings("setupStep", 1);
-  setSettings("isEditMode", true);
 }
 
 export { settings };
