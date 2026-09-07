@@ -1,5 +1,6 @@
 import { Component, Show } from "solid-js";
 import { telemetry } from "../../stores/telemetryStore.ts";
+import { settings } from "../../stores/settingsStore.ts";
 import {
   IconFuel,
   IconWarning,
@@ -16,7 +17,13 @@ export const TelemetryMonitor: Component = () => {
   const w = () => telemetry.frame?.weather;
 
   return (
-    <div class="fixed bottom-6 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-3">
+    <div
+      style={{
+        transform: `translate3d(calc(-50% + ${settings.widgets.telemetryHub.x}px), ${settings.widgets.telemetryHub.y}px, 0) scale(${settings.widgets.telemetryHub.scale})`,
+        "transform-origin": "bottom center",
+      }}
+      class="fixed bottom-6 left-1/2 z-30 flex flex-col items-center gap-3 transition-transform duration-75"
+    >
       {/* High-priority Hazard Alert (Blinking if hazard ahead within 400m) */}
       <Show when={h() && h()!.hasIncident}>
         <div class="hud-panel px-6 py-2.5 flex items-center gap-3 bg-red-950/80 border-2 border-red-500 text-red-100 shadow-[0_0_25px_#EF4444] animate-pulse">

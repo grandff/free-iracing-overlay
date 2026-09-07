@@ -1,18 +1,19 @@
-import { Component, onMount, onCleanup, createEffect } from "solid-js";
+import { Component, onMount, onCleanup, createEffect, Show } from "solid-js";
 import { settings, toggleEditMode } from "./stores/settingsStore.ts";
 import { initializeTelemetryPipeline } from "./stores/telemetryStore.ts";
 import { HeaderBar } from "./components/common/HeaderBar.tsx";
 import { SpotterBlinker } from "./components/common/SpotterBlinker.tsx";
 import { TelemetryMonitor } from "./components/common/TelemetryMonitor.tsx";
+import { SetupWizard } from "./components/setup/SetupWizard.tsx";
 
 export const App: Component = () => {
   onMount(() => {
     // 1. Initialize 60Hz -> 144Hz+ LERP pipeline
     initializeTelemetryPipeline();
 
-    // 2. Register Ctrl + Shift + O keyboard toggle
+    // 2. Register Alt + J keyboard toggle
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === "o") {
+      if (e.altKey && (e.key === "j" || e.key === "J" || e.code === "KeyJ")) {
         e.preventDefault();
         toggleEditMode();
       }
@@ -33,30 +34,38 @@ export const App: Component = () => {
         settings.isEditMode ? "pointer-events-auto bg-black/25" : "pointer-events-none bg-transparent"
       }`}
     >
-      {/* Top Header & Toolbar (Interactive) */}
-      <HeaderBar />
+      {/* 1. Initial Setup Wizard (Runs when hasCompletedSetup is false) */}
+      <Show when={!settings.hasCompletedSetup}>
+        <SetupWizard />
+      </Show>
 
-      {/* Proximity Spotter (Always active on side borders) */}
-      <SpotterBlinker />
+      {/* 2. Main Driving Overlay HUD (Active when setup completed) */}
+      <Show when={settings.hasCompletedSetup}>
+        {/* Top Header & Toolbar (Interactive) */}
+        <HeaderBar />
 
-      {/* Viewport Bounds (Triple Monitor Center Clamp vs Full Span) */}
-      <div
-        class={`relative w-full h-full transition-all duration-300 ${
-          settings.tripleMonitorMode === "center-clamp"
-            ? "max-w-[1920px] mx-auto border-x border-white/5"
-            : "w-full"
-        }`}
-      >
-        {/* Driving Mode Overlay Notification (when locked) */}
-        {!settings.isEditMode && (
-          <div class="fixed top-12 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/60 text-white/50 text-[10px] font-mono rounded pointer-events-none transition-opacity duration-500">
-            DRIVING MODE ACTIVE (Click-through enabled • Press Ctrl+Shift+O to edit)
-          </div>
-        )}
+        {/* Proximity Spotter (Always active on side borders) */}
+        <SpotterBlinker />
 
-        {/* Central HUD Metrics & Alert Monitor */}
-        <TelemetryMonitor />
-      </div>
+        {/* Viewport Bounds (Triple Monitor Center Clamp vs Full Span) */}
+        <div
+          class={`relative w-full h-full transition-all duration-300 ${
+            settings.tripleMonitorMode === "center-clamp"
+              ? "max-w-[1920px] mx-auto border-x border-white/5"
+              : "w-full"
+          }`}
+        >
+          {/* Driving Mode Overlay Notification (when locked) */}
+          {!settings.isEditMode && (
+            <div class="fixed top-12 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/60 text-white/50 text-[10px] font-mono rounded pointer-events-none transition-opacity duration-500">
+              DRIVING MODE ACTIVE (Click-through enabled • Press Alt+J to edit)
+            </div>
+          )}
+
+          {/* Central HUD Metrics & Alert Monitor */}
+          <TelemetryMonitor />
+        </div>
+      </Show>
     </main>
   );
 };
