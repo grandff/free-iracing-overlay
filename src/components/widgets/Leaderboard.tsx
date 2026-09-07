@@ -3,6 +3,7 @@ import { Component, For, Show, createSignal, createMemo, onCleanup } from "solid
 import { CarTelemetry, SafetyRating, LicenseClass } from "../../services/telemetry/types.ts";
 import { createPresence } from "../../utils/presence.ts";
 import { t } from "../../i18n/index.ts";
+import { CarBrandIcon, BrandGenericRaceCar } from "../../assets/icons/CarBrandIcons.tsx";
 
 export interface LeaderboardProps {
   cars?: CarTelemetry[];
@@ -34,6 +35,9 @@ const countryFlags: Record<string, string> = {
   MX: "🇲🇽",
   BR: "🇧🇷",
   CA: "🇨🇦",
+  BE: "🇧🇪",
+  NZ: "🇳🇿",
+  CH: "🇨🇭",
 };
 
 // iRacing Safety Rating License Tier Colors
@@ -212,6 +216,7 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
       <div class="flex items-center px-2 py-1 bg-black/85 text-[9px] font-mono text-white/45 tracking-wider border-b border-white/[0.08]">
         {/* Pos */}
         <span class="w-7 text-center font-bold">POS</span>
+        <span class="w-[3px] mr-1.5 shrink-0" />
 
         {/* Optional Country Flag */}
         <Show when={showCountry()}>
@@ -220,7 +225,10 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
 
         {/* Optional Car Brand */}
         <Show when={showBrand()}>
-          <span class="w-20 pl-1 text-left truncate">CAR</span>
+          <span class="w-24 pl-1 text-left truncate flex items-center gap-1 font-bold">
+            <BrandGenericRaceCar class="w-3 h-3 text-white/40" />
+            BRAND
+          </span>
         </Show>
 
         {/* Driver Name (Always Visible, fills space) */}
@@ -290,10 +298,15 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
                   </div>
                 </Show>
 
-                {/* 3. Optional Car Brand */}
+                {/* 3. Optional Car Brand with Official Vector Emblem */}
                 <Show when={showBrand()}>
-                  <div class="w-20 pl-1 text-[10px] font-mono font-medium text-white/60 truncate shrink-0">
-                    {car.carBrand}
+                  <div class="w-24 pl-1 flex items-center gap-1.5 shrink-0 overflow-hidden" title={car.carBrand}>
+                    <div class="w-4 h-4 shrink-0 flex items-center justify-center">
+                      <CarBrandIcon brand={car.carBrand} class="w-4 h-4 drop-shadow-sm" />
+                    </div>
+                    <span class="text-[10px] font-mono font-medium text-white/80 truncate">
+                      {car.carBrand}
+                    </span>
                   </div>
                 </Show>
 
