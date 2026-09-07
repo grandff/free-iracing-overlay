@@ -7,6 +7,8 @@ import {
   updateWidgetTransform,
   WidgetKey,
 } from "./stores/settingsStore.ts";
+import { invoke, isTauri } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { telemetry, initializeTelemetryPipeline } from "./stores/telemetryStore.ts";
 import { HeaderBar } from "./components/common/HeaderBar.tsx";
 import { SetupWizard } from "./components/setup/SetupWizard.tsx";
@@ -68,10 +70,33 @@ export const App: Component = () => {
 
     window.addEventListener("keydown", handleKeyDown);
     onCleanup(() => window.removeEventListener("keydown", handleKeyDown));
+
+    // In game, iRacing owns keyboard focus and the listener above never fires.
+    // Rust registers Alt+J as an OS-level hotkey and emits this instead.
+    if (isTauri()) {
+      let unlisten: (() => void) | undefined;
+      let disposed = false;
+      listen("toggle-edit-mode", () => toggleEditMode()).then((fn) => {
+        if (disposed) fn();
+        else unlisten = fn;
+      });
+      onCleanup(() => {
+        disposed = true;
+        unlisten?.();
+      });
+    }
   });
 
   createEffect(() => {
     document.documentElement.setAttribute("data-theme", settings.theme);
+  });
+
+  // Driving mode must let clicks reach the game. CSS pointer-events cannot do this —
+  // only the OS window can, so mirror edit mode onto the native click-through flag.
+  createEffect(() => {
+    if (!isTauri()) return;
+    const interactive = settings.isEditMode || !settings.hasCompletedSetup || settings.showControlPanel;
+    invoke("set_clickthrough", { ignore: !interactive }).catch(() => {});
   });
 
   // Performance Tiering (AGENTS.md Section 5):
@@ -163,7 +188,7 @@ export const App: Component = () => {
       {/* 1. Initial Setup Wizard */}
       <Show when={setupPresence.mounted()}>
         <div
-          class={`w-full h-full transition-opacity duration-250 ${
+          class={`w-full h-full transition-opacity duration-200 ${
             setupPresence.visible() ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
@@ -174,7 +199,7 @@ export const App: Component = () => {
       {/* 2. Main Driving Overlay HUD */}
       <Show when={hudPresence.mounted()}>
         <div
-          class={`w-full h-full transition-opacity duration-250 ${
+          class={`w-full h-full transition-opacity duration-200 ${
             hudPresence.visible() ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
@@ -199,7 +224,7 @@ export const App: Component = () => {
               title={t().editOnOverlay}
             >
               <span>{settings.isEditMode ? t().exitEditMode : t().editOnOverlay}</span>
-              <kbd class="text-[9px] font-mono px-1 py-0.2 rounded bg-black/40 text-white">Alt+J</kbd>
+              <kbd class="text-[9px] font-mono px-1 py-0.5 rounded bg-black/40 text-white">Alt+J</kbd>
             </button>
           </div>
 
@@ -242,6 +267,7 @@ export const App: Component = () => {
                 <Leaderboard
                   cars={telemetry.frame?.cars}
                   lapCurrent={telemetry.frame?.cars[0]?.lap}
+                  playerCarIdx={telemetry.frame?.player?.carIdx || 1}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.leaderboard.scale}
                   width={settings.widgets.leaderboard.width || 460}
@@ -405,7 +431,7 @@ export const App: Component = () => {
                   transform: `translate3d(${settings.widgets.tireAnalysis.x}px, ${settings.widgets.tireAnalysis.y}px, 0) scale(${settings.widgets.tireAnalysis.scale})`,
                   "transform-origin": "bottom left",
                 }}
-                class={`fixed bottom-6 left-76 z-30 select-none ${
+                class={`fixed bottom-6 left-80 z-30 select-none ${
                   settings.isEditMode
                     ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-xl rounded-lg"
                     : "pointer-events-none"
@@ -452,7 +478,7 @@ export const App: Component = () => {
                   transform: `translate3d(${settings.widgets.weather.x}px, ${settings.widgets.weather.y}px, 0) scale(${settings.widgets.weather.scale})`,
                   "transform-origin": "top right",
                 }}
-                class={`fixed top-14 right-76 z-30 select-none ${
+                class={`fixed top-14 right-80 z-30 select-none ${
                   settings.isEditMode
                     ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-xl rounded-lg"
                     : "pointer-events-none"

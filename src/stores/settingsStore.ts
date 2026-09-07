@@ -30,6 +30,13 @@ export type WidgetKey =
   | "trackMap"
   | "telemetryHub";
 
+export interface UserProfile {
+  driverName: string;
+  country: string; // ISO 2-letter or iRacing Club, e.g. "KR"
+  carNumber: string;
+  carBrand: string;
+}
+
 export interface SettingsState {
   hasCompletedSetup: boolean; // false = initial setup wizard required
   setupStep: 1 | 2; // 1 = Theme Selection, 2 = Overlay Preview & Layout
@@ -39,6 +46,7 @@ export interface SettingsState {
   showControlPanel: boolean; // true = program settings dashboard visible
   tripleMonitorMode: TripleMonitorMode;
   storageTarget: "disk-file" | "local-storage";
+  userProfile: UserProfile;
   widgets: Record<WidgetKey, WidgetTransform>;
 }
 
@@ -53,6 +61,12 @@ const defaultSettings: SettingsState = {
   showControlPanel: false,
   tripleMonitorMode: "center-clamp",
   storageTarget: "local-storage",
+  userProfile: {
+    driverName: "K. Jeongmin",
+    country: "KR",
+    carNumber: "7",
+    carBrand: "Porsche",
+  },
   widgets: {
     leaderboard: { x: 0, y: 0, scale: 1.0, width: 460, maxRows: 10, visible: true },
     relative: { x: 0, y: 0, scale: 1.0, visible: true },
@@ -79,6 +93,10 @@ function loadInitialSettings(): SettingsState {
         ...defaultSettings,
         ...parsed,
         language: parsed.language || "ko",
+        userProfile: {
+          ...defaultSettings.userProfile,
+          ...(parsed.userProfile || {}),
+        },
         widgets: {
           ...defaultSettings.widgets,
           ...(parsed.widgets || {}),
@@ -150,6 +168,10 @@ export function closeControlPanel() {
 
 export function toggleEditMode() {
   setSettings("isEditMode", (prev) => !prev);
+}
+
+export function updateUserProfile(profile: Partial<UserProfile>) {
+  setSettings("userProfile", (prev) => ({ ...prev, ...profile }));
 }
 
 export async function saveSettingsAsDefault() {

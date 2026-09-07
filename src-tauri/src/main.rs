@@ -5,7 +5,8 @@ mod iracing;
 
 use std::fs;
 use std::path::PathBuf;
-use tauri::{AppHandle, Manager};
+use tauri::{AppHandle, Emitter, Manager};
+use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 fn get_config_path(app: &AppHandle) -> Result<PathBuf, String> {
     let mut path = app.path().app_config_dir().map_err(|e| e.to_string())?;
@@ -55,19 +56,35 @@ fn get_connection_status() -> Result<serde_json::Value, String> {
 }
 
 fn main() {
+    // ponytail: OS-level hotkey, not a DOM keydown. iRacing owns keyboard focus while
+    // driving, so a window listener never fires in game. Registered here instead.
+    let alt_j = Shortcut::new(Some(Modifiers::ALT), Code::KeyJ);
+    let alt_j_handler = alt_j.clone();
+
     tauri::Builder::default()
-        .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_handler(move |app, shortcut, event| {
+                    if shortcut == &alt_j_handler && event.state() == ShortcutState::Pressed {
+                        let _ = app.emit("toggle-edit-mode", ());
+                    }
+                })
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![
             save_config,
             load_config,
             set_clickthrough,
             get_connection_status
         ])
-        .setup(|app| {
+        .setup(move |app| {
             // Ponytail: configure transparent overlay window defaults
             if let Some(window) = app.get_webview_window("main") {
                 let _ = window.set_always_on_top(true);
+                // Start in driving mode: clicks pass through to the game.
+                let _ = window.set_ignore_cursor_events(true);
             }
+            app.global_shortcut().register(alt_j.clone())?;
             Ok(())
         })
         .run(tauri::generate_context!())

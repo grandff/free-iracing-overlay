@@ -33,6 +33,10 @@ export interface PlayerTelemetry {
   carIdx: number;
   carNumber: string;
   driverName: string;
+  country: string; // e.g. "KR", "US", "DE"
+  carBrand: string; // e.g. "Porsche", "Ferrari"
+  irating?: number;
+  safetyRating?: SafetyRating;
   speedKmh: number;
   rpm: number;
   gear: number;

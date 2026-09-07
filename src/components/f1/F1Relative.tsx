@@ -111,7 +111,7 @@ export const F1Relative: Component<Props> = (props) => {
                       #{d.carNumber}
                     </span>
                     <Show when={d.isPlayer}>
-                      <span class="text-[8px] font-f1-wide font-black px-1 py-0.2 bg-[#00d26a]/20 text-[#00d26a] rounded border border-[#00d26a]/30">
+                      <span class="text-[8px] font-f1-wide font-black px-1 py-0.5 bg-[#00d26a]/20 text-[#00d26a] rounded border border-[#00d26a]/30">
                         YOU
                       </span>
                     </Show>

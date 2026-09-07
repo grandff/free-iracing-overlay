@@ -10,8 +10,8 @@ export class MockTelemetryEngine {
   private trackLength = 4500; // 4.5km circuit
 
   private simulatedCars: CarTelemetry[] = [
-    { carIdx: 1, carNumber: "1", driverName: "M. Verstappen", country: "NL", carBrand: "Red Bull", irating: 7850, safetyRating: { license: "P", value: 4.99 }, classPosition: 1, overallPosition: 1, lap: 3, lapDistPct: 0.15, lastLapTime: 84.12, bestLapTime: 83.89, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 245, gapToPlayerSeconds: 0, trackSurface: 3 },
-    { carIdx: 2, carNumber: "7", driverName: "K. Jeongmin", country: "KR", carBrand: "Porsche", irating: 6840, safetyRating: { license: "A", value: 4.62 }, classPosition: 2, overallPosition: 2, lap: 3, lapDistPct: 0.145, lastLapTime: 84.34, bestLapTime: 84.05, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 242, gapToPlayerSeconds: -0.42, trackSurface: 3 },
+    { carIdx: 1, carNumber: "7", driverName: "K. Jeongmin", country: "KR", carBrand: "Porsche", irating: 6840, safetyRating: { license: "A", value: 4.62 }, classPosition: 1, overallPosition: 1, lap: 3, lapDistPct: 0.15, lastLapTime: 84.12, bestLapTime: 83.89, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 245, gapToPlayerSeconds: 0, trackSurface: 3 },
+    { carIdx: 2, carNumber: "1", driverName: "M. Verstappen", country: "NL", carBrand: "Red Bull", irating: 7850, safetyRating: { license: "P", value: 4.99 }, classPosition: 2, overallPosition: 2, lap: 3, lapDistPct: 0.145, lastLapTime: 84.34, bestLapTime: 84.05, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 242, gapToPlayerSeconds: -0.42, trackSurface: 3 },
     { carIdx: 3, carNumber: "6", driverName: "K. Estre", country: "FR", carBrand: "Porsche", irating: 7120, safetyRating: { license: "A", value: 4.88 }, classPosition: 3, overallPosition: 3, lap: 3, lapDistPct: 0.138, lastLapTime: 84.62, bestLapTime: 84.11, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 240, gapToPlayerSeconds: -1.02, trackSurface: 3 },
     { carIdx: 4, carNumber: "51", driverName: "A. Pier Guidi", country: "IT", carBrand: "Ferrari", irating: 6920, safetyRating: { license: "A", value: 4.75 }, classPosition: 4, overallPosition: 4, lap: 3, lapDistPct: 0.165, lastLapTime: 84.25, bestLapTime: 84.15, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 248, gapToPlayerSeconds: +1.28, trackSurface: 3 },
     { carIdx: 5, carNumber: "24", driverName: "J. Gordon", country: "US", carBrand: "Corvette", irating: 6350, safetyRating: { license: "A", value: 4.41 }, classPosition: 5, overallPosition: 5, lap: 3, lapDistPct: 0.115, lastLapTime: 87.80, bestLapTime: 87.35, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 225, gapToPlayerSeconds: -2.95, trackSurface: 3 },
@@ -78,8 +78,12 @@ export class MockTelemetryEngine {
       sessionTimeRemainingSec: 1512,
       player: {
         carIdx: 1,
-        carNumber: "1",
-        driverName: "M. Verstappen",
+        carNumber: "7",
+        driverName: "K. Jeongmin",
+        country: "KR",
+        carBrand: "Porsche",
+        irating: 6840,
+        safetyRating: { license: "A", value: 4.62 },
         speedKmh: Math.round(238 + Math.sin(Date.now() / 800) * 12),
         rpm: Math.round(11200 + Math.sin(Date.now() / 400) * 800),
         gear: 6,

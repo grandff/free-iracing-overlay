@@ -2,6 +2,7 @@ import { Component, createSignal, Show, For } from "solid-js";
 import {
   settings,
   updateSettings,
+  updateUserProfile,
   toggleWidgetVisibility,
   toggleEditMode,
   saveSettingsAsDefault,
@@ -26,11 +27,14 @@ import {
   Eye,
   EyeOff,
   Globe,
+  User,
 } from "lucide-solid";
 import { t, setLanguage, SUPPORTED_LANGUAGES } from "../../i18n/index.ts";
+import { CountryFlag, getCountryInfo } from "../../assets/icons/CountryFlags.tsx";
+import { CarBrandIcon } from "../../assets/icons/CarBrandIcons.tsx";
 
 export const ControlApp: Component = () => {
-  const [activeTab, setActiveTab] = createSignal<"theme" | "widgets" | "display" | "shortcuts" | "language">("widgets");
+  const [activeTab, setActiveTab] = createSignal<"widgets" | "profile" | "theme" | "display" | "shortcuts" | "language">("widgets");
 
   const widgetDefinitions = () => [
     { key: "leaderboard" as WidgetKey, name: t().wLeaderboard, category: "Timing", desc: t().wLeaderboardDesc },
@@ -105,6 +109,18 @@ export const ControlApp: Component = () => {
             </button>
 
             <button
+              onClick={() => setActiveTab("profile")}
+              class={`w-full px-3 py-2 rounded-lg flex items-center gap-2.5 text-xs font-medium text-left transition-all ${
+                activeTab() === "profile"
+                  ? "bg-white/15 text-white shadow-sm"
+                  : "text-white/60 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <User class="w-4 h-4 text-[#ff9f0a]" />
+              <span>사용자 프로필 & 국가</span>
+            </button>
+
+            <button
               onClick={() => setActiveTab("theme")}
               class={`w-full px-3 py-2 rounded-lg flex items-center gap-2.5 text-xs font-medium text-left transition-all ${
                 activeTab() === "theme"
@@ -155,6 +171,120 @@ export const ControlApp: Component = () => {
 
           {/* Right Main Content Area */}
           <div class="flex-1 p-6 overflow-y-auto max-h-[500px]">
+            {/* 0. 사용자 프로필 & 국가 설정 탭 */}
+            <Show when={activeTab() === "profile"}>
+              <div class="flex flex-col gap-5">
+                <div class="border-b border-white/10 pb-3">
+                  <h2 class="text-base font-semibold text-white">사용자 프로필 & 국가 정보</h2>
+                  <p class="text-xs text-white/50 mt-1">
+                    iRacing 텔레메트리 연동 시 본인(YOU)으로 표시될 국가(태극기)와 드라이버 프로필을 관리합니다.
+                  </p>
+                </div>
+
+                {/* Profile Card Preview */}
+                <div class="p-4 bg-black/40 border border-white/10 rounded-xl flex items-center justify-between">
+                  <div class="flex items-center gap-3">
+                    <CountryFlag code={settings.userProfile?.country || "KR"} class="w-10 h-7 rounded-[3px] border border-white/20 shadow-md" />
+                    <div>
+                      <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold text-white">{settings.userProfile?.driverName || "K. Jeongmin"}</span>
+                        <span class="text-xs font-mono text-white/40">#{settings.userProfile?.carNumber || "7"}</span>
+                        <span class="text-[9px] font-mono font-bold px-1.5 py-0.5 bg-[#30d158]/20 text-[#30d158] rounded border border-[#30d158]/30">
+                          YOU
+                        </span>
+                      </div>
+                      <div class="flex items-center gap-2 mt-1 text-xs text-white/60">
+                        <span>국가: <strong class="text-white">{getCountryInfo(settings.userProfile?.country || "KR").name} ({getCountryInfo(settings.userProfile?.country || "KR").code3})</strong></span>
+                        <span>•</span>
+                        <span class="flex items-center gap-1">차량: <CarBrandIcon brand={settings.userProfile?.carBrand || "Porsche"} class="w-3.5 h-3.5 inline" /> {settings.userProfile?.carBrand || "Porsche"}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Country Selection Grid */}
+                <div class="flex flex-col gap-2">
+                  <label class="text-xs font-semibold text-white/80">국가 / iRacing 클럽 선택</label>
+                  <div class="grid grid-cols-3 gap-2">
+                    {[
+                      { code: "KR", name: "대한민국 (Korea)" },
+                      { code: "US", name: "미국 (United States)" },
+                      { code: "DE", name: "독일 (Germany)" },
+                      { code: "JP", name: "일본 (Japan)" },
+                      { code: "GB", name: "영국 (United Kingdom)" },
+                      { code: "FR", name: "프랑스 (France)" },
+                      { code: "IT", name: "이탈리아 (Italy)" },
+                      { code: "ES", name: "스페인 (Spain / Iberia)" },
+                      { code: "NL", name: "네덜란드 (Netherlands)" },
+                      { code: "AU", name: "호주 (Australia)" },
+                      { code: "BE", name: "벨기에 (Belgium)" },
+                      { code: "CA", name: "캐나다 (Canada)" },
+                    ].map((c) => {
+                      const isSelected = () => (settings.userProfile?.country || "KR") === c.code;
+                      return (
+                        <button
+                          onClick={() => updateUserProfile({ country: c.code })}
+                          class={`p-2 rounded-lg border text-left flex items-center gap-2.5 transition-all cursor-pointer ${
+                            isSelected()
+                              ? "bg-white/15 border-white/40 text-white font-semibold ring-1 ring-white/20"
+                              : "bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:text-white"
+                          }`}
+                        >
+                          <CountryFlag code={c.code} class="w-5 h-3.5 rounded-[2px] border border-white/20 shrink-0" />
+                          <span class="text-xs truncate">{c.name}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Driver Name & Car Inputs */}
+                <div class="grid grid-cols-3 gap-3">
+                  <div class="flex flex-col gap-1.5">
+                    <label class="text-xs text-white/70">드라이버 이름</label>
+                    <input
+                      type="text"
+                      value={settings.userProfile?.driverName || "K. Jeongmin"}
+                      onInput={(e) => updateUserProfile({ driverName: e.currentTarget.value })}
+                      class="px-3 py-2 bg-black/40 border border-white/15 rounded-lg text-xs text-white focus:border-[#30d158] focus:outline-none"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-1.5">
+                    <label class="text-xs text-white/70">차량 번호</label>
+                    <input
+                      type="text"
+                      value={settings.userProfile?.carNumber || "7"}
+                      onInput={(e) => updateUserProfile({ carNumber: e.currentTarget.value })}
+                      class="px-3 py-2 bg-black/40 border border-white/15 rounded-lg text-xs text-white focus:border-[#30d158] focus:outline-none"
+                    />
+                  </div>
+
+                  <div class="flex flex-col gap-1.5">
+                    <label class="text-xs text-white/70">선호 제조사 (브랜드)</label>
+                    <select
+                      value={settings.userProfile?.carBrand || "Porsche"}
+                      onChange={(e) => updateUserProfile({ carBrand: e.currentTarget.value })}
+                      class="px-3 py-2 bg-black/40 border border-white/15 rounded-lg text-xs text-white focus:border-[#30d158] focus:outline-none"
+                    >
+                      <option value="Porsche">Porsche</option>
+                      <option value="Ferrari">Ferrari</option>
+                      <option value="BMW">BMW</option>
+                      <option value="Mercedes">Mercedes-AMG</option>
+                      <option value="McLaren">McLaren</option>
+                      <option value="Audi">Audi</option>
+                      <option value="Aston Martin">Aston Martin</option>
+                      <option value="Lamborghini">Lamborghini</option>
+                      <option value="Corvette">Corvette</option>
+                      <option value="Ford">Ford</option>
+                      <option value="Cadillac">Cadillac</option>
+                      <option value="Hyundai">Hyundai</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </Show>
+
             {/* 1. 위젯 관리 탭 */}
             <Show when={activeTab() === "widgets"}>
               <div class="flex flex-col gap-4">
@@ -187,7 +317,7 @@ export const ControlApp: Component = () => {
                               <span class={`text-sm font-semibold ${isVis() ? "text-white" : "text-white/40 line-through"}`}>
                                 {w.name}
                               </span>
-                              <span class="text-[10px] px-1.5 py-0.2 rounded bg-white/10 text-white/60">
+                              <span class="text-[10px] px-1.5 py-0.5 rounded bg-white/10 text-white/60">
                                 {w.category}
                               </span>
                             </div>
@@ -373,7 +503,7 @@ export const ControlApp: Component = () => {
                                   {lang.name}
                                 </span>
                                 <Show when={lang.code === "ko"}>
-                                  <span class="text-[9px] px-1.5 py-0.2 rounded bg-white/10 text-white/60 font-medium">
+                                  <span class="text-[9px] px-1.5 py-0.5 rounded bg-white/10 text-white/60 font-medium">
                                     기본 (Default)
                                   </span>
                                 </Show>

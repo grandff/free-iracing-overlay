@@ -8,6 +8,7 @@ import {
   toggleEditMode,
   WidgetKey,
 } from "../../stores/settingsStore.ts";
+import { telemetry } from "../../stores/telemetryStore.ts";
 import {
   LogoF1,
   LogoWEC,
@@ -586,6 +587,8 @@ export const SetupWizard: Component = () => {
                 }`}
               >
                 <Leaderboard
+                  cars={telemetry.frame?.cars}
+                  playerCarIdx={telemetry.frame?.player?.carIdx || 1}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.leaderboard.scale}
                   width={settings.widgets.leaderboard.width || 460}
