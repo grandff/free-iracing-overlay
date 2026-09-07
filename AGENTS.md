@@ -22,6 +22,10 @@
 6. **Apple Design 디자인 원칙 엄격 준수 (Apple Design Standard)**
    - 모든 UI/UX, 설정 위자드, 온보딩, 오버레이 위젯은 `.skill/apple-design/SKILL.md` 지침을 **무조건 필수 준수**합니다.
    - 촌스럽고 조잡한 AI 스타일의 알록달록한 카드/박스 나열을 일체 금지하고, 절제된 반투명 재질(`backdrop-blur`), 정교한 보더(`border-white/10`), SF 프로 감성의 광학적 타이포그래피, 스프링 반응(`active:scale-[0.98]`) 기반의 극도로 세련된 미니멀 디자인을 적용합니다.
+7. **F1 스타일 모터스포츠 레이싱 오버레이 디자인 엄격 준수 (Formula Style Standard)**
+   - 모든 레이싱 HUD와 방송 그래픽 오버레이(순위표, 렐러티브, 텔레메트리 등)는 `.skill/f1-style-overlay-design/SKILL.md` 지침을 **무조건 필수 준수**합니다.
+   - 단순한 빨간/검정 사선 상자가 아닌, **실제 F1 방송 타이밍 타워(팀 컬러 수직 인디케이터, 드라이버 3글자 약칭, 타이어 컴파운드 배지 S/M/H, 고정 너비 tabular numerals), 콕핏 스티어링 HUD(기어, 동적 RPM LED, 페달 트레이스, 델타 색상 규칙)**를 완벽 구현합니다.
+   - 공식 폰트(`Formula1`) 및 고품질 오픈소스 모터스포츠 폰트(`Titillium Web`, `Chakra Petch`, `Barlow Condensed`) 연동 및 자동 웹폰트 로딩 시스템을 지원합니다.
 
 ---
 

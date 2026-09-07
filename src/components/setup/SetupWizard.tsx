@@ -21,7 +21,11 @@ import {
   ChevronDown,
   Check,
   Info,
+  Type,
 } from "lucide-solid";
+import { F1TimingTower } from "../f1/F1TimingTower.tsx";
+import { F1Relative } from "../f1/F1Relative.tsx";
+import { F1TelemetryHub } from "../f1/F1TelemetryHub.tsx";
 
 // ponytail: minimal clean theme model without unnecessary subheadings
 interface ThemeOption {
@@ -34,6 +38,7 @@ interface ThemeOption {
 export const SetupWizard: Component = () => {
   const [selectedTheme, setSelectedTheme] = createSignal<string>("f1");
   const [isDropdownOpen, setIsDropdownOpen] = createSignal(false);
+  const [showFontInfo, setShowFontInfo] = createSignal(false);
 
   // Dragging state for Step 2
   const [draggingWidget, setDraggingWidget] = createSignal<string | null>(null);
@@ -239,11 +244,11 @@ export const SetupWizard: Component = () => {
       <Show when={settings.setupStep === 2}>
         <div class="relative w-full h-full">
           {/* Top Apple Minimal Floating Capsule Toolbar */}
-          <div class="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 px-5 py-2.5 bg-[#1c1c1e]/85 backdrop-blur-2xl border border-white/[0.12] rounded-full shadow-[0_20px_40px_-12px_rgba(0,0,0,0.8)] text-[#f5f5f7]">
+          <div class="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3.5 px-5 py-2.5 bg-[#181820]/90 backdrop-blur-2xl border border-white/[0.12] rounded-full shadow-[0_20px_40px_-12px_rgba(0,0,0,0.85)] text-[#f5f5f7]">
             {/* Step 2 Progress Bar */}
-            <div class="flex items-center gap-1.5 pr-3 border-r border-white/10 w-16">
-              <div class="h-1 flex-1 rounded-full bg-[#30d158] shadow-[0_0_6px_rgba(48,209,88,0.5)]" />
-              <div class="h-1 flex-1 rounded-full bg-[#30d158] shadow-[0_0_6px_rgba(48,209,88,0.5)]" />
+            <div class="flex items-center gap-1.5 pr-2.5 border-r border-white/10 w-16">
+              <div class="h-1 flex-1 rounded-full bg-[#00d26a] shadow-[0_0_6px_rgba(0,210,106,0.5)]" />
+              <div class="h-1 flex-1 rounded-full bg-[#00d26a] shadow-[0_0_6px_rgba(0,210,106,0.5)]" />
             </div>
 
             {/* Alt + J Shortcut Pill */}
@@ -251,17 +256,26 @@ export const SetupWizard: Component = () => {
               onClick={toggleEditMode}
               class={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2 border transition-all duration-150 active:scale-[0.96] cursor-pointer pointer-events-auto ${
                 settings.isEditMode
-                  ? "bg-amber-400/15 text-amber-300 border-amber-400/30"
+                  ? "bg-amber-400/15 text-amber-300 border-amber-400/30 shadow-[0_0_12px_rgba(251,191,36,0.2)]"
                   : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
               }`}
             >
-              <span>{settings.isEditMode ? "편집 활성" : "고정 모드"}</span>
+              <span>{settings.isEditMode ? "편집 모드 활성" : "고정 모드"}</span>
               <kbd class="bg-black/40 px-1.5 py-0.5 rounded text-[10px] font-mono border border-white/15 text-white">
                 Alt + J
               </kbd>
             </button>
 
-            <span class="text-xs text-[#86868b] hidden md:inline">
+            {/* F1 Font Status Pill */}
+            <button
+              onClick={() => setShowFontInfo(true)}
+              class="px-3 py-1 rounded-full text-xs font-f1 bg-white/5 hover:bg-white/10 text-white/85 border border-white/10 flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-[0.96]"
+            >
+              <Type class="w-3.5 h-3.5 text-[#e10600]" />
+              <span>F1 폰트 설정</span>
+            </button>
+
+            <span class="text-xs text-[#86868b] hidden lg:inline">
               {settings.isEditMode
                 ? "위젯을 드래그하여 이동하고 +/- 버튼으로 크기를 조절하세요."
                 : "Alt + J 로 편집 모드를 켤 수 있습니다."}
@@ -279,7 +293,7 @@ export const SetupWizard: Component = () => {
 
               <button
                 onClick={saveSettingsAsDefault}
-                class="px-4 py-1.5 rounded-full bg-[#30d158] hover:bg-[#28b84c] active:scale-[0.96] text-black font-semibold text-xs shadow-md transition-all duration-150 flex items-center gap-1.5 cursor-pointer pointer-events-auto"
+                class="px-4 py-1.5 rounded-full bg-[#00d26a] hover:bg-[#00ba5e] active:scale-[0.96] text-black font-semibold text-xs shadow-md transition-all duration-150 flex items-center gap-1.5 cursor-pointer pointer-events-auto"
               >
                 <span>최종 저장</span>
                 <Check class="w-3.5 h-3.5 stroke-[2.5]" />
@@ -287,190 +301,119 @@ export const SetupWizard: Component = () => {
             </div>
           </div>
 
+          {/* F1 Font Info Modal */}
+          <Show when={showFontInfo()}>
+            <div
+              onClick={() => setShowFontInfo(false)}
+              class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 pointer-events-auto"
+            >
+              <div
+                onClick={(e) => e.stopPropagation()}
+                class="max-w-[460px] w-full bg-[#181822] border border-white/15 rounded-2xl p-6 shadow-2xl flex flex-col gap-4 text-white font-sans"
+              >
+                <div class="flex items-center justify-between border-b border-white/10 pb-3">
+                  <div class="flex items-center gap-2">
+                    <LogoF1 class="h-4 w-auto" />
+                    <h2 class="text-base font-bold font-f1">F1 공식 타이포그래피 안내</h2>
+                  </div>
+                  <button
+                    onClick={() => setShowFontInfo(false)}
+                    class="text-xs text-white/50 hover:text-white px-2 py-1 rounded hover:bg-white/10 cursor-pointer"
+                  >
+                    닫기
+                  </button>
+                </div>
+
+                <div class="flex flex-col gap-2.5 text-xs text-[#a0a0b0] leading-relaxed">
+                  <p>
+                    본 오버레이는 Formula 1 공식 중계 폰트 스택을 지원합니다.
+                  </p>
+                  <div class="bg-black/40 border border-white/10 rounded-xl p-3 flex flex-col gap-1.5 font-mono text-[11px] text-white/90">
+                    <div class="flex items-center gap-2">
+                      <span class="w-2 h-2 rounded-full bg-[#00d26a]" />
+                      <span>현재 적용 상태: <strong>고품질 모터스포츠 웹폰트 활성</strong></span>
+                    </div>
+                    <div class="pl-4 text-[10px] text-white/60">
+                      • 타이밍 & 보드: <code class="text-amber-300">Titillium Web (Google Fonts)</code><br/>
+                      • 디지털 텔레메트리: <code class="text-amber-300">Chakra Petch (Google Fonts)</code>
+                    </div>
+                  </div>
+
+                  <p>
+                    <strong>Formula 1 공식 폰트 파일</strong>(<code class="text-white">Formula1-Bold.woff2</code>)을 소장하고 계신 경우, 프로젝트 루트의 <code class="text-white">public/fonts/</code> 디렉터리에 넣거나 PC 시스템에 설치하시면 100% 공식 폰트가 자동 우선 적용됩니다.
+                  </p>
+                </div>
+
+                <button
+                  onClick={() => setShowFontInfo(false)}
+                  class="w-full py-2.5 bg-white/10 hover:bg-white/15 text-white font-medium text-xs rounded-xl transition-all cursor-pointer"
+                >
+                  확인
+                </button>
+              </div>
+            </div>
+          </Show>
+
           {/* Interactive Preview Overlay Area */}
           <div class="w-full h-full relative pointer-events-none">
-            {/* Widget 1: Leaderboard (Top-Left) */}
+            {/* Widget 1: F1 Timing Tower (Top-Left) */}
             <div
               onMouseDown={(e) => handleMouseDown("leaderboard", e)}
               style={{
                 transform: `translate3d(${settings.widgets.leaderboard.x}px, ${settings.widgets.leaderboard.y}px, 0) scale(${settings.widgets.leaderboard.scale})`,
                 "transform-origin": "top left",
               }}
-              class={`fixed top-16 left-8 z-30 hud-panel p-3 w-80 select-none ${
+              class={`fixed top-16 left-8 z-30 select-none ${
                 settings.isEditMode
-                  ? "pointer-events-auto cursor-move ring-2 ring-amber-400/80 ring-offset-2 ring-offset-black/50"
+                  ? "pointer-events-auto cursor-move ring-2 ring-amber-400/80 ring-offset-2 ring-offset-black/50 rounded"
                   : "pointer-events-none"
               }`}
             >
-              <div class="flex items-center justify-between pb-2 border-b border-white/10 mb-2">
-                <span class="hud-header px-2 py-0.5 text-[11px] rounded">순위표 (LEADERBOARD)</span>
-                <Show when={settings.isEditMode}>
-                  <div class="flex items-center gap-1">
-                    <button
-                      onClick={() =>
-                        updateWidgetTransform("leaderboard", {
-                          scale: Math.max(0.7, settings.widgets.leaderboard.scale - 0.1),
-                        })
-                      }
-                      class="px-1.5 bg-white/20 hover:bg-white/30 rounded text-xs font-bold"
-                    >
-                      -
-                    </button>
-                    <span class="text-[10px] font-mono">{Math.round(settings.widgets.leaderboard.scale * 100)}%</span>
-                    <button
-                      onClick={() =>
-                        updateWidgetTransform("leaderboard", {
-                          scale: Math.min(1.5, settings.widgets.leaderboard.scale + 0.1),
-                        })
-                      }
-                      class="px-1.5 bg-white/20 hover:bg-white/30 rounded text-xs font-bold"
-                    >
-                      +
-                    </button>
-                  </div>
-                </Show>
-              </div>
-              <div class="space-y-1 text-xs font-mono">
-                <div class="flex items-center justify-between p-1 bg-red-950/40 rounded">
-                  <span>P1 #1 M. Verstappen</span>
-                  <span class="text-emerald-400 font-bold">1:24.120</span>
-                </div>
-                <div class="flex items-center justify-between p-1 bg-black/40 rounded">
-                  <span>P2 #16 C. Leclerc</span>
-                  <span class="text-white/60">+0.421s</span>
-                </div>
-                <div class="flex items-center justify-between p-1 bg-black/40 rounded">
-                  <span>P3 #44 L. Hamilton</span>
-                  <span class="text-white/60">+1.025s</span>
-                </div>
-              </div>
+              <F1TimingTower
+                isEditMode={settings.isEditMode}
+                scale={settings.widgets.leaderboard.scale}
+                onScaleChange={(scale) => updateWidgetTransform("leaderboard", { scale })}
+              />
             </div>
 
-            {/* Widget 2: Relative (Bottom-Right) */}
+            {/* Widget 2: F1 Tactical Relative (Bottom-Right) */}
             <div
               onMouseDown={(e) => handleMouseDown("relative", e)}
               style={{
                 transform: `translate3d(${settings.widgets.relative.x}px, ${settings.widgets.relative.y}px, 0) scale(${settings.widgets.relative.scale})`,
                 "transform-origin": "bottom right",
               }}
-              class={`fixed bottom-8 right-8 z-30 hud-panel p-3 w-72 select-none ${
+              class={`fixed bottom-8 right-8 z-30 select-none ${
                 settings.isEditMode
-                  ? "pointer-events-auto cursor-move ring-2 ring-amber-400/80 ring-offset-2 ring-offset-black/50"
+                  ? "pointer-events-auto cursor-move ring-2 ring-amber-400/80 ring-offset-2 ring-offset-black/50 rounded"
                   : "pointer-events-none"
               }`}
             >
-              <div class="flex items-center justify-between pb-2 border-b border-white/10 mb-2">
-                <span class="hud-header px-2 py-0.5 text-[11px] rounded">상대 간격 (RELATIVE)</span>
-                <Show when={settings.isEditMode}>
-                  <div class="flex items-center gap-1">
-                    <button
-                      onClick={() =>
-                        updateWidgetTransform("relative", {
-                          scale: Math.max(0.7, settings.widgets.relative.scale - 0.1),
-                        })
-                      }
-                      class="px-1.5 bg-white/20 hover:bg-white/30 rounded text-xs font-bold"
-                    >
-                      -
-                    </button>
-                    <span class="text-[10px] font-mono">{Math.round(settings.widgets.relative.scale * 100)}%</span>
-                    <button
-                      onClick={() =>
-                        updateWidgetTransform("relative", {
-                          scale: Math.min(1.5, settings.widgets.relative.scale + 0.1),
-                        })
-                      }
-                      class="px-1.5 bg-white/20 hover:bg-white/30 rounded text-xs font-bold"
-                    >
-                      +
-                    </button>
-                  </div>
-                </Show>
-              </div>
-              <div class="space-y-1 text-xs font-mono">
-                <div class="flex items-center justify-between p-1 bg-black/30 rounded text-amber-300">
-                  <span>#16 C. Leclerc</span>
-                  <span>-0.42s</span>
-                </div>
-                <div class="flex items-center justify-between p-1 bg-red-600/30 font-bold text-white rounded">
-                  <span>#1 M. Verstappen (YOU)</span>
-                  <span>0.00s</span>
-                </div>
-                <div class="flex items-center justify-between p-1 bg-black/30 rounded text-emerald-300">
-                  <span>#44 L. Hamilton</span>
-                  <span>+1.02s</span>
-                </div>
-              </div>
+              <F1Relative
+                isEditMode={settings.isEditMode}
+                scale={settings.widgets.relative.scale}
+                onScaleChange={(scale) => updateWidgetTransform("relative", { scale })}
+              />
             </div>
 
-            {/* Widget 3: Telemetry Hub (Bottom-Center) */}
+            {/* Widget 3: F1 Cockpit Telemetry Hub (Bottom-Center) */}
             <div
               onMouseDown={(e) => handleMouseDown("telemetryHub", e)}
               style={{
-                transform: `translate3d(${settings.widgets.telemetryHub.x}px, ${settings.widgets.telemetryHub.y}px, 0) scale(${settings.widgets.telemetryHub.scale})`,
+                transform: `translate3d(calc(-50% + ${settings.widgets.telemetryHub.x}px), ${settings.widgets.telemetryHub.y}px, 0) scale(${settings.widgets.telemetryHub.scale})`,
                 "transform-origin": "bottom center",
               }}
-              class={`fixed bottom-8 left-1/2 -translate-x-1/2 z-30 hud-panel px-6 py-3 flex items-center gap-6 select-none ${
+              class={`fixed bottom-8 left-1/2 z-30 select-none ${
                 settings.isEditMode
-                  ? "pointer-events-auto cursor-move ring-2 ring-amber-400/80 ring-offset-2 ring-offset-black/50"
+                  ? "pointer-events-auto cursor-move ring-2 ring-amber-400/80 ring-offset-2 ring-offset-black/50 rounded-lg"
                   : "pointer-events-none"
               }`}
             >
-              <div class="flex items-center gap-3 pr-4 border-r border-white/10">
-                <div class="flex flex-col items-center">
-                  <span class="text-[10px] text-[var(--theme-text-muted)] font-mono">GEAR</span>
-                  <span class="text-3xl font-black text-[var(--theme-accent)] leading-none">6</span>
-                </div>
-                <div class="flex flex-col">
-                  <div class="flex items-baseline gap-1">
-                    <span class="text-2xl font-mono font-black tracking-tight">245</span>
-                    <span class="text-[10px] text-[var(--theme-text-muted)]">KM/H</span>
-                  </div>
-                  <span class="text-[10px] font-mono text-white/50">11,200 RPM</span>
-                </div>
-              </div>
-
-              <div class="flex flex-col pr-4 border-r border-white/10">
-                <div class="flex items-center gap-1 text-[10px] text-[var(--theme-text-muted)]">
-                  <IconStopwatch size={12} />
-                  <span>LAP DELTA</span>
-                </div>
-                <span class="font-mono font-bold text-base text-emerald-400">-0.23s</span>
-              </div>
-
-              <div class="flex flex-col">
-                <div class="flex items-center gap-1 text-[10px] text-[var(--theme-text-muted)]">
-                  <IconFuel size={12} />
-                  <span>FUEL REMAIN</span>
-                </div>
-                <span class="font-mono font-bold text-base">42.5L</span>
-              </div>
-
-              <Show when={settings.isEditMode}>
-                <div class="flex items-center gap-1 pl-4 border-l border-white/10">
-                  <button
-                    onClick={() =>
-                      updateWidgetTransform("telemetryHub", {
-                        scale: Math.max(0.7, settings.widgets.telemetryHub.scale - 0.1),
-                      })
-                    }
-                    class="px-1.5 bg-white/20 hover:bg-white/30 rounded text-xs font-bold"
-                  >
-                    -
-                  </button>
-                  <span class="text-[10px] font-mono">{Math.round(settings.widgets.telemetryHub.scale * 100)}%</span>
-                  <button
-                    onClick={() =>
-                      updateWidgetTransform("telemetryHub", {
-                        scale: Math.min(1.5, settings.widgets.telemetryHub.scale + 0.1),
-                      })
-                    }
-                    class="px-1.5 bg-white/20 hover:bg-white/30 rounded text-xs font-bold"
-                  >
-                    +
-                  </button>
-                </div>
-              </Show>
+              <F1TelemetryHub
+                isEditMode={settings.isEditMode}
+                scale={settings.widgets.telemetryHub.scale}
+                onScaleChange={(scale) => updateWidgetTransform("telemetryHub", { scale })}
+              />
             </div>
           </div>
         </div>
