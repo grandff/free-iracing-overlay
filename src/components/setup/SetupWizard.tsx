@@ -29,18 +29,18 @@ import {
   Globe,
 } from "lucide-solid";
 import { Leaderboard } from "../widgets/Leaderboard.tsx";
-import { F1Relative } from "../f1/F1Relative.tsx";
-import { F1LapDelta } from "../f1/F1LapDelta.tsx";
-import { F1RevengeTracker } from "../f1/F1RevengeTracker.tsx";
-import { F1SpotterLeft } from "../f1/F1SpotterLeft.tsx";
-import { F1SpotterRight } from "../f1/F1SpotterRight.tsx";
-import { F1FuelCalculator } from "../f1/F1FuelCalculator.tsx";
-import { F1TireAnalysis } from "../f1/F1TireAnalysis.tsx";
-import { F1IncidentHazard } from "../f1/F1IncidentHazard.tsx";
-import { F1WeatherWidget } from "../f1/F1WeatherWidget.tsx";
-import { F1MulticlassRadar } from "../f1/F1MulticlassRadar.tsx";
-import { F1TrackMap } from "../f1/F1TrackMap.tsx";
-import { F1TelemetryHub } from "../f1/F1TelemetryHub.tsx";
+import { Relative } from "../widgets/Relative.tsx";
+import { LapDelta } from "../widgets/LapDelta.tsx";
+import { RevengeTracker } from "../widgets/RevengeTracker.tsx";
+import { SpotterLeft } from "../widgets/SpotterLeft.tsx";
+import { SpotterRight } from "../widgets/SpotterRight.tsx";
+import { FuelSimulator } from "../widgets/FuelSimulator.tsx";
+import { TireAnalysis } from "../widgets/TireAnalysis.tsx";
+import { IncidentHazard } from "../widgets/IncidentHazard.tsx";
+import { WeatherWidget } from "../widgets/WeatherWidget.tsx";
+import { MulticlassRadar } from "../widgets/MulticlassRadar.tsx";
+import { TrackMap } from "../widgets/TrackMap.tsx";
+import { TelemetryHub } from "../widgets/TelemetryHub.tsx";
 import { createPresence } from "../../utils/presence.ts";
 import { t, setLanguage, SUPPORTED_LANGUAGES } from "../../i18n/index.ts";
 
@@ -612,7 +612,7 @@ export const SetupWizard: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1Relative
+                <Relative
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.relative.scale}
                   onScaleChange={(scale) => updateWidgetTransform("relative", { scale })}
@@ -634,7 +634,7 @@ export const SetupWizard: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1LapDelta
+                <LapDelta
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.lapDelta.scale}
                   onScaleChange={(scale) => updateWidgetTransform("lapDelta", { scale })}
@@ -656,7 +656,7 @@ export const SetupWizard: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1RevengeTracker
+                <RevengeTracker
                   hasTarget={true}
                   targetCarNumber={33}
                   targetDriverName="Max Verstappen"
@@ -682,7 +682,7 @@ export const SetupWizard: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1SpotterLeft
+                <SpotterLeft
                   distance={1.4}
                   state="danger"
                   isEditMode={settings.isEditMode}
@@ -706,7 +706,7 @@ export const SetupWizard: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1SpotterRight
+                <SpotterRight
                   distance={2.8}
                   state="warning"
                   isEditMode={settings.isEditMode}
@@ -730,7 +730,7 @@ export const SetupWizard: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1FuelCalculator
+                <FuelSimulator
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.fuelCalculator.scale}
                   onScaleChange={(scale) => updateWidgetTransform("fuelCalculator", { scale })}
@@ -752,7 +752,7 @@ export const SetupWizard: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1TireAnalysis
+                <TireAnalysis
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.tireAnalysis.scale}
                   onScaleChange={(scale) => updateWidgetTransform("tireAnalysis", { scale })}
@@ -774,7 +774,7 @@ export const SetupWizard: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1IncidentHazard
+                <IncidentHazard
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.incidentHazard.scale}
                   onScaleChange={(scale) => updateWidgetTransform("incidentHazard", { scale })}
@@ -796,7 +796,7 @@ export const SetupWizard: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1WeatherWidget
+                <WeatherWidget
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.weather.scale}
                   onScaleChange={(scale) => updateWidgetTransform("weather", { scale })}
@@ -818,7 +818,7 @@ export const SetupWizard: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1MulticlassRadar
+                <MulticlassRadar
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.multiclassRadar.scale}
                   onScaleChange={(scale) => updateWidgetTransform("multiclassRadar", { scale })}
@@ -840,7 +840,7 @@ export const SetupWizard: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1TrackMap
+                <TrackMap
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.trackMap.scale}
                   onScaleChange={(scale) => updateWidgetTransform("trackMap", { scale })}
@@ -862,7 +862,7 @@ export const SetupWizard: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1TelemetryHub
+                <TelemetryHub
                   gear="7"
                   speedKmh={312}
                   rpm={11800}

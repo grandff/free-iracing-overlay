@@ -14,18 +14,18 @@ import { HeaderBar } from "./components/common/HeaderBar.tsx";
 import { SetupWizard } from "./components/setup/SetupWizard.tsx";
 import { ControlApp } from "./components/control/ControlApp.tsx";
 import { Leaderboard } from "./components/widgets/Leaderboard.tsx";
-import { F1Relative } from "./components/f1/F1Relative.tsx";
-import { F1LapDelta } from "./components/f1/F1LapDelta.tsx";
-import { F1RevengeTracker } from "./components/f1/F1RevengeTracker.tsx";
-import { F1SpotterLeft } from "./components/f1/F1SpotterLeft.tsx";
-import { F1SpotterRight } from "./components/f1/F1SpotterRight.tsx";
-import { F1FuelCalculator } from "./components/f1/F1FuelCalculator.tsx";
-import { F1TireAnalysis } from "./components/f1/F1TireAnalysis.tsx";
-import { F1IncidentHazard } from "./components/f1/F1IncidentHazard.tsx";
-import { F1WeatherWidget } from "./components/f1/F1WeatherWidget.tsx";
-import { F1MulticlassRadar } from "./components/f1/F1MulticlassRadar.tsx";
-import { F1TrackMap } from "./components/f1/F1TrackMap.tsx";
-import { F1TelemetryHub } from "./components/f1/F1TelemetryHub.tsx";
+import { Relative } from "./components/widgets/Relative.tsx";
+import { LapDelta } from "./components/widgets/LapDelta.tsx";
+import { RevengeTracker } from "./components/widgets/RevengeTracker.tsx";
+import { SpotterLeft } from "./components/widgets/SpotterLeft.tsx";
+import { SpotterRight } from "./components/widgets/SpotterRight.tsx";
+import { FuelSimulator } from "./components/widgets/FuelSimulator.tsx";
+import { TireAnalysis } from "./components/widgets/TireAnalysis.tsx";
+import { IncidentHazard } from "./components/widgets/IncidentHazard.tsx";
+import { WeatherWidget } from "./components/widgets/WeatherWidget.tsx";
+import { MulticlassRadar } from "./components/widgets/MulticlassRadar.tsx";
+import { TrackMap } from "./components/widgets/TrackMap.tsx";
+import { TelemetryHub } from "./components/widgets/TelemetryHub.tsx";
 import { createPresence } from "./utils/presence.ts";
 import { t } from "./i18n/index.ts";
 
@@ -291,7 +291,7 @@ export const App: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1Relative
+                <Relative
                   entries={relativeEntries().length > 0 ? relativeEntries() : undefined}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.relative.scale}
@@ -314,7 +314,7 @@ export const App: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1LapDelta
+                <LapDelta
                   deltaSeconds={telemetry.frame?.player?.lastLapDelta ?? -0.142}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.lapDelta.scale}
@@ -337,7 +337,7 @@ export const App: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1RevengeTracker
+                <RevengeTracker
                   hasTarget={telemetry.frame?.revenge?.hasTarget}
                   targetCarNumber={telemetry.frame?.revenge?.carNumber}
                   targetDriverName={telemetry.frame?.revenge?.driverName}
@@ -363,7 +363,7 @@ export const App: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1SpotterLeft
+                <SpotterLeft
                   distance={telemetry.frame?.spotter?.leftDistanceMeters}
                   state={telemetry.frame?.spotter?.leftState}
                   isEditMode={settings.isEditMode}
@@ -387,7 +387,7 @@ export const App: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1SpotterRight
+                <SpotterRight
                   distance={telemetry.frame?.spotter?.rightDistanceMeters}
                   state={telemetry.frame?.spotter?.rightState}
                   isEditMode={settings.isEditMode}
@@ -411,7 +411,7 @@ export const App: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1FuelCalculator
+                <FuelSimulator
                   fuelLevelLiters={telemetry.frame?.player?.fuelLevelLiters}
                   fuelPerLap={telemetry.frame?.player?.fuelAvgPerLap}
                   fuelLapsRemaining={telemetry.frame?.player?.fuelLapsRemaining}
@@ -437,7 +437,7 @@ export const App: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1TireAnalysis
+                <TireAnalysis
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.tireAnalysis.scale}
                   onScaleChange={(scale) => updateWidgetTransform("tireAnalysis", { scale })}
@@ -459,7 +459,7 @@ export const App: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1IncidentHazard
+                <IncidentHazard
                   aheadHazardMeters={telemetry.frame?.hazard?.hasIncident ? telemetry.frame?.hazard?.distanceMeters : undefined}
                   hazardCarNumber={telemetry.frame?.hazard?.incidentCarNumber}
                   yellowFlagActive={telemetry.frame?.hazard?.hasIncident}
@@ -484,7 +484,7 @@ export const App: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1WeatherWidget
+                <WeatherWidget
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.weather.scale}
                   onScaleChange={(scale) => updateWidgetTransform("weather", { scale })}
@@ -506,7 +506,7 @@ export const App: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1MulticlassRadar
+                <MulticlassRadar
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.multiclassRadar.scale}
                   onScaleChange={(scale) => updateWidgetTransform("multiclassRadar", { scale })}
@@ -528,7 +528,7 @@ export const App: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1TrackMap
+                <TrackMap
                   cars={trackMapCars().length > 0 ? trackMapCars() : undefined}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.trackMap.scale}
@@ -551,7 +551,7 @@ export const App: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1TelemetryHub
+                <TelemetryHub
                   gear={telemetry.frame?.player?.gear ?? "4"}
                   speedKmh={telemetry.frame?.player?.speedKmh ?? 245}
                   rpm={telemetry.frame?.player?.rpm ?? 11250}

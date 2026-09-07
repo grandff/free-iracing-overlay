@@ -5,7 +5,7 @@ import {
   IconWarning,
   IconCrosshair,
 } from "../../assets/icons/Icons.tsx";
-import { F1TelemetryHub } from "../f1/F1TelemetryHub.tsx";
+import { TelemetryHub } from "../widgets/TelemetryHub.tsx";
 import { createPresence } from "../../utils/presence.ts";
 
 interface Props {
@@ -40,10 +40,10 @@ export const TelemetryMonitor: Component<Props> = (props) => {
         }`}>
           <IconWarning size={22} class="text-red-400 animate-bounce" />
           <div class="flex flex-col">
-            <span class="font-f1-wide font-black tracking-wider text-xs uppercase text-white">
+            <span class="font-mono font-black tracking-wider text-xs uppercase text-white">
               INCIDENT AHEAD IN SECTOR {h()!.incidentSector}
             </span>
-            <span class="font-f1-num text-[11px] text-red-200">
+            <span class="font-mono text-[11px] text-red-200">
               Car #{h()!.incidentCarNumber} — Distance: <strong>{h()!.distanceMeters}m</strong>
             </span>
           </div>
@@ -52,7 +52,7 @@ export const TelemetryMonitor: Component<Props> = (props) => {
 
       {/* Revenge Target Notification if tracking someone */}
       <Show when={revengePresence.mounted()}>
-        <div class={`px-4 py-1.5 rounded bg-black/80 border border-red-500/40 text-red-300 text-xs font-f1 flex items-center gap-2 shadow-lg apple-pill-enter ${
+        <div class={`px-4 py-1.5 rounded bg-black/80 border border-red-500/40 text-red-300 text-xs font-sans flex items-center gap-2 shadow-lg apple-pill-enter ${
           revengePresence.visible() ? "is-visible" : "is-hidden"
         }`}>
           <IconCrosshair size={14} class="text-red-400 animate-spin" />
@@ -60,8 +60,8 @@ export const TelemetryMonitor: Component<Props> = (props) => {
         </div>
       </Show>
 
-      {/* F1 Cockpit Steering & Telemetry Hub */}
-      <F1TelemetryHub
+      {/* Cockpit Steering & Telemetry Hub */}
+      <TelemetryHub
         gear={p()?.gear}
         speedKmh={p()?.speedKmh}
         rpm={p()?.rpm}

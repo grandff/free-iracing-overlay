@@ -169,6 +169,11 @@
 3. **윈도우 관리 및 단축키 제어**
    - 투명 오버레이 모드(`transparent: true`, `decorations: false`, `always_on_top: true`).
    - **`Alt + J`** 단축키로 **[오버레이 고정/클릭스루 주행 모드]** ↔ **[위젯 드래그/크기 조절 편집 모드]** 간 즉시 전환.
+   - 게임 주행 중에는 iRacing이 키보드 포커스를 점유하므로, `Alt + J`는 **반드시 OS 레벨 전역 단축키(`tauri-plugin-global-shortcut`)로 등록**합니다. 웹뷰 `keydown` 리스너는 인게임에서 절대 발화하지 않습니다.
+   - 클릭스루는 CSS `pointer-events`로 구현할 수 없습니다. **반드시 네이티브 `set_ignore_cursor_events()`** 로 제어합니다.
+4. **기능 구현 전 텔레메트리 기준 문서 확인 (필수)**
+   - 모든 기능 구현·수정은 **[§3.0 Telemetry-First Rule](#30-️-기능-구현-전-필수-선행-규칙-telemetry-first-rule)** 을 먼저 따릅니다.
+   - 변수명·타입·단위는 [`docs/IRACING_TELEMETRY_REFERENCE.md`](docs/IRACING_TELEMETRY_REFERENCE.md) 에서 확인하고, **추측으로 만들지 않습니다.**
 
 ---
 
@@ -178,6 +183,11 @@
 free-iracing-overlay/
 ├── AGENTS.md                  # 본 프로젝트 개발 지침 및 아키텍처
 ├── README.md                  # 사용자 및 기여자 안내 문서
+├── docs/
+│   ├── IRACING_TELEMETRY_REFERENCE.md  # ⚠️ 기능 구현 1순위 기준 문서 (SDK 변수 293종)
+│   ├── IRACING_TELEMETRY_MEMO.md       # 핵심 변수 활용 사례 메모
+│   ├── MILESTONES.md          # 마일스톤 로드맵
+│   └── CHECKLIST.md           # 마일스톤 검증 체크리스트 (DoD)
 ├── src-tauri/                 # Tauri v2 (Rust) 백엔드
 │   ├── Cargo.toml
 │   ├── tauri.conf.json        # 윈도우 투명도, 권한, 크기 설정
@@ -255,5 +265,12 @@ free-iracing-overlay/
    - 단순 체크(`[x]`)에 그치지 않고, 각 기준을 입증하는 **실제 측정 데이터**(빌드 크기(KB), 빌드 소요 시간(ms), 텔레메트리 틱 레이트(Hz), 렌더링 프레임(FPS), 메모리 점유율(MB), CPU 사용률(%), 로컬 테스트 URL 등)를 검증 근거로 함께 기록합니다.
 3. **타 모델 및 사용자 교차 검토 보장:**
    - 사용자와 외부 AI 감사 모델이 `docs/CHECKLIST.md`만 보고도 각 마일스톤의 요구사항이 포니테일 원칙(경량성, 불필요한 추상화 배제)과 기술 사양에 부합하는지 즉시 판정할 수 있도록 명확하고 객관적인 증거를 유지합니다.
+4. **텔레메트리 변수 근거 명시 (§3.0 연계):**
+   - 위젯 관련 DoD를 PASS 처리할 때는, 그 위젯이 실제로 읽는 **SDK 변수명을 [`docs/IRACING_TELEMETRY_REFERENCE.md`](docs/IRACING_TELEMETRY_REFERENCE.md) 기준으로 나열**합니다.
+   - 목업 데이터로만 동작하는 경우 반드시 **`(mock only — 실 SDK 미검증)`** 이라고 병기합니다.
+5. **"구현함"과 "검증함"을 구분해서 기록:**
+   - `[x]` + **PASS**는 **실제로 실행해서 동작을 확인한 경우에만** 사용합니다.
+   - 코드만 작성하고 빌드·실행으로 확인하지 않았다면 **`IMPLEMENTED (미검증)`** 으로 표기합니다.
+   - 특히 Rust(`src-tauri/`) 변경은 `cargo check` 통과 여부를 근거로 남깁니다. 컴파일하지 않은 코드는 PASS가 아닙니다.
 
 
