@@ -11,7 +11,7 @@ import {
   LogoWEC,
   LogoWRC,
   LogoIndyCar,
-  LogoGT,
+  LogoIMSA,
   IconFuel,
   IconStopwatch,
 } from "../../assets/icons/Icons.tsx";
@@ -25,7 +25,7 @@ import {
 
 // ponytail: minimal clean theme model without unnecessary subheadings
 interface ThemeOption {
-  id: "f1" | "wec" | "wrc" | "indycar" | "gt";
+  id: "f1" | "wec" | "wrc" | "indycar" | "imsa";
   name: string;
   available: boolean;
   logo: Component<{ class?: string; fill?: string }>;
@@ -39,13 +39,13 @@ export const SetupWizard: Component = () => {
   const [draggingWidget, setDraggingWidget] = createSignal<string | null>(null);
   const [dragOffset, setDragOffset] = createSignal<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Pure Grand Prix / Championship names only
+  // Pure Grand Prix / Championship names with official marks
   const themes: ThemeOption[] = [
     { id: "f1", name: "Formula 1", available: true, logo: LogoF1 },
     { id: "wec", name: "WEC", available: false, logo: LogoWEC },
     { id: "wrc", name: "WRC", available: false, logo: LogoWRC },
     { id: "indycar", name: "IndyCar", available: false, logo: LogoIndyCar },
-    { id: "gt", name: "GT", available: false, logo: LogoGT },
+    { id: "imsa", name: "Daytona (IMSA)", available: false, logo: LogoIMSA },
   ];
 
   const currentTheme = () => themes.find((t) => t.id === selectedTheme()) || themes[0];
@@ -128,8 +128,11 @@ export const SetupWizard: Component = () => {
                   class="w-full bg-[#2c2c2e]/80 hover:bg-[#3a3a3c]/80 active:scale-[0.99] border border-white/15 rounded-xl px-4 py-3 flex items-center justify-between text-left transition-all duration-150 shadow-sm cursor-pointer pointer-events-auto"
                 >
                   <div class="flex items-center gap-3">
-                    <div class="h-6 w-14 flex items-center justify-center">
-                      <LogoF1 class="h-4 w-auto" />
+                    <div class="h-6 w-14 flex items-center justify-center text-white">
+                      {(() => {
+                        const LogoComponent = currentTheme().logo;
+                        return <LogoComponent class="h-4 w-auto max-h-4 max-w-12" />;
+                      })()}
                     </div>
                     <span class="text-base font-semibold text-white tracking-tight">
                       {currentTheme().name}
