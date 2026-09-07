@@ -63,17 +63,15 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
   const totalLaps = () => props.lapTotal || 57;
 
   // Width Responsive Hierarchy:
-  // - Minimum (~220px): [순위] [이름] [최근랩타임]
+  // - Minimum (~220px): [순위] [국기 + 이름] [최근랩타임] (국기 플래그는 이름 옆에 항상 표시)
   // - Level 1 (>= 280px): + [베스트랩타임]
   // - Level 2 (>= 350px): + [IR]
-  // - Level 3 (>= 410px): + [국가]
-  // - Level 4 (>= 480px): + [SR 사각 배지]
-  // - Level 5 (>= 560px): + [차량브랜드]
+  // - Level 3 (>= 440px): + [SR 사각 배지]
+  // - Level 4 (>= 520px): + [차량브랜드]
   const showBestLap = () => currentWidth() >= 280;
   const showIR = () => currentWidth() >= 350;
-  const showCountry = () => currentWidth() >= 410;
-  const showSR = () => currentWidth() >= 480;
-  const showBrand = () => currentWidth() >= 560;
+  const showSR = () => currentWidth() >= 440;
+  const showBrand = () => currentWidth() >= 520;
 
   const isPlayer = (car: CarTelemetry) => car.carIdx === (props.playerCarIdx ?? 1);
 
@@ -137,32 +135,32 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
                 class={`px-1.5 py-0.5 rounded text-[9px] font-medium cursor-pointer transition-all ${
                   currentWidth() < 280 ? "bg-white/25 text-white" : "bg-white/5 text-white/50 hover:text-white"
                 }`}
-                title="최소 너비 (순위, 이름, 최근랩)"
+                title="최소 너비 (순위, 국기+이름, 최근랩)"
               >
                 최소
               </button>
               <button
-                onClick={() => props.onWidthChange?.(380)}
+                onClick={() => props.onWidthChange?.(360)}
                 class={`px-1.5 py-0.5 rounded text-[9px] font-medium cursor-pointer transition-all ${
-                  currentWidth() >= 280 && currentWidth() < 480 ? "bg-white/25 text-white" : "bg-white/5 text-white/50 hover:text-white"
+                  currentWidth() >= 280 && currentWidth() < 440 ? "bg-white/25 text-white" : "bg-white/5 text-white/50 hover:text-white"
                 }`}
                 title="기본 너비 (+베스트랩, IR)"
               >
                 기본
               </button>
               <button
-                onClick={() => props.onWidthChange?.(480)}
+                onClick={() => props.onWidthChange?.(460)}
                 class={`px-1.5 py-0.5 rounded text-[9px] font-medium cursor-pointer transition-all ${
-                  currentWidth() >= 480 && currentWidth() < 560 ? "bg-white/25 text-white" : "bg-white/5 text-white/50 hover:text-white"
+                  currentWidth() >= 440 && currentWidth() < 520 ? "bg-white/25 text-white" : "bg-white/5 text-white/50 hover:text-white"
                 }`}
-                title="상세 너비 (+국가, SR 배지)"
+                title="상세 너비 (+SR 배지)"
               >
                 상세
               </button>
               <button
-                onClick={() => props.onWidthChange?.(600)}
+                onClick={() => props.onWidthChange?.(560)}
                 class={`px-1.5 py-0.5 rounded text-[9px] font-medium cursor-pointer transition-all ${
-                  currentWidth() >= 560 ? "bg-white/25 text-white" : "bg-white/5 text-white/50 hover:text-white"
+                  currentWidth() >= 520 ? "bg-white/25 text-white" : "bg-white/5 text-white/50 hover:text-white"
                 }`}
                 title="전체 너비 (+차량브랜드)"
               >
@@ -216,11 +214,6 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
         <span class="w-7 text-center font-bold">POS</span>
         <span class="w-[3px] mr-1.5 shrink-0" />
 
-        {/* Optional Country Flag */}
-        <Show when={showCountry()}>
-          <span class="w-8 text-center font-bold" title="Country / iRacing Club (NAT)">NAT</span>
-        </Show>
-
         {/* Optional Car Brand */}
         <Show when={showBrand()}>
           <span class="w-24 pl-1 text-left truncate flex items-center gap-1 font-bold">
@@ -229,7 +222,7 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
           </span>
         </Show>
 
-        {/* Driver Name (Always Visible, fills space) */}
+        {/* Driver Name & Flag (Always Visible, fills space) */}
         <span class="flex-1 pl-1.5 text-left truncate font-bold">DRIVER</span>
 
         {/* Optional Safety Rating Badge */}
@@ -288,17 +281,7 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
                   style={{ "background-color": car.carClassColor || "#E10600" }}
                 />
 
-                {/* 2. Optional Country Flag (Authentic Vector SVG) */}
-                <Show when={showCountry()}>
-                  <div class="w-8 flex items-center justify-center shrink-0">
-                    <CountryFlag
-                      code={car.country}
-                      class="w-5 h-3.5 rounded-[2px] border border-white/20 shadow-sm"
-                    />
-                  </div>
-                </Show>
-
-                {/* 3. Optional Car Brand with Official Vector Emblem */}
+                {/* 2. Optional Car Brand with Official Vector Emblem */}
                 <Show when={showBrand()}>
                   <div class="w-24 pl-1 flex items-center gap-1.5 shrink-0 overflow-hidden" title={car.carBrand}>
                     <div class="w-4 h-4 shrink-0 flex items-center justify-center">
@@ -310,8 +293,12 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
                   </div>
                 </Show>
 
-                {/* 4. Driver Name (Always Visible) */}
+                {/* 3. Driver Name & Flag (Always Visible) */}
                 <div class="flex-1 min-w-0 flex items-center gap-1.5 pl-1.5">
+                  <CountryFlag
+                    code={car.country}
+                    class="w-4.5 h-3 rounded-[1.5px] border border-white/20 shadow-sm shrink-0"
+                  />
                   <span class="text-[12px] font-medium tracking-tight text-white truncate">
                     {car.driverName}
                   </span>
