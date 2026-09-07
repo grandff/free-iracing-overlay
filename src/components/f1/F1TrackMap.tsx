@@ -47,13 +47,11 @@ export const F1TrackMap: Component<Props> = (props) => {
   };
 
   return (
-    <div class="relative flex flex-col w-[260px] font-f1 select-none drop-shadow-[0_16px_32px_rgba(0,0,0,0.9)]">
+    <div class="relative flex flex-col w-[260px] font-f1 select-none">
       {/* Floating Scale Pill */}
       <Show when={editPresence.mounted()}>
         <div
-          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 backdrop-blur-xl border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
-            editPresence.visible() ? "is-visible" : "is-hidden"
-          }`}
+          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${ editPresence.visible() ? "is-visible" : "is-hidden" }`}
         >
           <span class="text-[10px] font-medium text-white/70 whitespace-nowrap">트랙 맵 크기</span>
           <div class="flex items-center gap-1.5">
@@ -75,7 +73,7 @@ export const F1TrackMap: Component<Props> = (props) => {
       </Show>
 
       {/* Main Track Map Container */}
-      <div class="bg-[#12131a]/95 border border-white/15 rounded-lg overflow-hidden shadow-2xl backdrop-blur-xl">
+      <div class="bg-[#12131a]/95 border border-white/15 rounded-lg overflow-hidden shadow-2xl">
         <div class="flex items-center justify-between bg-[#1a1b24] border-b border-white/10 px-3 py-1.5">
           <span class="text-[10px] font-f1-wide font-extrabold tracking-wider text-white">
             2D TRACK MAP
@@ -123,12 +121,12 @@ export const F1TrackMap: Component<Props> = (props) => {
                           fill={c.color}
                           stroke="#ffffff"
                           stroke-width="1"
-                          class="drop-shadow-[0_0_4px_rgba(255,255,255,0.8)]"
+                          class=""
                         />
                       }
                     >
                       {/* Player Marker (Neon Cyan Arrow + Ping) */}
-                      <circle r="7" fill="none" stroke="#00d2ff" stroke-width="1.5" class="animate-ping opacity-75" />
+                      <circle r="7" fill="none" stroke="#00d2ff" stroke-width="1.5" class=" opacity-75" />
                       <circle r="5" fill="#00d2ff" stroke="#ffffff" stroke-width="1.5" />
                       <text
                         y="-8"

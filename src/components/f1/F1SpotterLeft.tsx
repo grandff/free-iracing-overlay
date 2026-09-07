@@ -23,9 +23,7 @@ export const F1SpotterLeft: Component<Props> = (props) => {
       {/* Floating Apple Scale Capsule (Only in Edit Mode) */}
       <Show when={editPresence.mounted()}>
         <div
-          class={`absolute -top-10 left-0 z-50 flex items-center gap-2 px-2.5 py-1 bg-[#1c1c24]/95 backdrop-blur-xl border border-white/15 rounded-full shadow-lg text-white pointer-events-auto whitespace-nowrap apple-pill-enter ${
-            editPresence.visible() ? "is-visible" : "is-hidden"
-          }`}
+          class={`absolute -top-10 left-0 z-50 flex items-center gap-2 px-2.5 py-1 bg-[#1c1c24]/95 border border-white/15 rounded-full shadow-lg text-white pointer-events-auto whitespace-nowrap apple-pill-enter ${ editPresence.visible() ? "is-visible" : "is-hidden" }`}
         >
           <span class="text-[10px] font-medium text-white/70">좌측 스포터 크기</span>
           <div class="flex items-center gap-1">
@@ -50,15 +48,7 @@ export const F1SpotterLeft: Component<Props> = (props) => {
 
       {/* Spotter Radar Wing (Left Screen Edge) */}
       <div
-        class={`flex items-center gap-2.5 px-3 py-2.5 rounded-r-xl border-y border-r transition-all duration-150 backdrop-blur-xl ${
-          isDanger()
-            ? "bg-[#ff3b30] text-white border-[#ff453a] animate-pulse shadow-md"
-            : isCaution()
-            ? "bg-[#ff9f0a] text-black border-[#ff9f0a] shadow-sm"
-            : props.isEditMode
-            ? "bg-[#1c1c1e]/90 text-white/60 border-white/15 shadow-sm"
-            : "opacity-0 pointer-events-none"
-        }`}
+        class={`flex items-center gap-2.5 px-3 py-2.5 rounded-r-xl border-y border-r transition-all duration-150 ${ isDanger() ? "bg-[#ff3b30] text-white border-[#ff453a] animate-pulse shadow-md" : isCaution() ? "bg-[#ff9f0a] text-black border-[#ff9f0a] shadow-sm" : props.isEditMode ? "bg-[#1c1c1e]/90 text-white/60 border-white/15 shadow-sm" : "opacity-0 pointer-events-none" }`}
       >
         <div class="flex flex-col items-center justify-center w-5">
           <span class="text-base font-black leading-none">◀</span>
@@ -68,14 +58,10 @@ export const F1SpotterLeft: Component<Props> = (props) => {
         {/* 3-Bar Proximity Density Meter */}
         <div class="flex items-center gap-1 h-7">
           <div
-            class={`w-1.5 h-full rounded-full ${
-              isDanger() || isCaution() ? (isDanger() ? "bg-white" : "bg-black") : "bg-white/20"
-            }`}
+            class={`w-1.5 h-full rounded-full ${ isDanger() || isCaution() ? (isDanger() ? "bg-white" : "bg-black") : "bg-white/20" }`}
           />
           <div
-            class={`w-1.5 h-5 rounded-full ${
-              isDanger() ? "bg-white" : isCaution() ? "bg-black/60" : "bg-white/10"
-            }`}
+            class={`w-1.5 h-5 rounded-full ${ isDanger() ? "bg-white" : isCaution() ? "bg-black/60" : "bg-white/10" }`}
           />
           <div class={`w-1.5 h-3 rounded-full ${isDanger() ? "bg-white" : "bg-white/10"}`} />
         </div>

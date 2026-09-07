@@ -23,9 +23,7 @@ export const F1SpotterRight: Component<Props> = (props) => {
       {/* Floating Apple Scale Capsule (Only in Edit Mode) */}
       <Show when={editPresence.mounted()}>
         <div
-          class={`absolute -top-10 right-0 z-50 flex items-center gap-2 px-2.5 py-1 bg-[#1c1c24]/95 backdrop-blur-xl border border-white/15 rounded-full shadow-lg text-white pointer-events-auto whitespace-nowrap apple-pill-enter ${
-            editPresence.visible() ? "is-visible" : "is-hidden"
-          }`}
+          class={`absolute -top-10 right-0 z-50 flex items-center gap-2 px-2.5 py-1 bg-[#1c1c24]/95 border border-white/15 rounded-full shadow-lg text-white pointer-events-auto whitespace-nowrap apple-pill-enter ${ editPresence.visible() ? "is-visible" : "is-hidden" }`}
         >
           <span class="text-[10px] font-medium text-white/70">우측 스포터 크기</span>
           <div class="flex items-center gap-1">
@@ -50,15 +48,7 @@ export const F1SpotterRight: Component<Props> = (props) => {
 
       {/* Spotter Radar Wing (Right Screen Edge) */}
       <div
-        class={`flex items-center gap-2.5 px-3 py-2.5 rounded-l-xl border-y border-l transition-all duration-150 backdrop-blur-xl ${
-          isDanger()
-            ? "bg-[#ff3b30] text-white border-[#ff453a] animate-pulse shadow-md"
-            : isCaution()
-            ? "bg-[#ff9f0a] text-black border-[#ff9f0a] shadow-sm"
-            : props.isEditMode
-            ? "bg-[#1c1c1e]/90 text-white/60 border-white/15 shadow-sm"
-            : "opacity-0 pointer-events-none"
-        }`}
+        class={`flex items-center gap-2.5 px-3 py-2.5 rounded-l-xl border-y border-l transition-all duration-150 ${ isDanger() ? "bg-[#ff3b30] text-white border-[#ff453a] animate-pulse shadow-md" : isCaution() ? "bg-[#ff9f0a] text-black border-[#ff9f0a] shadow-sm" : props.isEditMode ? "bg-[#1c1c1e]/90 text-white/60 border-white/15 shadow-sm" : "opacity-0 pointer-events-none" }`}
       >
         {/* Distance Text */}
         <div class="flex flex-col items-end pl-1">
@@ -74,14 +64,10 @@ export const F1SpotterRight: Component<Props> = (props) => {
         <div class="flex items-center gap-1 h-7">
           <div class={`w-1.5 h-3 rounded-full ${isDanger() ? "bg-white" : "bg-white/10"}`} />
           <div
-            class={`w-1.5 h-5 rounded-full ${
-              isDanger() ? "bg-white" : isCaution() ? "bg-black/60" : "bg-white/10"
-            }`}
+            class={`w-1.5 h-5 rounded-full ${ isDanger() ? "bg-white" : isCaution() ? "bg-black/60" : "bg-white/10" }`}
           />
           <div
-            class={`w-1.5 h-full rounded-full ${
-              isDanger() || isCaution() ? (isDanger() ? "bg-white" : "bg-black") : "bg-white/20"
-            }`}
+            class={`w-1.5 h-full rounded-full ${ isDanger() || isCaution() ? (isDanger() ? "bg-white" : "bg-black") : "bg-white/20" }`}
           />
         </div>
 

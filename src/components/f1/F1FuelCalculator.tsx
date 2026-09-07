@@ -24,13 +24,11 @@ export const F1FuelCalculator: Component<Props> = (props) => {
   const pct = () => Math.min(100, Math.max(0, (current() / maxFuel()) * 100));
 
   return (
-    <div class="relative flex flex-col w-[260px] font-f1 select-none drop-shadow-[0_16px_32px_rgba(0,0,0,0.9)]">
+    <div class="relative flex flex-col w-[260px] font-f1 select-none">
       {/* Floating Scale Pill */}
       <Show when={editPresence.mounted()}>
         <div
-          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 backdrop-blur-xl border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
-            editPresence.visible() ? "is-visible" : "is-hidden"
-          }`}
+          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${ editPresence.visible() ? "is-visible" : "is-hidden" }`}
         >
           <span class="text-[10px] font-medium text-white/70 whitespace-nowrap">연료 크기</span>
           <div class="flex items-center gap-1.5">
@@ -52,7 +50,7 @@ export const F1FuelCalculator: Component<Props> = (props) => {
       </Show>
 
       {/* Main Fuel Card */}
-      <div class="bg-[#12131a]/95 border border-white/15 rounded-lg overflow-hidden shadow-2xl backdrop-blur-xl">
+      <div class="bg-[#12131a]/95 border border-white/15 rounded-lg overflow-hidden shadow-2xl">
         <div class="flex items-center justify-between bg-[#1a1b24] border-b border-white/10 px-3 py-1.5">
           <div class="flex items-center gap-2 text-white">
             <IconFuel size={14} class="text-[#00d26a]" />

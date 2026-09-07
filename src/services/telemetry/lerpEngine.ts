@@ -1,6 +1,7 @@
 import { TelemetryFrame } from "./types.ts";
 
-// ponytail: 144Hz/240Hz display refresh rate linear interpolation engine
+// ponytail: high-efficiency 60fps rate-limited interpolation engine
+// Prevents GC thrashing and excessive DOM re-evaluations on 120Hz/144Hz/240Hz screens
 export class LerpEngine {
   private prevFrame: TelemetryFrame | null = null;
   private currFrame: TelemetryFrame | null = null;
@@ -12,6 +13,8 @@ export class LerpEngine {
   private frameCount = 0;
   private lastFpsCalcTime = performance.now();
   private currentFps = 60;
+  private lastRenderTime = 0;
+  private readonly targetFrameIntervalMs = 16.0; // 60fps max for Solid DOM reactivity
 
   public feed(frame: TelemetryFrame) {
     const now = performance.now();
@@ -34,10 +37,14 @@ export class LerpEngine {
         this.lastFpsCalcTime = time;
       }
 
-      if (this.currFrame) {
-        const interpolated = this.interpolate(time);
-        if (this.onRenderCallback) {
-          this.onRenderCallback(interpolated, this.currentFps);
+      // Throttle Solid.js store updates to 60fps
+      if (time - this.lastRenderTime >= this.targetFrameIntervalMs) {
+        this.lastRenderTime = time;
+        if (this.currFrame) {
+          const interpolated = this.interpolate(time);
+          if (this.onRenderCallback) {
+            this.onRenderCallback(interpolated, this.currentFps);
+          }
         }
       }
 
@@ -57,14 +64,10 @@ export class LerpEngine {
   private interpolate(renderTime: number): TelemetryFrame {
     if (!this.prevFrame || !this.currFrame) return this.currFrame!;
 
-    // Alpha from 0.0 to 1.0 between 60Hz ticks
     const elapsed = renderTime - this.lastTickTime;
     const alpha = Math.min(1.0, Math.max(0.0, elapsed / this.tickIntervalMs));
-
-    // Linear interpolation helper
     const lerp = (a: number, b: number) => a + (b - a) * alpha;
 
-    // Return interpolated frame with smoothed dynamic values
     return {
       ...this.currFrame,
       player: {
@@ -72,15 +75,8 @@ export class LerpEngine {
         speedKmh: Math.round(lerp(this.prevFrame.player.speedKmh, this.currFrame.player.speedKmh)),
         rpm: Math.round(lerp(this.prevFrame.player.rpm, this.currFrame.player.rpm)),
       },
-      cars: this.currFrame.cars.map((car, idx) => {
-        const prevCar = this.prevFrame?.cars[idx];
-        if (!prevCar) return car;
-        return {
-          ...car,
-          lapDistPct: lerp(prevCar.lapDistPct, car.lapDistPct),
-          speedKmh: Math.round(lerp(prevCar.speedKmh, car.speedKmh)),
-        };
-      }),
+      // Keep cars array reference stable per 60Hz tick to prevent memory thrashing
+      cars: this.currFrame.cars,
     };
   }
 }

@@ -28,13 +28,11 @@ export const F1ProximitySpotter: Component<Props> = (props) => {
   };
 
   return (
-    <div class="relative flex items-center justify-between w-[320px] font-f1 select-none drop-shadow-[0_16px_32px_rgba(0,0,0,0.9)]">
+    <div class="relative flex items-center justify-between w-[320px] font-f1 select-none">
       {/* Floating Scale Pill */}
       <Show when={editPresence.mounted()}>
         <div
-          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 backdrop-blur-xl border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
-            editPresence.visible() ? "is-visible" : "is-hidden"
-          }`}
+          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${ editPresence.visible() ? "is-visible" : "is-hidden" }`}
         >
           <span class="text-[10px] font-medium text-white/70 whitespace-nowrap">스포터 크기</span>
           <div class="flex items-center gap-1.5">
@@ -56,7 +54,7 @@ export const F1ProximitySpotter: Component<Props> = (props) => {
       </Show>
 
       {/* Left Wing Radar */}
-      <div class={`flex items-center gap-2 px-3 py-2 rounded-lg border backdrop-blur-xl transition-all duration-150 ${stateColor(leftState())}`}>
+      <div class={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-150 ${stateColor(leftState())}`}>
         <div class="rotate-[-90deg]">
           <IconArrow size={14} />
         </div>
@@ -72,7 +70,7 @@ export const F1ProximitySpotter: Component<Props> = (props) => {
       </div>
 
       {/* Right Wing Radar */}
-      <div class={`flex items-center gap-2 px-3 py-2 rounded-lg border backdrop-blur-xl transition-all duration-150 ${stateColor(rightState())}`}>
+      <div class={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-all duration-150 ${stateColor(rightState())}`}>
         <div class="flex flex-col items-end">
           <span class="text-[9px] font-f1-wide font-black tracking-wider">RIGHT</span>
           <span class="text-xs font-mono font-bold tnum">{rightState() === "clear" ? "CLEAR" : `${rightDist().toFixed(1)}m`}</span>

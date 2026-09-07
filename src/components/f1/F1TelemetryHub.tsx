@@ -41,13 +41,11 @@ export const F1TelemetryHub: Component<Props> = (props) => {
   const litCount = () => Math.round(rpmRatio() * totalLeds);
 
   return (
-    <div class="relative flex flex-col bg-[#141416]/95 border border-white/10 rounded-xl shadow-2xl backdrop-blur-2xl p-3 select-none font-f1 w-[440px]">
+    <div class="relative flex flex-col bg-[#141416]/95 border border-white/10 rounded-xl shadow-2xl p-3 select-none font-f1 w-[440px]">
       {/* Sleek Floating Apple Scale Capsule (Only in Edit Mode) */}
       <Show when={editPresence.mounted()}>
         <div
-          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 backdrop-blur-xl border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
-            editPresence.visible() ? "is-visible" : "is-hidden"
-          }`}
+          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${ editPresence.visible() ? "is-visible" : "is-hidden" }`}
         >
           <span class="text-[10px] font-medium text-white/70">텔레메트리 크기</span>
           <div class="flex items-center gap-1.5">
@@ -85,7 +83,7 @@ export const F1TelemetryHub: Component<Props> = (props) => {
 
               return (
                 <div
-                  class={`h-2 flex-1 rounded-sm transition-all duration-75 ${colorClass()}`}
+                  class={`h-2 flex-1 rounded-sm  ${colorClass()}`}
                 />
               );
             }}
@@ -99,13 +97,7 @@ export const F1TelemetryHub: Component<Props> = (props) => {
         <div class="flex flex-col items-center justify-center bg-black/50 border border-white/10 rounded-lg py-2 px-1">
           <span class="text-[9px] font-f1-wide text-white/40 tracking-wider">GEAR</span>
           <span
-            class={`text-4xl font-f1-num font-black leading-none tracking-tight ${
-              gear() === "R"
-                ? "text-[#ffd60a]"
-                : gear() === "N"
-                ? "text-[#30d158]"
-                : "text-white"
-            }`}
+            class={`text-4xl font-f1-num font-black leading-none tracking-tight ${ gear() === "R" ? "text-[#ffd60a]" : gear() === "N" ? "text-[#30d158]" : "text-white" }`}
           >
             {gear()}
           </span>
@@ -126,13 +118,7 @@ export const F1TelemetryHub: Component<Props> = (props) => {
             {/* DRS & ERS Badges - Matte, Clean Minimalist */}
             <div class="ml-auto flex items-center gap-1.5">
               <div
-                class={`px-2 py-0.5 rounded text-[10px] font-f1-wide font-black border transition-all ${
-                  drsOn()
-                    ? "bg-[#30d158] text-black border-[#30d158]"
-                    : drsAvail()
-                    ? "bg-white/10 text-[#30d158] border-[#30d158]/40"
-                    : "bg-white/5 text-white/20 border-white/10"
-                }`}
+                class={`px-2 py-0.5 rounded text-[10px] font-f1-wide font-black border transition-all ${ drsOn() ? "bg-[#30d158] text-black border-[#30d158]" : drsAvail() ? "bg-white/10 text-[#30d158] border-[#30d158]/40" : "bg-white/5 text-white/20 border-white/10" }`}
               >
                 DRS
               </div>
@@ -148,7 +134,7 @@ export const F1TelemetryHub: Component<Props> = (props) => {
               <span class="text-[9px] font-f1-wide text-white/40 w-5">THR</span>
               <div class="flex-1 h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
                 <div
-                  class="h-full bg-[#30d158] transition-all duration-75"
+                  class="h-full bg-[#30d158] "
                   style={{ width: `${throttle()}%` }}
                 />
               </div>
@@ -161,7 +147,7 @@ export const F1TelemetryHub: Component<Props> = (props) => {
               <span class="text-[9px] font-f1-wide text-white/40 w-5">BRK</span>
               <div class="flex-1 h-1.5 bg-white/[0.08] rounded-full overflow-hidden">
                 <div
-                  class="h-full bg-[#ff453a] transition-all duration-75"
+                  class="h-full bg-[#ff453a] "
                   style={{ width: `${brake()}%` }}
                 />
               </div>
@@ -180,11 +166,7 @@ export const F1TelemetryHub: Component<Props> = (props) => {
               <span>LAP DELTA</span>
             </div>
             <div
-              class={`px-2 py-0.5 rounded text-xs font-f1-num font-bold tracking-tight border mt-0.5 text-center ${
-                delta() <= 0
-                  ? "bg-[#30d158]/15 text-[#30d158] border-[#30d158]/30"
-                  : "bg-[#ff453a]/15 text-[#ff453a] border-[#ff453a]/30"
-              }`}
+              class={`px-2 py-0.5 rounded text-xs font-f1-num font-bold tracking-tight border mt-0.5 text-center ${ delta() <= 0 ? "bg-[#30d158]/15 text-[#30d158] border-[#30d158]/30" : "bg-[#ff453a]/15 text-[#ff453a] border-[#ff453a]/30" }`}
             >
               {delta() <= 0 ? "" : "+"}
               {delta().toFixed(3)}s

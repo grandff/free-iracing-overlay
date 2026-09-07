@@ -52,13 +52,11 @@ export const F1TimingTower: Component<Props> = (props) => {
   };
 
   return (
-    <div class="relative flex flex-col w-[295px] font-f1 select-none drop-shadow-[0_16px_32px_rgba(0,0,0,0.9)]">
+    <div class="relative flex flex-col w-[295px] font-f1 select-none">
       {/* Sleek Floating Apple Scale Capsule (Only in Edit Mode) */}
       <Show when={editPresence.mounted()}>
         <div
-          class={`absolute -top-9 left-0 right-0 z-40 flex items-center justify-between px-3 py-1 bg-[#1c1c24]/95 backdrop-blur-xl border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
-            editPresence.visible() ? "is-visible" : "is-hidden"
-          }`}
+          class={`absolute -top-9 left-0 right-0 z-40 flex items-center justify-between px-3 py-1 bg-[#1c1c24]/95 border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${ editPresence.visible() ? "is-visible" : "is-hidden" }`}
         >
           <span class="text-[10px] font-medium text-white/70">순위표 크기</span>
           <div class="flex items-center gap-1.5">
@@ -109,11 +107,7 @@ export const F1TimingTower: Component<Props> = (props) => {
             const badge = tireBadge(d.tireCompound);
             return (
               <div
-                class={`grid grid-cols-[28px_1fr_26px_68px] items-center h-[28px] transition-colors duration-150 ${
-                  d.isPlayer
-                    ? "bg-[#1e2336] ring-1 ring-inset ring-[#00d26a]/50"
-                    : "bg-[#13141c]/95 hover:bg-[#181a24]/95"
-                }`}
+                class={`grid grid-cols-[28px_1fr_26px_68px] items-center h-[28px] transition-colors duration-150 ${ d.isPlayer ? "bg-[#1e2336] ring-1 ring-inset ring-[#00d26a]/50" : "bg-[#13141c]/95 hover:bg-[#181a24]/95" }`}
               >
                 {/* Position */}
                 <div class="flex items-center justify-center h-full bg-black/40 text-[11px] font-f1-num font-bold text-white">
