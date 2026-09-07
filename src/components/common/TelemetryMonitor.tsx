@@ -7,18 +7,27 @@ import {
 } from "../../assets/icons/Icons.tsx";
 import { F1TelemetryHub } from "../f1/F1TelemetryHub.tsx";
 
-export const TelemetryMonitor: Component = () => {
+interface Props {
+  onMouseDown?: (e: MouseEvent) => void;
+}
+
+export const TelemetryMonitor: Component<Props> = (props) => {
   const p = () => telemetry.frame?.player;
   const h = () => telemetry.frame?.hazard;
   const r = () => telemetry.frame?.revenge;
 
   return (
     <div
+      onMouseDown={props.onMouseDown}
       style={{
         transform: `translate3d(calc(-50% + ${settings.widgets.telemetryHub.x}px), ${settings.widgets.telemetryHub.y}px, 0) scale(${settings.widgets.telemetryHub.scale})`,
         "transform-origin": "bottom center",
       }}
-      class="fixed bottom-6 left-1/2 z-30 flex flex-col items-center gap-2.5 transition-transform duration-75"
+      class={`fixed bottom-6 left-1/2 z-30 flex flex-col items-center gap-2.5 transition-shadow duration-150 ${
+        settings.isEditMode
+          ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-xl"
+          : "pointer-events-none"
+      }`}
     >
       {/* High-priority Hazard Alert (Blinking if hazard ahead within 400m) */}
       <Show when={h() && h()!.hasIncident}>

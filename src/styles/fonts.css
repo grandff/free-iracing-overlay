@@ -50,27 +50,27 @@
   font-display: swap;
 }
 
-/* F1 Typography Utility Classes */
+/* F1 Typography Utility Classes with Native macOS High-Contrast Motorsport Fallbacks */
 .font-f1 {
-  font-family: "Formula1", "Titillium Web", "Chakra Petch", "Barlow Condensed", -apple-system, sans-serif;
+  font-family: "Formula1", "DIN Alternate", "Titillium Web", "Futura", "Chakra Petch", "Barlow Condensed", -apple-system, sans-serif;
   letter-spacing: -0.01em;
 }
 
 .font-f1-bold {
-  font-family: "Formula1", "Titillium Web", "Chakra Petch", -apple-system, sans-serif;
+  font-family: "Formula1", "DIN Alternate", "Titillium Web", "Futura", "Chakra Petch", -apple-system, sans-serif;
   font-weight: 700;
   letter-spacing: 0.02em;
 }
 
 .font-f1-wide {
-  font-family: "Formula1", "Chakra Petch", "Barlow Condensed", -apple-system, sans-serif;
+  font-family: "Formula1", "DIN Alternate", "Chakra Petch", "Barlow Condensed", "Futura", -apple-system, sans-serif;
   font-weight: 800;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .font-f1-num {
-  font-family: "Formula1", "Chakra Petch", "Titillium Web", monospace;
+  font-family: "Formula1", "DIN Alternate", "Chakra Petch", "Titillium Web", monospace;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" on;
 }

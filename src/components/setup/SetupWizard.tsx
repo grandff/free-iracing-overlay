@@ -247,8 +247,8 @@ export const SetupWizard: Component = () => {
           <div class="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3.5 px-5 py-2.5 bg-[#181820]/90 backdrop-blur-2xl border border-white/[0.12] rounded-full shadow-[0_20px_40px_-12px_rgba(0,0,0,0.85)] text-[#f5f5f7]">
             {/* Step 2 Progress Bar */}
             <div class="flex items-center gap-1.5 pr-2.5 border-r border-white/10 w-16">
-              <div class="h-1 flex-1 rounded-full bg-[#00d26a] shadow-[0_0_6px_rgba(0,210,106,0.5)]" />
-              <div class="h-1 flex-1 rounded-full bg-[#00d26a] shadow-[0_0_6px_rgba(0,210,106,0.5)]" />
+              <div class="h-1 flex-1 rounded-full bg-[#E10600] shadow-[0_0_6px_rgba(225,6,0,0.5)]" />
+              <div class="h-1 flex-1 rounded-full bg-[#E10600] shadow-[0_0_6px_rgba(225,6,0,0.5)]" />
             </div>
 
             {/* Alt + J Shortcut Pill */}
@@ -256,7 +256,7 @@ export const SetupWizard: Component = () => {
               onClick={toggleEditMode}
               class={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2 border transition-all duration-150 active:scale-[0.96] cursor-pointer pointer-events-auto ${
                 settings.isEditMode
-                  ? "bg-amber-400/15 text-amber-300 border-amber-400/30 shadow-[0_0_12px_rgba(251,191,36,0.2)]"
+                  ? "bg-white/20 text-white border-white/30 shadow-[0_0_12px_rgba(255,255,255,0.12)]"
                   : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
               }`}
             >
@@ -363,9 +363,9 @@ export const SetupWizard: Component = () => {
                 transform: `translate3d(${settings.widgets.leaderboard.x}px, ${settings.widgets.leaderboard.y}px, 0) scale(${settings.widgets.leaderboard.scale})`,
                 "transform-origin": "top left",
               }}
-              class={`fixed top-16 left-8 z-30 select-none ${
+              class={`fixed top-16 left-8 z-30 select-none transition-shadow duration-150 ${
                 settings.isEditMode
-                  ? "pointer-events-auto cursor-move ring-2 ring-amber-400/80 ring-offset-2 ring-offset-black/50 rounded"
+                  ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                   : "pointer-events-none"
               }`}
             >
@@ -383,9 +383,9 @@ export const SetupWizard: Component = () => {
                 transform: `translate3d(${settings.widgets.relative.x}px, ${settings.widgets.relative.y}px, 0) scale(${settings.widgets.relative.scale})`,
                 "transform-origin": "bottom right",
               }}
-              class={`fixed bottom-8 right-8 z-30 select-none ${
+              class={`fixed bottom-8 right-8 z-30 select-none transition-shadow duration-150 ${
                 settings.isEditMode
-                  ? "pointer-events-auto cursor-move ring-2 ring-amber-400/80 ring-offset-2 ring-offset-black/50 rounded"
+                  ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                   : "pointer-events-none"
               }`}
             >
@@ -403,9 +403,9 @@ export const SetupWizard: Component = () => {
                 transform: `translate3d(calc(-50% + ${settings.widgets.telemetryHub.x}px), ${settings.widgets.telemetryHub.y}px, 0) scale(${settings.widgets.telemetryHub.scale})`,
                 "transform-origin": "bottom center",
               }}
-              class={`fixed bottom-8 left-1/2 z-30 select-none ${
+              class={`fixed bottom-8 left-1/2 z-30 select-none transition-shadow duration-150 ${
                 settings.isEditMode
-                  ? "pointer-events-auto cursor-move ring-2 ring-amber-400/80 ring-offset-2 ring-offset-black/50 rounded-lg"
+                  ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-xl"
                   : "pointer-events-none"
               }`}
             >

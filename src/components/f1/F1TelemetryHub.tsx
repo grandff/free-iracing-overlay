@@ -39,7 +39,29 @@ export const F1TelemetryHub: Component<Props> = (props) => {
   const litCount = () => Math.round(rpmRatio() * totalLeds);
 
   return (
-    <div class="flex flex-col bg-[#101016]/95 border border-white/[0.14] rounded-lg shadow-[0_20px_48px_rgba(0,0,0,0.9)] backdrop-blur-2xl p-3 select-none font-f1 w-[460px] drop-shadow-2xl">
+    <div class="relative flex flex-col bg-[#0f1016]/95 border border-white/[0.12] rounded-xl shadow-[0_20px_48px_rgba(0,0,0,0.9)] backdrop-blur-2xl p-3 select-none font-f1 w-[460px] drop-shadow-2xl">
+      {/* Sleek Floating Apple Scale Capsule (Only in Edit Mode) */}
+      <Show when={props.isEditMode}>
+        <div class="absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 backdrop-blur-xl border border-white/20 rounded-full shadow-lg text-white pointer-events-auto">
+          <span class="text-[10px] font-medium text-white/70">텔레메트리 크기</span>
+          <div class="flex items-center gap-1.5">
+            <button
+              onClick={() => props.onScaleChange && props.onScaleChange(Math.max(0.7, (props.scale || 1) - 0.1))}
+              class="w-5 h-5 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-xs font-bold cursor-pointer"
+            >
+              -
+            </button>
+            <span class="text-[10px] font-mono font-semibold w-8 text-center">{Math.round((props.scale || 1) * 100)}%</span>
+            <button
+              onClick={() => props.onScaleChange && props.onScaleChange(Math.min(1.5, (props.scale || 1) + 0.1))}
+              class="w-5 h-5 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-xs font-bold cursor-pointer"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </Show>
+
       {/* 1. Top F1 Rev Light LED Bar (15 LEDs) */}
       <div class="flex items-center justify-between gap-1 px-3 py-1 bg-black/60 rounded-md border border-white/[0.08] mb-2.5">
         <div class="flex items-center gap-1 w-full justify-between">
@@ -47,7 +69,6 @@ export const F1TelemetryHub: Component<Props> = (props) => {
             {(_, idx) => {
               const i = idx();
               const isLit = () => i < litCount();
-              // color tier: 0..4 green, 5..9 red, 10..14 blue/purple
               const colorClass = () => {
                 if (i < 5) return isLit() ? "bg-[#00d26a] shadow-[0_0_8px_#00d26a]" : "bg-[#00d26a]/15";
                 if (i < 10) return isLit() ? "bg-[#e10600] shadow-[0_0_8px_#e10600]" : "bg-[#e10600]/15";
@@ -80,7 +101,7 @@ export const F1TelemetryHub: Component<Props> = (props) => {
           >
             {gear()}
           </span>
-          <span class="text-[9px] font-f1-num text-white/40 mt-1">
+          <span class="text-[9px] font-f1-num text-white/40 mt-1 font-semibold">
             {rpm().toLocaleString()}
           </span>
         </div>
@@ -113,9 +134,8 @@ export const F1TelemetryHub: Component<Props> = (props) => {
             </div>
           </div>
 
-          {/* Pedal Traces (Throttle green, Brake red) */}
+          {/* Pedal Traces */}
           <div class="flex flex-col gap-1">
-            {/* Throttle */}
             <div class="flex items-center gap-2">
               <span class="text-[9px] font-f1-wide text-white/40 w-5">THR</span>
               <div class="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -124,12 +144,11 @@ export const F1TelemetryHub: Component<Props> = (props) => {
                   style={{ width: `${throttle()}%` }}
                 />
               </div>
-              <span class="text-[9px] font-f1-num text-white/60 w-6 text-right">
+              <span class="text-[9px] font-f1-num text-white/60 w-6 text-right font-bold">
                 {throttle()}%
               </span>
             </div>
 
-            {/* Brake */}
             <div class="flex items-center gap-2">
               <span class="text-[9px] font-f1-wide text-white/40 w-5">BRK</span>
               <div class="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
@@ -138,7 +157,7 @@ export const F1TelemetryHub: Component<Props> = (props) => {
                   style={{ width: `${brake()}%` }}
                 />
               </div>
-              <span class="text-[9px] font-f1-num text-white/60 w-6 text-right">
+              <span class="text-[9px] font-f1-num text-white/60 w-6 text-right font-bold">
                 {brake()}%
               </span>
             </div>
@@ -147,7 +166,6 @@ export const F1TelemetryHub: Component<Props> = (props) => {
 
         {/* Delta & Fuel Column */}
         <div class="flex flex-col gap-1.5 pl-3 border-l border-white/10">
-          {/* Lap Delta */}
           <div class="flex flex-col">
             <div class="flex items-center gap-1 text-[9px] font-f1-wide text-white/40">
               <IconStopwatch size={10} />
@@ -167,7 +185,6 @@ export const F1TelemetryHub: Component<Props> = (props) => {
             </div>
           </div>
 
-          {/* Fuel */}
           <div class="flex items-center justify-between text-[11px] font-f1-num text-white/80 pt-1 border-t border-white/[0.08]">
             <div class="flex items-center gap-1 text-[9px] font-f1-wide text-white/40">
               <IconFuel size={10} />
@@ -177,28 +194,6 @@ export const F1TelemetryHub: Component<Props> = (props) => {
           </div>
         </div>
       </div>
-
-      {/* Edit Mode Scale Controls */}
-      <Show when={props.isEditMode}>
-        <div class="mt-2.5 pt-2 border-t border-white/10 flex items-center justify-between text-xs text-white/70">
-          <span class="text-[10px] font-mono text-white/50">콕핏 텔레메트리 크기</span>
-          <div class="flex items-center gap-1">
-            <button
-              onClick={() => props.onScaleChange && props.onScaleChange(Math.max(0.7, (props.scale || 1) - 0.1))}
-              class="px-2 py-0.5 bg-white/20 hover:bg-white/30 rounded text-xs font-bold text-white cursor-pointer"
-            >
-              -
-            </button>
-            <span class="text-[10px] font-mono text-white/80">{Math.round((props.scale || 1) * 100)}%</span>
-            <button
-              onClick={() => props.onScaleChange && props.onScaleChange(Math.min(1.5, (props.scale || 1) + 0.1))}
-              class="px-2 py-0.5 bg-white/20 hover:bg-white/30 rounded text-xs font-bold text-white cursor-pointer"
-            >
-              +
-            </button>
-          </div>
-        </div>
-      </Show>
     </div>
   );
 };

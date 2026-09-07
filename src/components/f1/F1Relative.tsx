@@ -8,7 +8,6 @@ export interface RelativeEntry {
   tireCompound: "S" | "M" | "H" | "I" | "W";
   gapSeconds: number;
   isPlayer?: boolean;
-  isLapped?: boolean;
 }
 
 interface Props {
@@ -28,7 +27,7 @@ const defaultEntries: RelativeEntry[] = [
 export const F1Relative: Component<Props> = (props) => {
   const list = () => props.entries || defaultEntries;
 
-  const tireColor = (c: "S" | "M" | "H" | "I" | "W") => {
+  const tireBadge = (c: "S" | "M" | "H" | "I" | "W") => {
     switch (c) {
       case "S": return { border: "border-[#e10600]", text: "text-[#e10600]", bg: "bg-[#e10600]/15" };
       case "M": return { border: "border-[#ffd100]", text: "text-[#ffd100]", bg: "bg-[#ffd100]/15" };
@@ -39,7 +38,29 @@ export const F1Relative: Component<Props> = (props) => {
   };
 
   return (
-    <div class="flex flex-col w-[280px] font-f1 select-none drop-shadow-[0_16px_32px_rgba(0,0,0,0.9)]">
+    <div class="relative flex flex-col w-[280px] font-f1 select-none drop-shadow-[0_16px_32px_rgba(0,0,0,0.9)]">
+      {/* Sleek Floating Apple Scale Capsule (Only in Edit Mode) */}
+      <Show when={props.isEditMode}>
+        <div class="absolute -top-9 left-0 right-0 z-40 flex items-center justify-between px-3 py-1 bg-[#1c1c24]/95 backdrop-blur-xl border border-white/20 rounded-full shadow-lg text-white pointer-events-auto">
+          <span class="text-[10px] font-medium text-white/70">렐러티브 크기</span>
+          <div class="flex items-center gap-1.5">
+            <button
+              onClick={() => props.onScaleChange && props.onScaleChange(Math.max(0.7, (props.scale || 1) - 0.1))}
+              class="w-5 h-5 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-xs font-bold cursor-pointer"
+            >
+              -
+            </button>
+            <span class="text-[10px] font-mono font-semibold w-8 text-center">{Math.round((props.scale || 1) * 100)}%</span>
+            <button
+              onClick={() => props.onScaleChange && props.onScaleChange(Math.min(1.5, (props.scale || 1) + 0.1))}
+              class="w-5 h-5 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-xs font-bold cursor-pointer"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </Show>
+
       {/* Header */}
       <div class="flex items-center justify-between bg-[#15151e] border-b-2 border-white/20 px-3 py-1.5 rounded-t-sm">
         <div class="flex items-center gap-2">
@@ -48,38 +69,20 @@ export const F1Relative: Component<Props> = (props) => {
             RELATIVE INTERVAL
           </span>
         </div>
-
-        <Show when={props.isEditMode}>
-          <div class="flex items-center gap-1">
-            <button
-              onClick={() => props.onScaleChange && props.onScaleChange(Math.max(0.7, (props.scale || 1) - 0.1))}
-              class="px-1.5 py-0.5 bg-white/20 hover:bg-white/30 rounded text-[10px] font-bold text-white cursor-pointer"
-            >
-              -
-            </button>
-            <span class="text-[9px] font-mono text-white/80">{Math.round((props.scale || 1) * 100)}%</span>
-            <button
-              onClick={() => props.onScaleChange && props.onScaleChange(Math.min(1.5, (props.scale || 1) + 0.1))}
-              class="px-1.5 py-0.5 bg-white/20 hover:bg-white/30 rounded text-[10px] font-bold text-white cursor-pointer"
-            >
-              +
-            </button>
-          </div>
-        </Show>
       </div>
 
       {/* Subheader */}
-      <div class="grid grid-cols-[1fr_26px_68px] items-center px-2 py-0.5 bg-black/75 text-[9px] font-f1-wide text-white/45 tracking-wider border-b border-white/[0.06]">
+      <div class="grid grid-cols-[1fr_26px_68px] items-center px-2 py-0.5 bg-black/80 text-[9px] font-f1-wide text-white/45 tracking-wider border-b border-white/[0.06]">
         <span class="pl-2">DRIVER</span>
         <span class="text-center">TYRE</span>
         <span class="text-right pr-1">GAP</span>
       </div>
 
       {/* Rows */}
-      <div class="flex flex-col gap-[1px] bg-black/40">
+      <div class="flex flex-col gap-[1px] bg-black/50">
         <For each={list()}>
           {(d) => {
-            const tire = tireColor(d.tireCompound);
+            const badge = tireBadge(d.tireCompound);
             const isAhead = d.gapSeconds < 0;
             const formattedGap = d.isPlayer
               ? "0.000s"
@@ -89,26 +92,26 @@ export const F1Relative: Component<Props> = (props) => {
               <div
                 class={`grid grid-cols-[1fr_26px_68px] items-center h-[28px] transition-colors duration-150 ${
                   d.isPlayer
-                    ? "bg-[#1f2334] ring-1 ring-inset ring-[#00d26a]/60 shadow-[0_0_12px_rgba(0,210,106,0.15)]"
-                    : "bg-[#14141c]/95 hover:bg-[#1a1a26]/95"
+                    ? "bg-[#1e2336] ring-1 ring-inset ring-[#00d26a]/60 shadow-[0_0_12px_rgba(0,210,106,0.15)]"
+                    : "bg-[#13141c]/95 hover:bg-[#181a24]/95"
                 }`}
               >
                 {/* Team stripe & Driver */}
                 <div class="flex items-center h-full pl-0 relative overflow-hidden">
                   <div
-                    class="w-[3.5px] h-full shrink-0"
+                    class="w-[4px] h-full shrink-0"
                     style={{ "background-color": d.teamColor }}
                   />
 
                   <div class="flex items-center gap-1.5 pl-2">
-                    <span class="text-xs font-f1-bold font-bold tracking-wider text-white uppercase">
+                    <span class="text-[12px] font-f1-bold font-extrabold tracking-wider text-white uppercase">
                       {d.code}
                     </span>
                     <span class="text-[10px] font-f1-num text-white/40 font-medium">
                       #{d.carNumber}
                     </span>
                     <Show when={d.isPlayer}>
-                      <span class="text-[8px] font-f1-wide font-extrabold px-1 py-0.2 bg-[#00d26a]/20 text-[#00d26a] rounded border border-[#00d26a]/30">
+                      <span class="text-[8px] font-f1-wide font-black px-1 py-0.2 bg-[#00d26a]/20 text-[#00d26a] rounded border border-[#00d26a]/30">
                         YOU
                       </span>
                     </Show>
@@ -118,20 +121,20 @@ export const F1Relative: Component<Props> = (props) => {
                 {/* Tire */}
                 <div class="flex items-center justify-center">
                   <div
-                    class={`w-[17px] h-[17px] rounded-full border ${tire.border} ${tire.bg} flex items-center justify-center`}
+                    class={`w-[17px] h-[17px] rounded-full border ${badge.border} ${badge.bg} flex items-center justify-center`}
                   >
-                    <span class={`text-[9px] font-f1 font-extrabold ${tire.text}`}>
+                    <span class={`text-[9px] font-f1 font-black ${badge.text}`}>
                       {d.tireCompound}
                     </span>
                   </div>
                 </div>
 
                 {/* Gap */}
-                <div class="text-right pr-2 font-f1-num text-[11px] font-semibold tracking-tight">
+                <div class="text-right pr-2 font-f1-num text-[11px] font-bold tracking-tight">
                   <span
                     class={
                       d.isPlayer
-                        ? "text-[#00d26a] font-bold"
+                        ? "text-[#00d26a] font-extrabold"
                         : isAhead
                         ? "text-[#ffd100]"
                         : "text-[#f7f8fb]"

@@ -1,4 +1,4 @@
-import { Component, onMount, onCleanup, createEffect, Show } from "solid-js";
+import { Component, onMount, onCleanup, createEffect, Show, createSignal } from "solid-js";
 import {
   settings,
   toggleEditMode,
@@ -14,6 +14,29 @@ import { F1TimingTower } from "./components/f1/F1TimingTower.tsx";
 import { F1Relative } from "./components/f1/F1Relative.tsx";
 
 export const App: Component = () => {
+  const [draggingWidget, setDraggingWidget] = createSignal<string | null>(null);
+  const [dragOffset, setDragOffset] = createSignal<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const handleMouseDown = (widgetKey: "telemetryHub" | "leaderboard" | "relative", e: MouseEvent) => {
+    if (!settings.isEditMode) return;
+    setDraggingWidget(widgetKey);
+    const current = settings.widgets[widgetKey];
+    setDragOffset({ x: e.clientX - current.x, y: e.clientY - current.y });
+  };
+
+  const handleMouseMove = (e: MouseEvent) => {
+    const key = draggingWidget();
+    if (!key) return;
+    const offset = dragOffset();
+    const newX = e.clientX - offset.x;
+    const newY = e.clientY - offset.y;
+    updateWidgetTransform(key as any, { x: newX, y: newY });
+  };
+
+  const handleMouseUp = () => {
+    setDraggingWidget(null);
+  };
+
   onMount(() => {
     hydrateFromDiskConfig();
     initializeTelemetryPipeline();
@@ -78,6 +101,8 @@ export const App: Component = () => {
 
   return (
     <main
+      onMouseMove={handleMouseMove}
+      onMouseUp={handleMouseUp}
       class={`relative w-full h-full min-h-screen overflow-hidden ${
         !settings.hasCompletedSetup || settings.isEditMode
           ? "pointer-events-auto bg-black/25"
@@ -109,12 +134,15 @@ export const App: Component = () => {
 
           {/* F1 Timing Tower (Top-Left) */}
           <div
+            onMouseDown={(e) => handleMouseDown("leaderboard", e)}
             style={{
               transform: `translate3d(${settings.widgets.leaderboard.x}px, ${settings.widgets.leaderboard.y}px, 0) scale(${settings.widgets.leaderboard.scale})`,
               "transform-origin": "top left",
             }}
-            class={`fixed top-16 left-8 z-30 select-none ${
-              settings.isEditMode ? "pointer-events-auto cursor-move ring-2 ring-amber-400/80 rounded" : "pointer-events-none"
+            class={`fixed top-16 left-8 z-30 select-none transition-shadow duration-150 ${
+              settings.isEditMode
+                ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
+                : "pointer-events-none"
             }`}
           >
             <F1TimingTower
@@ -128,12 +156,15 @@ export const App: Component = () => {
 
           {/* F1 Tactical Relative (Bottom-Right) */}
           <div
+            onMouseDown={(e) => handleMouseDown("relative", e)}
             style={{
               transform: `translate3d(${settings.widgets.relative.x}px, ${settings.widgets.relative.y}px, 0) scale(${settings.widgets.relative.scale})`,
               "transform-origin": "bottom right",
             }}
-            class={`fixed bottom-8 right-8 z-30 select-none ${
-              settings.isEditMode ? "pointer-events-auto cursor-move ring-2 ring-amber-400/80 rounded" : "pointer-events-none"
+            class={`fixed bottom-8 right-8 z-30 select-none transition-shadow duration-150 ${
+              settings.isEditMode
+                ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
+                : "pointer-events-none"
             }`}
           >
             <F1Relative
@@ -145,7 +176,7 @@ export const App: Component = () => {
           </div>
 
           {/* Central Telemetry Monitor */}
-          <TelemetryMonitor />
+          <TelemetryMonitor onMouseDown={(e) => handleMouseDown("telemetryHub", e)} />
         </div>
       </Show>
     </main>
