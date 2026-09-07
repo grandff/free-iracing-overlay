@@ -17,7 +17,6 @@ import {
   LogoIMSA,
 } from "../../assets/icons/Icons.tsx";
 import {
-  Settings,
   Palette,
   Layers,
   Monitor,

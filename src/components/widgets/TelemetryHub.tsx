@@ -13,6 +13,8 @@ interface Props {
   lapDelta?: number;
   fuelLiters?: number;
   fuelLaps?: number;
+  drsAvailable?: boolean;
+  drsActive?: boolean;
   isEditMode?: boolean;
   scale?: number;
   onScaleChange?: (newScale: number) => void;

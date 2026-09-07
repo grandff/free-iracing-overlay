@@ -8,25 +8,26 @@ export interface SafetyRating {
 }
 
 export interface CarTelemetry {
-  carIdx: number;
-  carNumber: string;
-  driverName: string;
-  country: string; // e.g. "KR", "US", "NL", "GB", "DE", "FR", "IT", "JP", "ES"
-  carBrand: string; // e.g. "Porsche", "Ferrari", "BMW", "Mercedes", "McLaren", "Aston Martin", "Audi"
-  irating: number; // e.g. 6240
-  safetyRating: SafetyRating; // e.g. { license: "A", value: 4.82 }
-  classPosition: number;
-  overallPosition: number;
-  lap: number;
-  lapDistPct: number; // 0.0 to 1.0 (longitudinal position on track)
-  lastLapTime: number; // in seconds
-  bestLapTime: number;
-  inPit: boolean;
-  carClass: "Hypercar" | "LMP2" | "GT3";
-  carClassColor: string;
-  speedKmh: number;
-  gapToPlayerSeconds: number;
-  trackSurface: number; // 0 = not on track, 1 = off track, 2 = pit stall, 3 = on track
+  carIdx: number; // Index in 64-car arrays (CarIdx*)
+  carNumber: string; // Session YAML: DriverInfo.Drivers[carIdx].CarNumber
+  driverName: string; // Session YAML: DriverInfo.Drivers[carIdx].UserName
+  country: string; // Session YAML: DriverInfo.Drivers[carIdx].ClubName / CountryCode
+  carBrand: string; // Session YAML: DriverInfo.Drivers[carIdx].CarScreenName / CarPath
+  irating: number; // Session YAML: DriverInfo.Drivers[carIdx].IRating
+  safetyRating: SafetyRating; // Session YAML: DriverInfo.Drivers[carIdx].LicString / LicSubLevel
+  classPosition: number; // Telemetry: CarIdxClassPosition (int[64])
+  overallPosition: number; // Telemetry: CarIdxPosition (int[64])
+  positionDelta?: number; // Position change relative to grid/previous lap: +N, -N, 0
+  lap: number; // Telemetry: CarIdxLap (int[64])
+  lapDistPct: number; // Telemetry: CarIdxLapDistPct (float[64], 0.0 to 1.0)
+  lastLapTime: number; // Telemetry: CarIdxLastLapTime (float[64], seconds)
+  bestLapTime: number; // Telemetry: CarIdxBestLapTime (float[64], seconds)
+  inPit: boolean; // Telemetry: CarIdxOnPitRoad (bool[64])
+  carClass: "Hypercar" | "LMP2" | "GT3"; // Telemetry: CarIdxClass (int[64])
+  carClassColor: string; // Session YAML: DriverInfo.Drivers[carIdx].CarClassColor
+  speedKmh: number; // Telemetry: Speed * 3.6 (m/s to km/h)
+  gapToPlayerSeconds: number; // Telemetry: CarIdxEstTime[carIdx] - CarIdxEstTime[player]
+  trackSurface: number; // Telemetry: CarIdxTrackSurface (irsdk_TrackSurface: 0=OffTrack, 1=InPitLane, 2=PitStall, 3=OnTrack)
 }
 
 export interface PlayerTelemetry {

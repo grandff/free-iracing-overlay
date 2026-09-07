@@ -8,11 +8,11 @@
 
 | 마일스톤 | 구분 | 진행 상태 | 검증 일자 | 검증자 |
 | :--- | :--- | :---: | :---: | :---: |
-| **Milestone 1** | 초기 설정 마법사 & F1 오버레이 배치/크기 에디터 (`Alt + J`) & 프로그램 제어판 분리 & 다국어 지원 | **PASSED (완료)** | 2026-09-07 | Antigravity AI |
-| **Milestone 2** | F1 테마 전용 핵심 HUD 위젯 4종 구현 (순위표 / 상대 간격 / 랩 델타 / 2D 트랙 맵) | PENDING (진행 예정) | - | - |
-| **Milestone 3** | F1 테마 안전 및 레이스 관리 위젯 4종 구현 (독립 좌/우 스포터 / 연료 시뮬 / 전방 사고 / 날씨) | PENDING (진행 예정) | - | - |
-| **Milestone 4** | F1 테마 고급 인텔리전스 3종 & 11대 전체 위젯 통합 완성 (리벤지 / 타이어 / 멀티클래스) | PENDING (진행 예정) | - | - |
-| **Milestone 5** | 차기 4종 테마 확장 & Windows 네이티브 Shared Memory 연동 & 단일 바이너리 패키징 | PENDING (진행 예정) | - | - |
+| **Milestone 1** | 초기 설정 마법사 & 오버레이 배치/크기 에디터 (`Alt + J`) & 프로그램 제어판 분리 & 다국어 지원 | **PASSED (조건부 완료)** | 2026-09-07 | Antigravity AI / Claude Opus 5 |
+| **Milestone 2** | 핵심 HUD 위젯 4종 구현 (2.1 순위표 완료, 2.2~2.5 대기) | **IN PROGRESS (2.1 완료)** | 2026-09-07 | Antigravity AI |
+| **Milestone 3** | 안전 및 레이스 관리 위젯 4종 구현 (독립 좌/우 스포터 / 연료 시뮬 / 전방 사고 / 날씨) | PENDING (대기) | - | - |
+| **Milestone 4** | 고급 인텔리전스 3종 & 전체 위젯 통합 완성 (리벤지 / 타이어 / 멀티클래스) | PENDING (대기) | - | - |
+| **Milestone 5** | 차기 테마 확장 & Windows 네이티브 Shared Memory 연동 & 단일 바이너리 패키징 | PENDING (대기) | - | - |
 
 ---
 
@@ -104,95 +104,99 @@
     - iRacing 세션 연결 시 `DriverInfo: Drivers[DriverCarIdx]`에서 사용자 본인의 국가/클럽을 자동 식별하여 본인 행(`YOU`)에 유저 국가(대한민국 태극기 🇰🇷)를 우선 렌더링.
     - 프로그램 제어판(`ControlApp.tsx`)에 [👤 사용자 프로필 & 국가] 전용 탭을 신설하여 드라이버 이름, 국가(KR/US/DE/JP 등), 차량 번호, 선호 제조사를 자유롭게 설정 및 `config.json` 영구 보존.
   - **SR(Safety Rating) 배지:** R, D, C, B, A, P 라이선스별 색상 테두리/은은한 배경과 함께 글자 주변 radius 사각형 배지(`rounded-[4px]`) 완비.
-  - **테마 적용:** F1 하드코딩 로고 일체 배제, 방송 그래픽 스타일(STANDINGS 헤더, LAP 카운트, 실시간 그린 펄스 점) 렌더링.
+  - **AGENTS.md §3 기능 1 필수 아이콘 완비:**
+    - 순위 변동 인디케이터: P1~P12 순위 변동(▲/▼/–) 아이콘 및 툴팁 완비.
+    - 베스트 랩 스톱워치: 헤더 BEST 항목에 고해상도 인라인 SVG 스톱워치(`IconStopwatch`) 렌더링.
+    - 피트 인 렌치: 피트 레인/피트 스톨 진입 차량에 주황색 발광 PIT 배지 및 렌치(`IconPit`) 아이콘 실시간 표시 (`inPit === true` 또는 `trackSurface === 1 || 2`).
+  - **AGENTS.md §3.0 SDK 변수 매핑 실증 근거:**
+    - 60Hz Telemetry: `CarIdxPosition`, `CarIdxClassPosition`, `CarIdxClass`, `CarIdxLap`, `CarIdxLapDistPct`, `CarIdxBestLapTime`, `CarIdxLastLapTime`, `CarIdxTrackSurface`, `CarIdxOnPitRoad`
+    - Session YAML: `irsdk_getSessionInfoStr` -> `DriverInfo: Drivers[carIdx]` (`UserName`, `CarNumber`, `ClubName`/`CountryCode`, `CarScreenName`/`CarPath`, `IRating`, `LicString`/`LicSubLevel`)
   - **편집 모드(`Alt + J`):** 가로 리사이즈 드래그 핸들(`↔`) 및 상단 캡슐 너비 프리셋(최소/기본/상세/전체: 240/360/460/560px) 제공 및 `config.json` 영구 보존.
-  - **실측 성능:** Vite 프로덕션 빌드 **3.90초**, JS 번들 **241.80KB (gzip 65.56KB)** 초경량 달성.
-  - **판정:** **PASS**
-- [x] **DoD 2.2:** 렐러티브 (`Relative.tsx`) 위젯 정밀 구현
+  - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 빌드 **4.36초**, JS 번들 **240.14KB (gzip 65.10KB)** 초경량 달성.
+  - **판정:** **PASS (mock verified — 실 SDK 미검증)**
+- [ ] **DoD 2.2:** 렐러티브 (`Relative.tsx`) 위젯 정밀 구현 (대기)
   - 내 위치 기준 전후방 드라이버 실시간 간격, 드라이버별 국기(SVG), 타이어 컴파운드 배지(S/M/H/I/W).
   - SDK 변수: `CarIdxEstTime`, `CarIdxLapDistPct`, `CarIdxLap`, `PlayerCarIdx`.
-  - **판정:** **PASS**
-- [x] **DoD 2.3:** 직전 랩타임 델타 (`LapDelta.tsx`) 위젯 정밀 구현
+  - **판정:** **IMPLEMENTED (mock only — 실 SDK 미검증)**
+- [ ] **DoD 2.3:** 직전 랩타임 델타 (`LapDelta.tsx`) 위젯 정밀 구현 (대기)
   - 직전 랩 대비 델타 초 단위 비교 게이지 (음수 녹색, 양수 적색, 보라색 최고 기록).
   - SDK 변수: `LapDeltaToSessionLastlLap`, `LapDeltaToBestLap`.
-  - **판정:** **PASS**
-- [x] **DoD 2.4:** 2D 실시간 트랙 맵 (`TrackMap.tsx`) 위젯 정밀 구현
+  - **판정:** **IMPLEMENTED (mock only — 실 SDK 미검증)**
+- [ ] **DoD 2.4:** 2D 실시간 트랙 맵 (`TrackMap.tsx`) 위젯 정밀 구현 (대기)
   - 2D SVG 서킷 레이아웃, 실시간 차량 위치 매핑, 내 차량 고휘도 시안/화살표 인디케이터.
   - SDK 변수: `CarIdxLapDistPct`, `CarIdxTrackSurface`, `CarIdxOnPitRoad`.
-  - **판정:** **PASS**
-- [x] **DoD 2.5:** 트리플 모니터(48:9) 뷰포트 센터 클램프 정밀 정렬
+  - **판정:** **IMPLEMENTED (mock only — 실 SDK 미검증)**
+- [ ] **DoD 2.5:** 트리플 모니터(48:9) 뷰포트 센터 클램프 정밀 정렬 (대기)
   - 가로 5760/7680 환경에서 중앙 16:9 안전 영역 클램프 모드 지원.
-  - **판정:** **PASS**
+  - **판정:** **IMPLEMENTED (mock only — 실 SDK 미검증)**
 
 ---
 
-## 🛡️ Milestone 3: 안전 및 레이스 관리 위젯 4종 구현
+## 🛡️ Milestone 3: 안전 및 레이스 관리 위젯 4종 구현 (대기)
 
 > **목표:** 모터스포츠 디자인 언어에 맞춰 독립 좌/우 근접 스포터, 연료 시뮬레이터, 전방 사고 경고, 날씨 위젯을 정밀 구현합니다.
 
 ### 3.1 완료 검증 기준 (DoD)
 
-- [x] **DoD 3.1:** 좌/우 근접 스포터 (`SpotterLeft.tsx`, `SpotterRight.tsx`) 개별 분리 정밀 구현
+- [ ] **DoD 3.1:** 좌/우 근접 스포터 (`SpotterLeft.tsx`, `SpotterRight.tsx`) 개별 분리 정밀 구현 (대기)
   - 좌측/우측 개별 위젯 분리, 독립 감지 거리(1.5m~5m) 및 3단계(안전/주의/위험) 점멸.
   - SDK 변수: `CarLeftRight` bitfield.
-  - **판정:** **PASS**
-- [x] **DoD 3.2:** 연료 시뮬레이터 (`FuelSimulator.tsx`) 정밀 구현
+  - **판정:** **IMPLEMENTED (mock only — 실 SDK 미검증)**
+- [ ] **DoD 3.2:** 연료 시뮬레이터 (`FuelSimulator.tsx`) 정밀 구현 (대기)
   - 랩당 평균 소비량, 잔여 랩수 기준 완주 필요 급유량 계산.
   - SDK 변수: `FuelLevel`, `FuelLevelPct`, `FuelUsePerHour`, `SessionLapsRemainEx`.
-  - **판정:** **PASS**
-- [x] **DoD 3.3:** 전방 사고 지점 경고 (`IncidentHazard.tsx`) 정밀 구현
+  - **판정:** **IMPLEMENTED (mock only — 실 SDK 미검증)**
+- [ ] **DoD 3.3:** 전방 사고 지점 경고 (`IncidentHazard.tsx`) 정밀 구현 (대기)
   - 전방 400m 이내 사고 감지 시 실시간 잔여 거리(m) 카운트다운 및 점멸 경보.
   - SDK 변수: `SessionFlags`, `CarIdxTrackSurface`, `CarIdxLapDistPct`.
-  - **판정:** **PASS**
-- [x] **DoD 3.4:** 날씨 & Tempest 정보 (`WeatherWidget.tsx`) 위젯 정밀 구현
+  - **판정:** **IMPLEMENTED (mock only — 실 SDK 미검증)**
+- [ ] **DoD 3.4:** 날씨 & Tempest 정보 (`WeatherWidget.tsx`) 위젯 정밀 구현 (대기)
   - 대기/노면 온도, 풍향 나침반, 우천 강수량 게이지.
   - SDK 변수: `AirTemp`, `TrackTempCrew`, `WindVel`, `WindDir`, `RelativeHumidity`.
-  - **판정:** **PASS**
+  - **판정:** **IMPLEMENTED (mock only — 실 SDK 미검증)**
 
 ---
 
-## 🧠 Milestone 4: 고급 인텔리전스 3종 & 11대 전체 위젯 통합 완성
+## 🧠 Milestone 4: 고급 인텔리전스 3종 & 11대 전체 위젯 통합 완성 (대기)
 
 > **목표:** 리벤지 트래커, 타이어 분석, 멀티클래스 레이더를 완성하여 11대 전 기능을 유기적으로 통합합니다.
 
 ### 4.1 완료 검증 기준 (DoD)
 
-- [x] **DoD 4.1:** 리벤지 트래커 (`RevengeTracker.tsx`) 정밀 구현
+- [ ] **DoD 4.1:** 리벤지 트래커 (`RevengeTracker.tsx`) 정밀 구현 (대기)
   - +4x 접촉 유발 차량 자동 감지, 락온 조준선 HUD 및 실시간 간격 추적.
   - SDK 변수: `PlayerCarMyIncidentCount`, `CarLeftRight`, `CarIdxLapDistPct`.
-  - **판정:** **PASS**
-- [x] **DoD 4.2:** 타이어 분석기 (`TireAnalysis.tsx`) 정밀 구현
+  - **판정:** **IMPLEMENTED (mock only — 실 SDK 미검증)**
+- [ ] **DoD 4.2:** 타이어 분석기 (`TireAnalysis.tsx`) 정밀 구현 (대기)
   - 4륜 타이어 마모도, 압력(PSI), 온도 상태 시각화.
   - SDK 변수: `LFwearL/M/R`, `LFtempCL/CM/CR`, `LFcoldPressure`.
-  - **판정:** **PASS**
-- [x] **DoD 4.3:** 멀티클래스 접근 경고 (`MulticlassRadar.tsx`) 정밀 구현
+  - **판정:** **IMPLEMENTED (mock only — 실 SDK 미검증)**
+- [ ] **DoD 4.3:** 멀티클래스 접근 경고 (`MulticlassRadar.tsx`) 정밀 구현 (대기)
   - 상위 빠른 클래스 차량 후방 3초 이내 고속 접근 시 시각 경보.
   - SDK 변수: `CarIdxClass`, `PlayerCarClass`, `CarIdxEstTime`.
-  - **판정:** **PASS**
-- [x] **DoD 4.4:** 11대 핵심 기능 전체 + 콕핏 허브 (`TelemetryHub.tsx`) 통합 완성
+  - **판정:** **IMPLEMENTED (mock only — 실 SDK 미검증)**
+- [ ] **DoD 4.4:** 11대 핵심 기능 전체 + 콕핏 허브 (`TelemetryHub.tsx`) 통합 완성 (대기)
   - 13개 전체 위젯이 `src/components/widgets/`로 완전히 통일되고 특정 테마 접두어가 파일명에서 100% 제거됨.
-  - **실측 번들:** Vite 프로덕션 빌드 **2.99초**, JS **238.77KB (gzip 64.66KB)**.
-  - **판정:** **PASS**
+  - **실측 번들:** Vite 프로덕션 빌드 4.36초, JS 240.14KB (gzip 65.10KB).
+  - **판정:** **IMPLEMENTED (mock only — 실 SDK 미검증)**
 
 ---
 
-## 📦 Milestone 5: 차기 테마 확장 & Windows 단일 바이너리 패키징
+## 📦 Milestone 5: 차기 테마 확장 & Windows 단일 바이너리 패키징 (대기)
 
 > **목표:** Windows Shared Memory 연동 및 1-클릭 빌드 스크립트, GitHub Actions 자동 릴리즈 파이프라인을 패키징합니다.
 
 ### 5.1 완료 검증 기준 (DoD)
 
-- [x] **DoD 5.1:** 범용 위젯 아키텍처 및 공통 위젯 분리
+- [ ] **DoD 5.1:** 범용 위젯 아키텍처 및 공통 위젯 분리 (대기)
   - 모든 파일명에서 `F1` 접두어 제거, 테마 독립적 범용 레이아웃 완비.
-  - **판정:** **PASS**
-- [x] **DoD 5.2:** 실제 Windows iRacing Shared Memory 제로 카피 무지연 매핑 검증
+  - **판정:** **IMPLEMENTED (mock only — 실 SDK 미검증)**
+- [ ] **DoD 5.2:** 실제 Windows iRacing Shared Memory 제로 카피 무지연 매핑 검증 (대기)
   - `src-tauri/src/iracing/memory.rs` Windows `Local\\IRSDKMemMapFileName` 직접 매핑 및 macOS/Linux 폴백 드라이버 완비.
-  - **판정:** **PASS**
-- [x] **DoD 5.3:** Windows 1-클릭 빌드 (`build-windows.bat`) 및 GitHub Actions CI (`.github/workflows/build-windows.yml`)
-  - 번들 크기 238KB 초경량 달성, NSIS 인스톨러 및 단독 실행 파일 자동 빌드 파이프라인 완성.
-  - **판정:** **PASS**
-
----
+  - **판정:** **PENDING (실 SDK 미검증)**
+- [ ] **DoD 5.3:** Windows 1-클릭 빌드 (`build-windows.bat`) 및 GitHub Actions CI (`.github/workflows/build-windows.yml`) (대기)
+  - 번들 크기 240KB 초경량 달성, NSIS 인스톨러 및 단독 실행 파일 자동 빌드 파이프라인 완성.
+  - **판정:** **PENDING (실 SDK 미검증)**
 
 ---
 
@@ -345,7 +349,7 @@ LERP 보간 엔진과 위젯별 틱 분리(10/20/30/60Hz)도 설계 의도대로
 | :--- | :--- | :--- | :---: |
 | **Milestone 1** | Antigravity AI | 초기 온보딩 판별 ➔ F1 테마 선택(타 테마 잠금) ➔ 미리보기 및 Alt+J 조절 ➔ 제어판 분리 ➔ 7개 국어 다국어 지원 ➔ config.json 영구 보존 전체 실측 완료. PASS. | 2026-09-07 |
 | **Milestone 1** *(재검증)* | Claude Opus 5 | 코드 정독 + 실제 빌드 + 브라우저 실조작으로 교차검증. 온보딩/테마잠금/Alt+J/드래그/스케일/저장복원/7개국어 **동작 확인**. 단 ①Rust 백엔드 미컴파일(config.json 미검증) ②클릭스루 미연결 ③글로벌 단축키 미등록(게임 내 Alt+J 무동작) ④`left-76`/`right-76` 미생성 클래스로 기본 배치 위젯 2쌍 겹침 ⑤`tsc` 미실행(에러 16건) 확인. **판정: 조건부 PASS — 상세는 위 교차검증 리포트 참조.** | 2026-09-07 |
-| **Milestone 2** | *(진행 예정)* | F1 전용 핵심 4종 HUD 정밀 구현 대기 | - |
-| **Milestone 3** | *(진행 예정)* | F1 안전/레이스 관리 4종 HUD 정밀 구현 대기 | - |
-| **Milestone 4** | *(진행 예정)* | F1 고급 인텔리전스 3종 & 11대 전체 위젯 통합 대기 | - |
+| **Milestone 2** | Antigravity AI | DoD 2.1 순위표 위젯 mock 기반 정밀 구현 및 검증 완료. (실 SDK 미검증). DoD 2.2~2.5 대기. | 2026-09-07 |
+| **Milestone 3** | *(진행 예정)* | 안전/레이스 관리 4종 HUD 정밀 구현 대기 | - |
+| **Milestone 4** | *(진행 예정)* | 고급 인텔리전스 3종 & 11대 전체 위젯 통합 대기 | - |
 | **Milestone 5** | *(진행 예정)* | 차기 테마 확장 및 Windows 네이티브 패키징 대기 | - |

@@ -28,7 +28,7 @@ export const MulticlassRadar: Component<Props> = (props) => {
             editPresence.visible() ? "is-visible" : "is-hidden"
           }`}
         >
-          <span class="text-[10px] font-medium text-white/70 whitespace-nowrap">{t().wMulticlassRadar}</span>
+          <span class="text-[10px] font-medium text-white/70 whitespace-nowrap">{t().wMulticlass}</span>
           <div class="flex items-center gap-1.5">
             <button
               onClick={() => props.onScaleChange && props.onScaleChange(Math.max(0.7, (props.scale || 1) - 0.1))}

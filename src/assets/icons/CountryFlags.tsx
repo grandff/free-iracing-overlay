@@ -1,4 +1,5 @@
 import { Component, JSX } from "solid-js";
+import { Dynamic } from "solid-js/web";
 
 // ponytail: ultra-lightweight, high-fidelity SVG country flags for iRacing overlays
 // 100% Windows-native compatible: Windows Segoe UI Emoji does NOT render flag emojis!
@@ -547,7 +548,6 @@ export const CountryFlag: Component<{
   showCode?: boolean;
 }> = (props) => {
   const info = () => getCountryInfo(props.code);
-  const Flag = () => info().FlagComponent;
 
   return (
     <div
@@ -556,7 +556,7 @@ export const CountryFlag: Component<{
       }`}
       title={`${info().name} (${info().code3})`}
     >
-      <Flag class="w-full h-full object-cover" />
+      <Dynamic component={info().FlagComponent} class="w-full h-full object-cover" />
     </div>
   );
 };

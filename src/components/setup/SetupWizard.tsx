@@ -26,7 +26,6 @@ import {
   Layers,
   Eye,
   EyeOff,
-  Globe,
 } from "lucide-solid";
 import { Leaderboard } from "../widgets/Leaderboard.tsx";
 import { Relative } from "../widgets/Relative.tsx";
@@ -658,7 +657,7 @@ export const SetupWizard: Component = () => {
               >
                 <RevengeTracker
                   hasTarget={true}
-                  targetCarNumber={33}
+                  targetCarNumber="33"
                   targetDriverName="Max Verstappen"
                   gapSeconds={1.42}
                   isEditMode={settings.isEditMode}
@@ -708,7 +707,7 @@ export const SetupWizard: Component = () => {
               >
                 <SpotterRight
                   distance={2.8}
-                  state="warning"
+                  state="caution"
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.spotterRight.scale}
                   onScaleChange={(scale) => updateWidgetTransform("spotterRight", { scale })}

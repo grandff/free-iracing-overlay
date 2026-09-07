@@ -10,7 +10,6 @@ import {
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { telemetry, initializeTelemetryPipeline } from "./stores/telemetryStore.ts";
-import { HeaderBar } from "./components/common/HeaderBar.tsx";
 import { SetupWizard } from "./components/setup/SetupWizard.tsx";
 import { ControlApp } from "./components/control/ControlApp.tsx";
 import { Leaderboard } from "./components/widgets/Leaderboard.tsx";
@@ -100,14 +99,11 @@ export const App: Component = () => {
   });
 
   // Performance Tiering (AGENTS.md Section 5):
-  // - Timing Tower at 10Hz (every 100ms)
   // - Tactical Relative at 30Hz (every 33ms)
   // - Track Map at 20Hz (every 50ms)
-  const [timingDrivers, setTimingDrivers] = createSignal<any[]>([]);
   const [relativeEntries, setRelativeEntries] = createSignal<any[]>([]);
   const [trackMapCars, setTrackMapCars] = createSignal<any[]>([]);
 
-  let lastTimingUpdate = 0;
   let lastRelativeUpdate = 0;
   let lastTrackUpdate = 0;
 
@@ -115,28 +111,6 @@ export const App: Component = () => {
     const frame = telemetry.frame;
     if (!frame || !frame.cars || frame.cars.length === 0) return;
     const now = performance.now();
-
-    // 1. Timing Tower Throttled to 10Hz
-    if (now - lastTimingUpdate >= 100) {
-      lastTimingUpdate = now;
-      const teamColors = ["#3671C6", "#E8002D", "#FF8000", "#27F4D2", "#E8002D", "#FF8000", "#27F4D2", "#229971"];
-      const tireList: ("S" | "M" | "H")[] = ["M", "S", "M", "H", "S", "M", "H", "H"];
-      const mapped = frame.cars.slice(0, 8).map((c, i) => {
-        const code = c.driverName.split(" ").pop()?.substring(0, 3).toUpperCase() || `P${c.overallPosition}`;
-        return {
-          position: c.overallPosition,
-          carNumber: c.carNumber,
-          code,
-          name: c.driverName,
-          teamColor: teamColors[i % teamColors.length],
-          teamName: "F1 Team",
-          tireCompound: tireList[i % tireList.length],
-          gap: c.overallPosition === 1 ? "LEADER" : (c.gapToPlayerSeconds > 0 ? `+${c.gapToPlayerSeconds.toFixed(3)}` : `${c.gapToPlayerSeconds.toFixed(3)}`),
-          isPlayer: c.carIdx === 1,
-        };
-      });
-      setTimingDrivers(mapped);
-    }
 
     // 2. Relative Throttled to 30Hz
     if (now - lastRelativeUpdate >= 33) {

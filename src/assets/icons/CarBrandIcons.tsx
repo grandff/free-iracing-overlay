@@ -1,4 +1,5 @@
 import { Component, JSX } from "solid-js";
+import { Dynamic } from "solid-js/web";
 
 // ponytail: ultra-lightweight, crisp vector SVG brand emblems for sim racing cars
 // Zero external font/image dependencies. Instant rendering with zero stutter.
@@ -425,6 +426,5 @@ export function getCarBrandIcon(brandName?: string): Component<BrandIconProps> {
 }
 
 export const CarBrandIcon: Component<{ brand?: string; class?: string; size?: number }> = (props) => {
-  const IconComp = () => getCarBrandIcon(props.brand);
-  return <IconComp class={props.class} size={props.size} />;
+  return <Dynamic component={getCarBrandIcon(props.brand)} class={props.class} size={props.size} />;
 };

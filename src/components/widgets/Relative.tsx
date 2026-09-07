@@ -1,4 +1,4 @@
-import { Component, For, Show, createSignal, createMemo } from "solid-js";
+import { Component, For, Show } from "solid-js";
 import { createPresence } from "../../utils/presence.ts";
 import { CountryFlag } from "../../assets/icons/CountryFlags.tsx";
 import { t } from "../../i18n/index.ts";

@@ -21,14 +21,17 @@ export function createPresence(
     const open = isOpen();
     if (open) {
       setMounted(true);
-      // Double requestAnimationFrame ensures browser paints the initial state before transitioning
-      const frame1 = requestAnimationFrame(() => {
-        const frame2 = requestAnimationFrame(() => {
+      let frame1: number | undefined;
+      let frame2: number | undefined;
+      frame1 = requestAnimationFrame(() => {
+        frame2 = requestAnimationFrame(() => {
           setVisible(true);
         });
-        onCleanup(() => cancelAnimationFrame(frame2));
       });
-      onCleanup(() => cancelAnimationFrame(frame1));
+      onCleanup(() => {
+        if (frame1 !== undefined) cancelAnimationFrame(frame1);
+        if (frame2 !== undefined) cancelAnimationFrame(frame2);
+      });
     } else {
       setVisible(false);
       const timer = setTimeout(() => {

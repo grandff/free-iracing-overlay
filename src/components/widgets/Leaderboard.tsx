@@ -1,10 +1,33 @@
+/**
+ * M2.1: 순위표 (Leaderboard / Standings)
+ *
+ * ⚠️ iRacing 텔레메트리 연동 기준 (AGENTS.md §3.0 준수):
+ * 1. 실시간 텔레메트리 (60Hz 공유 메모리):
+ *    - CarIdxPosition[carIdx] -> overallPosition (순위)
+ *    - CarIdxClassPosition[carIdx] -> classPosition (클래스별 순위)
+ *    - CarIdxClass[carIdx] -> carClass (차량 클래스)
+ *    - CarIdxLap[carIdx] -> lap (현재 주행 랩)
+ *    - CarIdxLapDistPct[carIdx] -> lapDistPct (0.0~1.0 트랙 진행률)
+ *    - CarIdxBestLapTime[carIdx] -> bestLapTime (초 단위 float)
+ *    - CarIdxLastLapTime[carIdx] -> lastLapTime (초 단위 float)
+ *    - CarIdxTrackSurface[carIdx] -> trackSurface (0=OffTrack, 1=InPitLane, 2=PitStall, 3=OnTrack)
+ *    - CarIdxOnPitRoad[carIdx] -> inPit (bool, 피트 진입 여부)
+ * 2. 세션 YAML (irsdk_getSessionInfoStr -> DriverInfo.Drivers[carIdx]):
+ *    - UserName -> driverName (드라이버 성명)
+ *    - CarNumber -> carNumber (차량 번호)
+ *    - ClubName / CountryCode -> country (ISO 2자리/iRacing 클럽)
+ *    - CarScreenName / CarPath -> carBrand (차량 제조사 브랜드)
+ *    - IRating -> irating (iRating 정수)
+ *    - LicString / LicSubLevel -> safetyRating (라이선스 등급 및 SR 수치)
+ */
 // ponytail: ultra-lightweight, zero-dependency responsive leaderboard
-import { Component, For, Show, createSignal, createMemo, onCleanup } from "solid-js";
-import { CarTelemetry, SafetyRating, LicenseClass } from "../../services/telemetry/types.ts";
+import { Component, For, Show, createSignal, createMemo } from "solid-js";
+import { CarTelemetry, LicenseClass } from "../../services/telemetry/types.ts";
 import { createPresence } from "../../utils/presence.ts";
 import { t } from "../../i18n/index.ts";
 import { CarBrandIcon, BrandGenericRaceCar } from "../../assets/icons/CarBrandIcons.tsx";
-import { CountryFlag, getCountryInfo } from "../../assets/icons/CountryFlags.tsx";
+import { CountryFlag } from "../../assets/icons/CountryFlags.tsx";
+import { IconPit, IconStopwatch } from "../../assets/icons/Icons.tsx";
 
 export interface LeaderboardProps {
   cars?: CarTelemetry[];
@@ -22,18 +45,18 @@ export interface LeaderboardProps {
 
 // Fallback cars for preview or pre-connection states
 const defaultCars: CarTelemetry[] = [
-  { carIdx: 1, carNumber: "7", driverName: "K. Jeongmin", country: "KR", carBrand: "Porsche", irating: 6840, safetyRating: { license: "A", value: 4.62 }, classPosition: 1, overallPosition: 1, lap: 24, lapDistPct: 0.15, lastLapTime: 84.12, bestLapTime: 83.89, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 245, gapToPlayerSeconds: 0, trackSurface: 3 },
-  { carIdx: 2, carNumber: "1", driverName: "M. Verstappen", country: "NL", carBrand: "Red Bull", irating: 7850, safetyRating: { license: "P", value: 4.99 }, classPosition: 2, overallPosition: 2, lap: 24, lapDistPct: 0.145, lastLapTime: 84.34, bestLapTime: 84.05, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 242, gapToPlayerSeconds: -0.42, trackSurface: 3 },
-  { carIdx: 3, carNumber: "6", driverName: "K. Estre", country: "FR", carBrand: "Porsche", irating: 7120, safetyRating: { license: "A", value: 4.88 }, classPosition: 3, overallPosition: 3, lap: 24, lapDistPct: 0.138, lastLapTime: 84.62, bestLapTime: 84.11, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 240, gapToPlayerSeconds: -1.02, trackSurface: 3 },
-  { carIdx: 4, carNumber: "51", driverName: "A. Pier Guidi", country: "IT", carBrand: "Ferrari", irating: 6920, safetyRating: { license: "A", value: 4.75 }, classPosition: 4, overallPosition: 4, lap: 24, lapDistPct: 0.165, lastLapTime: 84.25, bestLapTime: 84.15, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 248, gapToPlayerSeconds: +1.28, trackSurface: 3 },
-  { carIdx: 5, carNumber: "24", driverName: "J. Gordon", country: "US", carBrand: "Corvette", irating: 6350, safetyRating: { license: "A", value: 4.41 }, classPosition: 5, overallPosition: 5, lap: 24, lapDistPct: 0.115, lastLapTime: 87.80, bestLapTime: 87.35, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 225, gapToPlayerSeconds: -2.95, trackSurface: 3 },
-  { carIdx: 6, carNumber: "911", driverName: "L. Vanthoor", country: "BE", carBrand: "Porsche", irating: 6890, safetyRating: { license: "A", value: 4.75 }, classPosition: 1, overallPosition: 6, lap: 23, lapDistPct: 0.12, lastLapTime: 94.55, bestLapTime: 94.20, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 235, gapToPlayerSeconds: -2.55, trackSurface: 3 },
-  { carIdx: 7, carNumber: "63", driverName: "M. Bortolotti", country: "IT", carBrand: "Lamborghini", irating: 6480, safetyRating: { license: "A", value: 4.52 }, classPosition: 2, overallPosition: 7, lap: 23, lapDistPct: 0.10, lastLapTime: 94.85, bestLapTime: 94.30, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 236, gapToPlayerSeconds: -4.10, trackSurface: 3 },
-  { carIdx: 8, carNumber: "3", driverName: "A. Garcia", country: "ES", carBrand: "Corvette", irating: 6120, safetyRating: { license: "A", value: 4.30 }, classPosition: 3, overallPosition: 8, lap: 23, lapDistPct: 0.08, lastLapTime: 95.10, bestLapTime: 94.60, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 233, gapToPlayerSeconds: -5.60, trackSurface: 3 },
-  { carIdx: 9, carNumber: "77", driverName: "M. Goetz", country: "DE", carBrand: "Mercedes", irating: 6210, safetyRating: { license: "A", value: 4.25 }, classPosition: 4, overallPosition: 9, lap: 23, lapDistPct: 0.07, lastLapTime: 95.25, bestLapTime: 94.75, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 234, gapToPlayerSeconds: -6.20, trackSurface: 3 },
-  { carIdx: 10, carNumber: "23", driverName: "T. Matsuda", country: "JP", carBrand: "Nissan", irating: 5950, safetyRating: { license: "A", value: 4.15 }, classPosition: 5, overallPosition: 10, lap: 23, lapDistPct: 0.06, lastLapTime: 95.40, bestLapTime: 94.90, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 232, gapToPlayerSeconds: -7.10, trackSurface: 3 },
-  { carIdx: 11, carNumber: "44", driverName: "L. Hamilton", country: "GB", carBrand: "Mercedes", irating: 7120, safetyRating: { license: "A", value: 4.88 }, classPosition: 6, overallPosition: 11, lap: 23, lapDistPct: 0.05, lastLapTime: 95.70, bestLapTime: 95.10, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 230, gapToPlayerSeconds: -8.00, trackSurface: 3 },
-  { carIdx: 12, carNumber: "888", driverName: "R. Marciello", country: "CH", carBrand: "Audi", irating: 6720, safetyRating: { license: "A", value: 4.60 }, classPosition: 7, overallPosition: 12, lap: 23, lapDistPct: 0.04, lastLapTime: 95.90, bestLapTime: 95.20, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 228, gapToPlayerSeconds: -8.90, trackSurface: 3 },
+  { carIdx: 1, carNumber: "7", driverName: "K. Jeongmin", country: "KR", carBrand: "Porsche", irating: 6840, safetyRating: { license: "A", value: 4.62 }, classPosition: 1, overallPosition: 1, positionDelta: 2, lap: 24, lapDistPct: 0.15, lastLapTime: 84.12, bestLapTime: 83.89, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 245, gapToPlayerSeconds: 0, trackSurface: 3 },
+  { carIdx: 2, carNumber: "1", driverName: "M. Verstappen", country: "NL", carBrand: "Red Bull", irating: 7850, safetyRating: { license: "P", value: 4.99 }, classPosition: 2, overallPosition: 2, positionDelta: -1, lap: 24, lapDistPct: 0.145, lastLapTime: 84.34, bestLapTime: 84.05, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 242, gapToPlayerSeconds: -0.42, trackSurface: 3 },
+  { carIdx: 3, carNumber: "6", driverName: "K. Estre", country: "FR", carBrand: "Porsche", irating: 7120, safetyRating: { license: "A", value: 4.88 }, classPosition: 3, overallPosition: 3, positionDelta: 0, lap: 24, lapDistPct: 0.138, lastLapTime: 84.62, bestLapTime: 84.11, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 240, gapToPlayerSeconds: -1.02, trackSurface: 3 },
+  { carIdx: 4, carNumber: "51", driverName: "A. Pier Guidi", country: "IT", carBrand: "Ferrari", irating: 6920, safetyRating: { license: "A", value: 4.75 }, classPosition: 4, overallPosition: 4, positionDelta: 1, lap: 24, lapDistPct: 0.165, lastLapTime: 84.25, bestLapTime: 84.15, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 248, gapToPlayerSeconds: +1.28, trackSurface: 3 },
+  { carIdx: 5, carNumber: "24", driverName: "J. Gordon", country: "US", carBrand: "Corvette", irating: 6350, safetyRating: { license: "A", value: 4.41 }, classPosition: 5, overallPosition: 5, positionDelta: -2, lap: 24, lapDistPct: 0.115, lastLapTime: 87.80, bestLapTime: 87.35, inPit: true, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 65, gapToPlayerSeconds: -2.95, trackSurface: 1 },
+  { carIdx: 6, carNumber: "911", driverName: "L. Vanthoor", country: "BE", carBrand: "Porsche", irating: 6890, safetyRating: { license: "A", value: 4.75 }, classPosition: 1, overallPosition: 6, positionDelta: 1, lap: 23, lapDistPct: 0.12, lastLapTime: 94.55, bestLapTime: 94.20, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 235, gapToPlayerSeconds: -2.55, trackSurface: 3 },
+  { carIdx: 7, carNumber: "63", driverName: "M. Bortolotti", country: "IT", carBrand: "Lamborghini", irating: 6480, safetyRating: { license: "A", value: 4.52 }, classPosition: 2, overallPosition: 7, positionDelta: 0, lap: 23, lapDistPct: 0.10, lastLapTime: 94.85, bestLapTime: 94.30, inPit: true, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 0, gapToPlayerSeconds: -4.10, trackSurface: 2 },
+  { carIdx: 8, carNumber: "3", driverName: "A. Garcia", country: "ES", carBrand: "Corvette", irating: 6120, safetyRating: { license: "A", value: 4.30 }, classPosition: 3, overallPosition: 8, positionDelta: -1, lap: 23, lapDistPct: 0.08, lastLapTime: 95.10, bestLapTime: 94.60, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 233, gapToPlayerSeconds: -5.60, trackSurface: 3 },
+  { carIdx: 9, carNumber: "77", driverName: "M. Goetz", country: "DE", carBrand: "Mercedes", irating: 6210, safetyRating: { license: "A", value: 4.25 }, classPosition: 4, overallPosition: 9, positionDelta: 0, lap: 23, lapDistPct: 0.07, lastLapTime: 95.25, bestLapTime: 94.75, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 234, gapToPlayerSeconds: -6.20, trackSurface: 3 },
+  { carIdx: 10, carNumber: "23", driverName: "T. Matsuda", country: "JP", carBrand: "Nissan", irating: 5950, safetyRating: { license: "A", value: 4.15 }, classPosition: 5, overallPosition: 10, positionDelta: 1, lap: 23, lapDistPct: 0.06, lastLapTime: 95.40, bestLapTime: 94.90, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 232, gapToPlayerSeconds: -7.10, trackSurface: 3 },
+  { carIdx: 11, carNumber: "44", driverName: "L. Hamilton", country: "GB", carBrand: "Mercedes", irating: 7120, safetyRating: { license: "A", value: 4.88 }, classPosition: 6, overallPosition: 11, positionDelta: -2, lap: 23, lapDistPct: 0.05, lastLapTime: 95.70, bestLapTime: 95.10, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 230, gapToPlayerSeconds: -8.00, trackSurface: 3 },
+  { carIdx: 12, carNumber: "888", driverName: "R. Marciello", country: "CH", carBrand: "Audi", irating: 6720, safetyRating: { license: "A", value: 4.60 }, classPosition: 7, overallPosition: 12, positionDelta: 0, lap: 23, lapDistPct: 0.04, lastLapTime: 95.90, bestLapTime: 95.20, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 228, gapToPlayerSeconds: -8.90, trackSurface: 3 },
 ];
 
 // iRacing Safety Rating License Tier Colors
@@ -110,7 +133,9 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
 
   return (
     <div
-      class="relative flex flex-col font-sans select-none rounded-sm overflow-visible text-white shadow-2xl transition-all"
+      class={`relative flex flex-col font-sans select-none rounded-sm overflow-visible text-white shadow-2xl transition-all ${
+        isResizingWidth() ? "cursor-ew-resize" : ""
+      }`}
       style={{
         width: `${currentWidth()}px`,
       }}
@@ -235,9 +260,12 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
           <span class="w-12 text-right pr-1">iR</span>
         </Show>
 
-        {/* Optional Best Lap */}
+        {/* Optional Best Lap with Stopwatch Icon */}
         <Show when={showBestLap()}>
-          <span class="w-16 text-right pr-1">BEST</span>
+          <span class="w-16 text-right pr-1 flex items-center justify-end gap-1 font-bold">
+            <IconStopwatch class="w-2.5 h-2.5 text-purple-300/80" />
+            BEST
+          </span>
         </Show>
 
         {/* Last Lap Time (Always Visible) */}
@@ -260,8 +288,8 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
                     : "bg-[#14141c]/95 hover:bg-[#1b1c26]/95"
                 }`}
               >
-                {/* 1. Pos */}
-                <div class="w-7 flex items-center justify-center h-full text-[11px] font-mono font-bold">
+                {/* 1. Pos with Gain/Loss Indicator (▲/▼/–) */}
+                <div class="w-7 flex items-center justify-center gap-0.5 h-full text-[11px] font-mono font-bold">
                   <span
                     class={
                       isLeader()
@@ -273,6 +301,18 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
                   >
                     {car.overallPosition}
                   </span>
+                  <Show when={car.positionDelta !== undefined && car.positionDelta !== 0} fallback={
+                    <span class="text-[7px] text-white/20 font-bold">−</span>
+                  }>
+                    <span
+                      class={`text-[7px] font-black ${
+                        car.positionDelta! > 0 ? "text-[#30d158]" : "text-[#ff453a]"
+                      }`}
+                      title={`${car.positionDelta! > 0 ? "+" : ""}${car.positionDelta} Pos`}
+                    >
+                      {car.positionDelta! > 0 ? "▲" : "▼"}
+                    </span>
+                  </Show>
                 </div>
 
                 {/* Vertical Accent Color Stripe */}
@@ -305,6 +345,12 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
                   <span class="text-[9px] font-mono text-white/35 shrink-0">
                     #{car.carNumber}
                   </span>
+                  <Show when={car.inPit || car.trackSurface === 1 || car.trackSurface === 2}>
+                    <span class="inline-flex items-center gap-0.5 px-1 py-0.2 rounded bg-amber-500/20 border border-amber-500/40 text-amber-400 text-[8px] font-mono font-bold shrink-0" title="In Pit / Pit Lane">
+                      <IconPit class="w-2.5 h-2.5 text-amber-400" />
+                      PIT
+                    </span>
+                  </Show>
                   <Show when={isPlayer(car)}>
                     <span class="text-[8px] font-mono font-bold px-1 py-0.5 bg-[#30d158]/20 text-[#30d158] rounded border border-[#30d158]/30 shrink-0">
                       YOU
@@ -362,7 +408,11 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
           class="absolute -right-2 top-0 bottom-0 w-4 flex items-center justify-center cursor-ew-resize group z-50 pointer-events-auto"
           title="너비 조절 (가로 드래그)"
         >
-          <div class="w-1.5 h-12 bg-amber-400 group-hover:bg-amber-300 rounded-full shadow-lg border border-black/40 transition-colors" />
+          <div
+            class={`w-1.5 h-12 rounded-full shadow-lg border border-black/40 transition-colors ${
+              isResizingWidth() ? "bg-amber-300 scale-110" : "bg-amber-400 group-hover:bg-amber-300"
+            }`}
+          />
         </div>
       </Show>
     </div>
