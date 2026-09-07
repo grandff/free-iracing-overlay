@@ -26,6 +26,7 @@ import {
 import { F1TimingTower } from "../f1/F1TimingTower.tsx";
 import { F1Relative } from "../f1/F1Relative.tsx";
 import { F1TelemetryHub } from "../f1/F1TelemetryHub.tsx";
+import { createPresence } from "../../utils/presence.ts";
 
 // ponytail: minimal clean theme model without unnecessary subheadings
 interface ThemeOption {
@@ -39,6 +40,12 @@ export const SetupWizard: Component = () => {
   const [selectedTheme, setSelectedTheme] = createSignal<string>("f1");
   const [isDropdownOpen, setIsDropdownOpen] = createSignal(false);
   const [showFontInfo, setShowFontInfo] = createSignal(false);
+
+  // Apple Design Fluid Presence Lifecycles (fade in/out on enter and exit)
+  const step1Presence = createPresence(() => settings.setupStep === 1, 220);
+  const step2Presence = createPresence(() => settings.setupStep === 2, 220);
+  const dropdownPresence = createPresence(() => isDropdownOpen(), 160);
+  const fontModalPresence = createPresence(() => showFontInfo(), 220);
 
   // Dragging state for Step 2
   const [draggingWidget, setDraggingWidget] = createSignal<string | null>(null);
@@ -94,11 +101,19 @@ export const SetupWizard: Component = () => {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
-      {/* ================= STEP 1: 테마 설정 화면 (Apple Design) ================= */}
-      <Show when={settings.setupStep === 1}>
-        <div class="w-full h-full flex items-center justify-center bg-black/80 backdrop-blur-2xl p-6 pointer-events-auto">
+      {/* ================= STEP 1: 테마 설정 화면 (Apple Design Fade in/out) ================= */}
+      <Show when={step1Presence.mounted()}>
+        <div
+          class={`w-full h-full flex items-center justify-center bg-black/80 backdrop-blur-2xl p-6 pointer-events-auto apple-backdrop ${
+            step1Presence.visible() ? "is-visible" : "is-hidden"
+          }`}
+        >
           {/* Apple Centered Glass Modal */}
-          <div class="max-w-[440px] w-full bg-[#1c1c1e]/90 backdrop-blur-3xl border border-white/[0.12] ring-1 ring-inset ring-white/[0.05] rounded-2xl p-7 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.85)] flex flex-col gap-5 text-[#f5f5f7]">
+          <div
+            class={`max-w-[440px] w-full bg-[#1c1c1e]/90 backdrop-blur-3xl border border-white/[0.12] ring-1 ring-inset ring-white/[0.05] rounded-2xl p-7 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.85)] flex flex-col gap-5 text-[#f5f5f7] apple-modal-card ${
+              step1Presence.visible() ? "is-visible" : "is-hidden"
+            }`}
+          >
             
             {/* 5. Apple Style Segmented Progress Bar (Step 1 of 2) */}
             <div class="w-full flex items-center gap-2">
@@ -157,10 +172,12 @@ export const SetupWizard: Component = () => {
                 </button>
 
                 {/* Dropdown Popover List */}
-                <Show when={isDropdownOpen()}>
+                <Show when={dropdownPresence.mounted()}>
                   <div
                     onClick={(e) => e.stopPropagation()}
-                    class="absolute top-full left-0 right-0 mt-2 bg-[#252528] border border-white/15 rounded-xl p-1.5 shadow-[0_24px_48px_rgba(0,0,0,0.95)] z-50 flex flex-col gap-1 pointer-events-auto"
+                    class={`absolute top-full left-0 right-0 mt-2 bg-[#252528] border border-white/15 rounded-xl p-1.5 shadow-[0_24px_48px_rgba(0,0,0,0.95)] z-50 flex flex-col gap-1 pointer-events-auto apple-popover ${
+                      dropdownPresence.visible() ? "is-visible" : "is-hidden"
+                    }`}
                   >
                     <For each={themes}>
                       {(t) => {
@@ -241,10 +258,18 @@ export const SetupWizard: Component = () => {
       </Show>
 
       {/* ================= STEP 2: 오버레이 미리보기 & Alt+J 배치 조절 (Apple Design) ================= */}
-      <Show when={settings.setupStep === 2}>
-        <div class="relative w-full h-full">
+      <Show when={step2Presence.mounted()}>
+        <div
+          class={`relative w-full h-full transition-opacity duration-200 ${
+            step2Presence.visible() ? "opacity-100" : "opacity-0"
+          }`}
+        >
           {/* Top Apple Minimal Floating Capsule Toolbar */}
-          <div class="fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3.5 px-5 py-2.5 bg-[#181820]/90 backdrop-blur-2xl border border-white/[0.12] rounded-full shadow-[0_20px_40px_-12px_rgba(0,0,0,0.85)] text-[#f5f5f7]">
+          <div
+            class={`fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3.5 px-5 py-2.5 bg-[#181820]/90 backdrop-blur-2xl border border-white/[0.12] rounded-full shadow-[0_20px_40px_-12px_rgba(0,0,0,0.85)] text-[#f5f5f7] apple-pill-enter ${
+              step2Presence.visible() ? "is-visible" : "is-hidden"
+            }`}
+          >
             {/* Step 2 Progress Bar */}
             <div class="flex items-center gap-1.5 pr-2.5 border-r border-white/10 w-16">
               <div class="h-1 flex-1 rounded-full bg-[#E10600] shadow-[0_0_6px_rgba(225,6,0,0.5)]" />
@@ -302,14 +327,18 @@ export const SetupWizard: Component = () => {
           </div>
 
           {/* F1 Font Info Modal */}
-          <Show when={showFontInfo()}>
+          <Show when={fontModalPresence.mounted()}>
             <div
               onClick={() => setShowFontInfo(false)}
-              class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 pointer-events-auto"
+              class={`fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 pointer-events-auto apple-backdrop ${
+                fontModalPresence.visible() ? "is-visible" : "is-hidden"
+              }`}
             >
               <div
                 onClick={(e) => e.stopPropagation()}
-                class="max-w-[460px] w-full bg-[#181822] border border-white/15 rounded-2xl p-6 shadow-2xl flex flex-col gap-4 text-white font-sans"
+                class={`max-w-[460px] w-full bg-[#181822] border border-white/15 rounded-2xl p-6 shadow-2xl flex flex-col gap-4 text-white font-sans apple-modal-card ${
+                  fontModalPresence.visible() ? "is-visible" : "is-hidden"
+                }`}
               >
                 <div class="flex items-center justify-between border-b border-white/10 pb-3">
                   <div class="flex items-center gap-2">

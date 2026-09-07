@@ -12,10 +12,15 @@ import { TelemetryMonitor } from "./components/common/TelemetryMonitor.tsx";
 import { SetupWizard } from "./components/setup/SetupWizard.tsx";
 import { F1TimingTower } from "./components/f1/F1TimingTower.tsx";
 import { F1Relative } from "./components/f1/F1Relative.tsx";
+import { createPresence } from "./utils/presence.ts";
 
 export const App: Component = () => {
   const [draggingWidget, setDraggingWidget] = createSignal<string | null>(null);
   const [dragOffset, setDragOffset] = createSignal<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  const setupPresence = createPresence(() => !settings.hasCompletedSetup, 250);
+  const hudPresence = createPresence(() => settings.hasCompletedSetup, 250);
+  const drivingBannerPresence = createPresence(() => !settings.isEditMode && settings.hasCompletedSetup, 200);
 
   const handleMouseDown = (widgetKey: "telemetryHub" | "leaderboard" | "relative", e: MouseEvent) => {
     if (!settings.isEditMode) return;
@@ -110,73 +115,89 @@ export const App: Component = () => {
       }`}
     >
       {/* 1. Initial Setup Wizard */}
-      <Show when={!settings.hasCompletedSetup}>
-        <SetupWizard />
+      <Show when={setupPresence.mounted()}>
+        <div
+          class={`w-full h-full transition-opacity duration-250 ${
+            setupPresence.visible() ? "opacity-100" : "opacity-0 pointer-events-none"
+          }`}
+        >
+          <SetupWizard />
+        </div>
       </Show>
 
       {/* 2. Main Driving Overlay HUD */}
-      <Show when={settings.hasCompletedSetup}>
-        <HeaderBar />
-        <SpotterBlinker />
-
+      <Show when={hudPresence.mounted()}>
         <div
-          class={`relative w-full h-full transition-all duration-300 ${
-            settings.tripleMonitorMode === "center-clamp"
-              ? "max-w-[1920px] mx-auto border-x border-white/5"
-              : "w-full"
+          class={`w-full h-full transition-opacity duration-250 ${
+            hudPresence.visible() ? "opacity-100" : "opacity-0 pointer-events-none"
           }`}
         >
-          {!settings.isEditMode && (
-            <div class="fixed top-12 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/60 text-white/50 text-[10px] font-mono rounded pointer-events-none transition-opacity duration-500">
-              DRIVING MODE ACTIVE (Click-through enabled • Press Alt+J to edit)
+          <HeaderBar />
+          <SpotterBlinker />
+
+          <div
+            class={`relative w-full h-full transition-all duration-300 ${
+              settings.tripleMonitorMode === "center-clamp"
+                ? "max-w-[1920px] mx-auto border-x border-white/5"
+                : "w-full"
+            }`}
+          >
+            <Show when={drivingBannerPresence.mounted()}>
+              <div
+                class={`fixed top-12 left-1/2 -translate-x-1/2 px-3 py-1 bg-black/60 text-white/50 text-[10px] font-mono rounded pointer-events-none apple-pill-enter ${
+                  drivingBannerPresence.visible() ? "is-visible" : "is-hidden"
+                }`}
+              >
+                DRIVING MODE ACTIVE (Click-through enabled • Press Alt+J to edit)
+              </div>
+            </Show>
+
+            {/* F1 Timing Tower (Top-Left) */}
+            <div
+              onMouseDown={(e) => handleMouseDown("leaderboard", e)}
+              style={{
+                transform: `translate3d(${settings.widgets.leaderboard.x}px, ${settings.widgets.leaderboard.y}px, 0) scale(${settings.widgets.leaderboard.scale})`,
+                "transform-origin": "top left",
+              }}
+              class={`fixed top-16 left-8 z-30 select-none transition-shadow duration-150 ${
+                settings.isEditMode
+                  ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
+                  : "pointer-events-none"
+              }`}
+            >
+              <F1TimingTower
+                drivers={timingDrivers()}
+                lapCurrent={telemetry.frame?.cars[0]?.lap}
+                isEditMode={settings.isEditMode}
+                scale={settings.widgets.leaderboard.scale}
+                onScaleChange={(scale) => updateWidgetTransform("leaderboard", { scale })}
+              />
             </div>
-          )}
 
-          {/* F1 Timing Tower (Top-Left) */}
-          <div
-            onMouseDown={(e) => handleMouseDown("leaderboard", e)}
-            style={{
-              transform: `translate3d(${settings.widgets.leaderboard.x}px, ${settings.widgets.leaderboard.y}px, 0) scale(${settings.widgets.leaderboard.scale})`,
-              "transform-origin": "top left",
-            }}
-            class={`fixed top-16 left-8 z-30 select-none transition-shadow duration-150 ${
-              settings.isEditMode
-                ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
-                : "pointer-events-none"
-            }`}
-          >
-            <F1TimingTower
-              drivers={timingDrivers()}
-              lapCurrent={telemetry.frame?.cars[0]?.lap}
-              isEditMode={settings.isEditMode}
-              scale={settings.widgets.leaderboard.scale}
-              onScaleChange={(scale) => updateWidgetTransform("leaderboard", { scale })}
-            />
+            {/* F1 Tactical Relative (Bottom-Right) */}
+            <div
+              onMouseDown={(e) => handleMouseDown("relative", e)}
+              style={{
+                transform: `translate3d(${settings.widgets.relative.x}px, ${settings.widgets.relative.y}px, 0) scale(${settings.widgets.relative.scale})`,
+                "transform-origin": "bottom right",
+              }}
+              class={`fixed bottom-8 right-8 z-30 select-none transition-shadow duration-150 ${
+                settings.isEditMode
+                  ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
+                  : "pointer-events-none"
+              }`}
+            >
+              <F1Relative
+                entries={relativeEntries()}
+                isEditMode={settings.isEditMode}
+                scale={settings.widgets.relative.scale}
+                onScaleChange={(scale) => updateWidgetTransform("relative", { scale })}
+              />
+            </div>
+
+            {/* Central Telemetry Monitor */}
+            <TelemetryMonitor onMouseDown={(e) => handleMouseDown("telemetryHub", e)} />
           </div>
-
-          {/* F1 Tactical Relative (Bottom-Right) */}
-          <div
-            onMouseDown={(e) => handleMouseDown("relative", e)}
-            style={{
-              transform: `translate3d(${settings.widgets.relative.x}px, ${settings.widgets.relative.y}px, 0) scale(${settings.widgets.relative.scale})`,
-              "transform-origin": "bottom right",
-            }}
-            class={`fixed bottom-8 right-8 z-30 select-none transition-shadow duration-150 ${
-              settings.isEditMode
-                ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
-                : "pointer-events-none"
-            }`}
-          >
-            <F1Relative
-              entries={relativeEntries()}
-              isEditMode={settings.isEditMode}
-              scale={settings.widgets.relative.scale}
-              onScaleChange={(scale) => updateWidgetTransform("relative", { scale })}
-            />
-          </div>
-
-          {/* Central Telemetry Monitor */}
-          <TelemetryMonitor onMouseDown={(e) => handleMouseDown("telemetryHub", e)} />
         </div>
       </Show>
     </main>

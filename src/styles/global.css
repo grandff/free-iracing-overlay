@@ -42,3 +42,82 @@
   background: var(--theme-accent);
   border-radius: 2px;
 }
+
+/* =========================================================
+   APPLE DESIGN FLUID MOTION & MODAL ANIMATIONS
+   - Critically damped spring feel (cubic-bezier(0.16, 1, 0.3, 1))
+   - Smooth GPU-accelerated enter & exit transitions
+   ========================================================= */
+:root {
+  --apple-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --apple-ease-in: cubic-bezier(0.7, 0, 0.84, 0);
+  --apple-duration-enter: 220ms;
+  --apple-duration-exit: 170ms;
+}
+
+/* 1. Modal Dialog Transition */
+.apple-modal-card {
+  transition: opacity var(--apple-duration-enter) var(--apple-ease),
+              transform var(--apple-duration-enter) var(--apple-ease);
+  will-change: opacity, transform;
+}
+.apple-modal-card.is-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+.apple-modal-card.is-hidden {
+  opacity: 0;
+  transform: scale(0.95) translateY(8px);
+  transition-duration: var(--apple-duration-exit);
+  transition-timing-function: var(--apple-ease-in);
+}
+
+/* 2. Modal Backdrop Transition */
+.apple-backdrop {
+  transition: opacity var(--apple-duration-enter) ease-out,
+              backdrop-filter var(--apple-duration-enter) ease-out;
+  will-change: opacity, backdrop-filter;
+}
+.apple-backdrop.is-visible {
+  opacity: 1;
+}
+.apple-backdrop.is-hidden {
+  opacity: 0;
+  transition-duration: var(--apple-duration-exit);
+  transition-timing-function: ease-in;
+}
+
+/* 3. Dropdown Popover Transition */
+.apple-popover {
+  transform-origin: top center;
+  transition: opacity 180ms var(--apple-ease),
+              transform 180ms var(--apple-ease);
+  will-change: opacity, transform;
+}
+.apple-popover.is-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+.apple-popover.is-hidden {
+  opacity: 0;
+  transform: scale(0.96) translateY(-6px);
+  transition-duration: 140ms;
+  transition-timing-function: var(--apple-ease-in);
+}
+
+/* 4. Floating Capsule Toolbars & Badges */
+.apple-pill-enter {
+  transition: opacity 200ms var(--apple-ease),
+              transform 200ms var(--apple-ease);
+  will-change: opacity, transform;
+}
+.apple-pill-enter.is-visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+.apple-pill-enter.is-hidden {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.96);
+  transition-duration: 150ms;
+}
+

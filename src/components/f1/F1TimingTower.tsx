@@ -1,5 +1,6 @@
 import { Component, For, Show } from "solid-js";
 import { LogoF1 } from "../../assets/icons/Icons.tsx";
+import { createPresence } from "../../utils/presence.ts";
 
 export interface TimingTowerDriver {
   position: number;
@@ -38,6 +39,7 @@ export const F1TimingTower: Component<Props> = (props) => {
   const driverList = () => props.drivers || defaultDrivers;
   const currentLap = () => props.lapCurrent || 24;
   const totalLaps = () => props.lapTotal || 57;
+  const editPresence = createPresence(() => !!props.isEditMode, 160);
 
   const tireBadge = (c: "S" | "M" | "H" | "I" | "W") => {
     switch (c) {
@@ -52,8 +54,12 @@ export const F1TimingTower: Component<Props> = (props) => {
   return (
     <div class="relative flex flex-col w-[295px] font-f1 select-none drop-shadow-[0_16px_32px_rgba(0,0,0,0.9)]">
       {/* Sleek Floating Apple Scale Capsule (Only in Edit Mode) */}
-      <Show when={props.isEditMode}>
-        <div class="absolute -top-9 left-0 right-0 z-40 flex items-center justify-between px-3 py-1 bg-[#1c1c24]/95 backdrop-blur-xl border border-white/20 rounded-full shadow-lg text-white pointer-events-auto">
+      <Show when={editPresence.mounted()}>
+        <div
+          class={`absolute -top-9 left-0 right-0 z-40 flex items-center justify-between px-3 py-1 bg-[#1c1c24]/95 backdrop-blur-xl border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
+            editPresence.visible() ? "is-visible" : "is-hidden"
+          }`}
+        >
           <span class="text-[10px] font-medium text-white/70">순위표 크기</span>
           <div class="flex items-center gap-1.5">
             <button

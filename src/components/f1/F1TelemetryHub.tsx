@@ -1,5 +1,6 @@
 import { Component, Show, For } from "solid-js";
 import { IconStopwatch, IconFuel } from "../../assets/icons/Icons.tsx";
+import { createPresence } from "../../utils/presence.ts";
 
 interface Props {
   gear?: number | string;
@@ -32,6 +33,7 @@ export const F1TelemetryHub: Component<Props> = (props) => {
   const drsAvail = () => props.drsAvailable !== undefined ? props.drsAvailable : true;
   const drsOn = () => props.drsActive !== undefined ? props.drsActive : false;
   const ers = () => props.ersBatteryPct !== undefined ? props.ersBatteryPct : 84;
+  const editPresence = createPresence(() => !!props.isEditMode, 160);
 
   // 15 Rev LEDs (5 Green, 5 Red, 5 Blue/Purple shift flash)
   const totalLeds = 15;
@@ -41,8 +43,12 @@ export const F1TelemetryHub: Component<Props> = (props) => {
   return (
     <div class="relative flex flex-col bg-[#0f1016]/95 border border-white/[0.12] rounded-xl shadow-[0_20px_48px_rgba(0,0,0,0.9)] backdrop-blur-2xl p-3 select-none font-f1 w-[460px] drop-shadow-2xl">
       {/* Sleek Floating Apple Scale Capsule (Only in Edit Mode) */}
-      <Show when={props.isEditMode}>
-        <div class="absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 backdrop-blur-xl border border-white/20 rounded-full shadow-lg text-white pointer-events-auto">
+      <Show when={editPresence.mounted()}>
+        <div
+          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 backdrop-blur-xl border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
+            editPresence.visible() ? "is-visible" : "is-hidden"
+          }`}
+        >
           <span class="text-[10px] font-medium text-white/70">텔레메트리 크기</span>
           <div class="flex items-center gap-1.5">
             <button

@@ -6,6 +6,7 @@ import {
   IconCrosshair,
 } from "../../assets/icons/Icons.tsx";
 import { F1TelemetryHub } from "../f1/F1TelemetryHub.tsx";
+import { createPresence } from "../../utils/presence.ts";
 
 interface Props {
   onMouseDown?: (e: MouseEvent) => void;
@@ -15,6 +16,9 @@ export const TelemetryMonitor: Component<Props> = (props) => {
   const p = () => telemetry.frame?.player;
   const h = () => telemetry.frame?.hazard;
   const r = () => telemetry.frame?.revenge;
+
+  const hazardPresence = createPresence(() => !!(h() && h()!.hasIncident), 200);
+  const revengePresence = createPresence(() => !!(r() && r()!.hasTarget), 200);
 
   return (
     <div
@@ -30,8 +34,10 @@ export const TelemetryMonitor: Component<Props> = (props) => {
       }`}
     >
       {/* High-priority Hazard Alert (Blinking if hazard ahead within 400m) */}
-      <Show when={h() && h()!.hasIncident}>
-        <div class="hud-panel px-6 py-2 flex items-center gap-3 bg-red-950/90 border-2 border-red-500 text-red-100 shadow-[0_0_25px_#EF4444] animate-pulse rounded">
+      <Show when={hazardPresence.mounted()}>
+        <div class={`hud-panel px-6 py-2 flex items-center gap-3 bg-red-950/90 border-2 border-red-500 text-red-100 shadow-[0_0_25px_#EF4444] animate-pulse rounded apple-pill-enter ${
+          hazardPresence.visible() ? "is-visible" : "is-hidden"
+        }`}>
           <IconWarning size={22} class="text-red-400 animate-bounce" />
           <div class="flex flex-col">
             <span class="font-f1-wide font-black tracking-wider text-xs uppercase text-white">
@@ -45,8 +51,10 @@ export const TelemetryMonitor: Component<Props> = (props) => {
       </Show>
 
       {/* Revenge Target Notification if tracking someone */}
-      <Show when={r() && r()!.hasTarget}>
-        <div class="px-4 py-1.5 rounded bg-black/80 border border-red-500/40 text-red-300 text-xs font-f1 flex items-center gap-2 shadow-lg">
+      <Show when={revengePresence.mounted()}>
+        <div class={`px-4 py-1.5 rounded bg-black/80 border border-red-500/40 text-red-300 text-xs font-f1 flex items-center gap-2 shadow-lg apple-pill-enter ${
+          revengePresence.visible() ? "is-visible" : "is-hidden"
+        }`}>
           <IconCrosshair size={14} class="text-red-400 animate-spin" />
           <span>REVENGE TARGET: <strong>#{r()!.carNumber} {r()!.driverName}</strong> ({r()!.gapSeconds.toFixed(1)}s)</span>
         </div>
