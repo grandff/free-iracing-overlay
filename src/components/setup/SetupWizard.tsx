@@ -3,8 +3,10 @@ import {
   settings,
   updateSettings,
   updateWidgetTransform,
+  toggleWidgetVisibility,
   saveSettingsAsDefault,
   toggleEditMode,
+  WidgetKey,
 } from "../../stores/settingsStore.ts";
 import {
   LogoF1,
@@ -12,8 +14,6 @@ import {
   LogoWRC,
   LogoIndyCar,
   LogoIMSA,
-  IconFuel,
-  IconStopwatch,
 } from "../../assets/icons/Icons.tsx";
 import {
   ArrowRight,
@@ -22,13 +22,24 @@ import {
   Check,
   Info,
   Type,
+  Layers,
+  Eye,
+  EyeOff,
 } from "lucide-solid";
 import { F1TimingTower } from "../f1/F1TimingTower.tsx";
 import { F1Relative } from "../f1/F1Relative.tsx";
+import { F1LapDelta } from "../f1/F1LapDelta.tsx";
+import { F1RevengeTracker } from "../f1/F1RevengeTracker.tsx";
+import { F1ProximitySpotter } from "../f1/F1ProximitySpotter.tsx";
+import { F1FuelCalculator } from "../f1/F1FuelCalculator.tsx";
+import { F1TireAnalysis } from "../f1/F1TireAnalysis.tsx";
+import { F1IncidentHazard } from "../f1/F1IncidentHazard.tsx";
+import { F1WeatherWidget } from "../f1/F1WeatherWidget.tsx";
+import { F1MulticlassRadar } from "../f1/F1MulticlassRadar.tsx";
+import { F1TrackMap } from "../f1/F1TrackMap.tsx";
 import { F1TelemetryHub } from "../f1/F1TelemetryHub.tsx";
 import { createPresence } from "../../utils/presence.ts";
 
-// ponytail: minimal clean theme model without unnecessary subheadings
 interface ThemeOption {
   id: "f1" | "wec" | "wrc" | "indycar" | "imsa";
   name: string;
@@ -40,18 +51,19 @@ export const SetupWizard: Component = () => {
   const [selectedTheme, setSelectedTheme] = createSignal<string>("f1");
   const [isDropdownOpen, setIsDropdownOpen] = createSignal(false);
   const [showFontInfo, setShowFontInfo] = createSignal(false);
+  const [showWidgetList, setShowWidgetList] = createSignal(false);
 
-  // Apple Design Fluid Presence Lifecycles (fade in/out on enter and exit)
+  // Apple Design Fluid Presence Lifecycles
   const step1Presence = createPresence(() => settings.setupStep === 1, 220);
   const step2Presence = createPresence(() => settings.setupStep === 2, 220);
   const dropdownPresence = createPresence(() => isDropdownOpen(), 160);
   const fontModalPresence = createPresence(() => showFontInfo(), 220);
+  const widgetListPresence = createPresence(() => showWidgetList(), 160);
 
   // Dragging state for Step 2
-  const [draggingWidget, setDraggingWidget] = createSignal<string | null>(null);
+  const [draggingWidget, setDraggingWidget] = createSignal<WidgetKey | null>(null);
   const [dragOffset, setDragOffset] = createSignal<{ x: number; y: number }>({ x: 0, y: 0 });
 
-  // Pure Grand Prix / Championship names with official marks
   const themes: ThemeOption[] = [
     { id: "f1", name: "Formula 1", available: true, logo: LogoF1 },
     { id: "wec", name: "WEC", available: false, logo: LogoWEC },
@@ -62,20 +74,39 @@ export const SetupWizard: Component = () => {
 
   const currentTheme = () => themes.find((t) => t.id === selectedTheme()) || themes[0];
 
-  // Close dropdown on true outside click
+  const widgetDefinitions: { key: WidgetKey; name: string; category: string }[] = [
+    { key: "leaderboard", name: "1. 실시간 순위표", category: "Timing" },
+    { key: "relative", name: "2. 렐러티브 (상대 간격)", category: "Timing" },
+    { key: "lapDelta", name: "3. 직전 랩타임 델타", category: "Timing" },
+    { key: "revengeTracker", name: "4. 리벤지 트래커", category: "Battle" },
+    { key: "proximitySpotter", name: "5. 근접 스포터", category: "Safety" },
+    { key: "fuelCalculator", name: "6. 연료 시뮬레이터", category: "Strategy" },
+    { key: "tireAnalysis", name: "7. 타이어 분석", category: "Strategy" },
+    { key: "incidentHazard", name: "8. 전방 사고 경고", category: "Safety" },
+    { key: "weather", name: "9. 날씨 & 트랙 컨디션", category: "Environment" },
+    { key: "multiclassRadar", name: "10. 멀티클래스 레이더", category: "Battle" },
+    { key: "trackMap", name: "11. 2D 실시간 트랙 맵", category: "Map" },
+    { key: "telemetryHub", name: "콕핏 스티어링 허브", category: "Cockpit" },
+  ];
+
+  const activeWidgetCount = () => Object.values(settings.widgets).filter((w) => w.visible).length;
+
   onMount(() => {
     const handleDocumentClick = (e: MouseEvent) => {
-      const container = document.getElementById("theme-dropdown-container");
-      if (container && !container.contains(e.target as Node)) {
+      const dropdown = document.getElementById("theme-dropdown-container");
+      if (dropdown && !dropdown.contains(e.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      const widgetPop = document.getElementById("widget-list-container");
+      if (widgetPop && !widgetPop.contains(e.target as Node)) {
+        setShowWidgetList(false);
       }
     };
     window.addEventListener("click", handleDocumentClick);
     onCleanup(() => window.removeEventListener("click", handleDocumentClick));
   });
 
-  // Step 2 Drag handling
-  const handleMouseDown = (widgetKey: "telemetryHub" | "leaderboard" | "relative", e: MouseEvent) => {
+  const handleMouseDown = (widgetKey: WidgetKey, e: MouseEvent) => {
     if (!settings.isEditMode) return;
     setDraggingWidget(widgetKey);
     const current = settings.widgets[widgetKey];
@@ -88,7 +119,7 @@ export const SetupWizard: Component = () => {
     const offset = dragOffset();
     const newX = e.clientX - offset.x;
     const newY = e.clientY - offset.y;
-    updateWidgetTransform(key as any, { x: newX, y: newY });
+    updateWidgetTransform(key, { x: newX, y: newY });
   };
 
   const handleMouseUp = () => {
@@ -101,21 +132,19 @@ export const SetupWizard: Component = () => {
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
     >
-      {/* ================= STEP 1: 테마 설정 화면 (Apple Design Fade in/out) ================= */}
+      {/* ================= STEP 1: 테마 설정 화면 ================= */}
       <Show when={step1Presence.mounted()}>
         <div
           class={`w-full h-full flex items-center justify-center bg-black/80 backdrop-blur-2xl p-6 pointer-events-auto apple-backdrop ${
             step1Presence.visible() ? "is-visible" : "is-hidden"
           }`}
         >
-          {/* Apple Centered Glass Modal */}
           <div
             class={`max-w-[440px] w-full bg-[#1c1c1e]/90 backdrop-blur-3xl border border-white/[0.12] ring-1 ring-inset ring-white/[0.05] rounded-2xl p-7 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.85)] flex flex-col gap-5 text-[#f5f5f7] apple-modal-card ${
               step1Presence.visible() ? "is-visible" : "is-hidden"
             }`}
           >
-            
-            {/* 5. Apple Style Segmented Progress Bar (Step 1 of 2) */}
+            {/* Step Progress Bar */}
             <div class="w-full flex items-center gap-2">
               <div class="h-1 flex-1 rounded-full bg-[#E10600] shadow-[0_0_8px_rgba(225,6,0,0.6)] transition-all duration-300" />
               <div class="h-1 flex-1 rounded-full bg-white/10 transition-all duration-300" />
@@ -131,14 +160,13 @@ export const SetupWizard: Component = () => {
               </p>
             </div>
 
-            {/* 1 & 2. Apple Style Dropdown Selector */}
+            {/* Dropdown Selector */}
             <div class="flex flex-col gap-2 relative" id="theme-dropdown-container">
               <label class="text-xs font-medium text-[#a1a1a6] px-0.5">
                 방송 테마 선택
               </label>
 
               <div class="relative">
-                {/* Dropdown Trigger Button */}
                 <button
                   type="button"
                   onClick={(e) => {
@@ -171,7 +199,7 @@ export const SetupWizard: Component = () => {
                   </div>
                 </button>
 
-                {/* Dropdown Popover List */}
+                {/* Dropdown Popover */}
                 <Show when={dropdownPresence.mounted()}>
                   <div
                     onClick={(e) => e.stopPropagation()}
@@ -230,7 +258,7 @@ export const SetupWizard: Component = () => {
               </div>
             </div>
 
-            {/* 3. Notice Callout */}
+            {/* Notice Callout */}
             <div class="bg-white/[0.04] border border-white/[0.08] rounded-xl p-3 text-xs text-[#a1a1a6] flex items-center gap-2.5">
               <Info class="w-4 h-4 text-[#86868b] shrink-0" />
               <p class="leading-relaxed">
@@ -238,7 +266,7 @@ export const SetupWizard: Component = () => {
               </p>
             </div>
 
-            {/* 4. Action Button with Lucide ArrowRight */}
+            {/* Action Button */}
             <div class="pt-1">
               <button
                 onClick={() => {
@@ -252,12 +280,11 @@ export const SetupWizard: Component = () => {
                 <ArrowRight class="w-4 h-4 stroke-[2.5]" />
               </button>
             </div>
-
           </div>
         </div>
       </Show>
 
-      {/* ================= STEP 2: 오버레이 미리보기 & Alt+J 배치 조절 (Apple Design) ================= */}
+      {/* ================= STEP 2: 11대 오버레이 미리보기 & Alt+J 배치 조절 ================= */}
       <Show when={step2Presence.mounted()}>
         <div
           class={`relative w-full h-full transition-opacity duration-200 ${
@@ -265,13 +292,9 @@ export const SetupWizard: Component = () => {
           }`}
         >
           {/* Top Apple Minimal Floating Capsule Toolbar */}
-          <div
-            class={`fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3.5 px-5 py-2.5 bg-[#181820]/90 backdrop-blur-2xl border border-white/[0.12] rounded-full shadow-[0_20px_40px_-12px_rgba(0,0,0,0.85)] text-[#f5f5f7] apple-pill-enter ${
-              step2Presence.visible() ? "is-visible" : "is-hidden"
-            }`}
-          >
+          <div class="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-4 py-2 bg-[#181820]/92 backdrop-blur-2xl border border-white/[0.12] rounded-full shadow-[0_20px_40px_-12px_rgba(0,0,0,0.85)] text-[#f5f5f7]">
             {/* Step 2 Progress Bar */}
-            <div class="flex items-center gap-1.5 pr-2.5 border-r border-white/10 w-16">
+            <div class="flex items-center gap-1 pr-2 border-r border-white/10 w-12">
               <div class="h-1 flex-1 rounded-full bg-[#E10600] shadow-[0_0_6px_rgba(225,6,0,0.5)]" />
               <div class="h-1 flex-1 rounded-full bg-[#E10600] shadow-[0_0_6px_rgba(225,6,0,0.5)]" />
             </div>
@@ -279,49 +302,94 @@ export const SetupWizard: Component = () => {
             {/* Alt + J Shortcut Pill */}
             <button
               onClick={toggleEditMode}
-              class={`px-3 py-1 rounded-full text-xs font-medium flex items-center gap-2 border transition-all duration-150 active:scale-[0.96] cursor-pointer pointer-events-auto ${
+              class={`px-2.5 py-1 rounded-full text-xs font-medium flex items-center gap-1.5 border transition-all duration-150 active:scale-[0.96] cursor-pointer pointer-events-auto ${
                 settings.isEditMode
                   ? "bg-white/20 text-white border-white/30 shadow-[0_0_12px_rgba(255,255,255,0.12)]"
                   : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
               }`}
             >
-              <span>{settings.isEditMode ? "편집 모드 활성" : "고정 모드"}</span>
-              <kbd class="bg-black/40 px-1.5 py-0.5 rounded text-[10px] font-mono border border-white/15 text-white">
-                Alt + J
+              <span>{settings.isEditMode ? "편집 모드 On" : "고정 모드"}</span>
+              <kbd class="bg-black/40 px-1 py-0.5 rounded text-[10px] font-mono border border-white/15 text-white">
+                Alt+J
               </kbd>
             </button>
+
+            {/* 11 Core Widgets Toggle Drawer Button */}
+            <div class="relative" id="widget-list-container">
+              <button
+                onClick={() => setShowWidgetList((prev) => !prev)}
+                class="px-2.5 py-1 rounded-full text-xs bg-white/5 hover:bg-white/10 text-white/90 border border-white/10 flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-[0.96]"
+              >
+                <Layers class="w-3.5 h-3.5 text-[#00d26a]" />
+                <span>11대 위젯 관리 ({activeWidgetCount()}/12)</span>
+                <ChevronDown class={`w-3 h-3 transition-transform ${showWidgetList() ? "rotate-180" : ""}`} />
+              </button>
+
+              {/* Widget List Popover */}
+              <Show when={widgetListPresence.mounted()}>
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  class={`absolute top-full left-0 mt-2 w-64 bg-[#1e1e24]/95 backdrop-blur-3xl border border-white/15 rounded-2xl p-2 shadow-2xl z-50 flex flex-col gap-1 pointer-events-auto apple-popover ${
+                    widgetListPresence.visible() ? "is-visible" : "is-hidden"
+                  }`}
+                >
+                  <div class="px-2.5 py-1.5 text-[10px] font-semibold text-white/40 uppercase tracking-wider border-b border-white/10">
+                    전체 11대 오버레이 위젯 토글
+                  </div>
+                  <div class="max-h-64 overflow-y-auto flex flex-col gap-0.5">
+                    <For each={widgetDefinitions}>
+                      {(w) => {
+                        const isVis = () => settings.widgets[w.key]?.visible !== false;
+                        return (
+                          <div
+                            onClick={() => toggleWidgetVisibility(w.key)}
+                            class="px-2.5 py-1.5 rounded-lg flex items-center justify-between text-xs hover:bg-white/10 cursor-pointer transition-all active:scale-[0.98]"
+                          >
+                            <div class="flex flex-col">
+                              <span class={`font-medium ${isVis() ? "text-white" : "text-white/40 line-through"}`}>
+                                {w.name}
+                              </span>
+                              <span class="text-[9px] text-white/30">{w.category}</span>
+                            </div>
+                            <button class={`p-1 rounded ${isVis() ? "text-[#00d26a]" : "text-white/25"}`}>
+                              <Show when={isVis()} fallback={<EyeOff class="w-3.5 h-3.5" />}>
+                                <Eye class="w-3.5 h-3.5" />
+                              </Show>
+                            </button>
+                          </div>
+                        );
+                      }}
+                    </For>
+                  </div>
+                </div>
+              </Show>
+            </div>
 
             {/* F1 Font Status Pill */}
             <button
               onClick={() => setShowFontInfo(true)}
-              class="px-3 py-1 rounded-full text-xs font-f1 bg-white/5 hover:bg-white/10 text-white/85 border border-white/10 flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-[0.96]"
+              class="px-2.5 py-1 rounded-full text-xs font-f1 bg-white/5 hover:bg-white/10 text-white/85 border border-white/10 flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-[0.96]"
             >
               <Type class="w-3.5 h-3.5 text-[#e10600]" />
-              <span>F1 폰트 설정</span>
+              <span>F1 폰트</span>
             </button>
 
-            <span class="text-xs text-[#86868b] hidden lg:inline">
-              {settings.isEditMode
-                ? "위젯을 드래그하여 이동하고 +/- 버튼으로 크기를 조절하세요."
-                : "Alt + J 로 편집 모드를 켤 수 있습니다."}
-            </span>
-
             {/* Actions */}
-            <div class="flex items-center gap-2 pl-3 border-l border-white/10">
+            <div class="flex items-center gap-2 pl-2 border-l border-white/10">
               <button
                 onClick={() => updateSettings("setupStep", 1)}
-                class="px-3 py-1 rounded-full text-xs text-[#a1a1a6] hover:text-white hover:bg-white/10 transition-all active:scale-[0.96] flex items-center gap-1 cursor-pointer pointer-events-auto"
+                class="px-2.5 py-1 rounded-full text-xs text-[#a1a1a6] hover:text-white hover:bg-white/10 transition-all active:scale-[0.96] flex items-center gap-1 cursor-pointer pointer-events-auto"
               >
-                <ArrowLeft class="w-3.5 h-3.5" />
+                <ArrowLeft class="w-3 h-3" />
                 <span>이전</span>
               </button>
 
               <button
                 onClick={saveSettingsAsDefault}
-                class="px-4 py-1.5 rounded-full bg-[#00d26a] hover:bg-[#00ba5e] active:scale-[0.96] text-black font-semibold text-xs shadow-md transition-all duration-150 flex items-center gap-1.5 cursor-pointer pointer-events-auto"
+                class="px-3.5 py-1 rounded-full bg-[#00d26a] hover:bg-[#00ba5e] active:scale-[0.96] text-black font-semibold text-xs shadow-md transition-all duration-150 flex items-center gap-1.5 cursor-pointer pointer-events-auto"
               >
                 <span>최종 저장</span>
-                <Check class="w-3.5 h-3.5 stroke-[2.5]" />
+                <Check class="w-3 h-3 stroke-[2.5]" />
               </button>
             </div>
           </div>
@@ -354,23 +422,17 @@ export const SetupWizard: Component = () => {
                 </div>
 
                 <div class="flex flex-col gap-2.5 text-xs text-[#a0a0b0] leading-relaxed">
-                  <p>
-                    본 오버레이는 Formula 1 공식 중계 폰트 스택을 지원합니다.
-                  </p>
+                  <p>본 오버레이는 Formula 1 공식 중계 폰트 스택을 지원합니다.</p>
                   <div class="bg-black/40 border border-white/10 rounded-xl p-3 flex flex-col gap-1.5 font-mono text-[11px] text-white/90">
                     <div class="flex items-center gap-2">
                       <span class="w-2 h-2 rounded-full bg-[#00d26a]" />
-                      <span>현재 적용 상태: <strong>고품질 모터스포츠 웹폰트 활성</strong></span>
+                      <span>현재 적용 상태: <strong>고품질 모터스포츠 폰트 활성</strong></span>
                     </div>
                     <div class="pl-4 text-[10px] text-white/60">
-                      • 타이밍 & 보드: <code class="text-amber-300">Titillium Web (Google Fonts)</code><br/>
-                      • 디지털 텔레메트리: <code class="text-amber-300">Chakra Petch (Google Fonts)</code>
+                      • 타이밍 & 보드: <code class="text-amber-300">DIN Alternate / Titillium Web</code><br/>
+                      • 디지털 텔레메트리: <code class="text-amber-300">Chakra Petch</code>
                     </div>
                   </div>
-
-                  <p>
-                    <strong>Formula 1 공식 폰트 파일</strong>(<code class="text-white">Formula1-Bold.woff2</code>)을 소장하고 계신 경우, 프로젝트 루트의 <code class="text-white">public/fonts/</code> 디렉터리에 넣거나 PC 시스템에 설치하시면 100% 공식 폰트가 자동 우선 적용됩니다.
-                  </p>
                 </div>
 
                 <button
@@ -383,67 +445,271 @@ export const SetupWizard: Component = () => {
             </div>
           </Show>
 
-          {/* Interactive Preview Overlay Area */}
+          {/* ================= 11대 오버레이 실시간 인터랙티브 프리뷰 뷰포트 ================= */}
           <div class="w-full h-full relative pointer-events-none">
-            {/* Widget 1: F1 Timing Tower (Top-Left) */}
-            <div
-              onMouseDown={(e) => handleMouseDown("leaderboard", e)}
-              style={{
-                transform: `translate3d(${settings.widgets.leaderboard.x}px, ${settings.widgets.leaderboard.y}px, 0) scale(${settings.widgets.leaderboard.scale})`,
-                "transform-origin": "top left",
-              }}
-              class={`fixed top-16 left-8 z-30 select-none transition-shadow duration-150 ${
-                settings.isEditMode
-                  ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
-                  : "pointer-events-none"
-              }`}
-            >
-              <F1TimingTower
-                isEditMode={settings.isEditMode}
-                scale={settings.widgets.leaderboard.scale}
-                onScaleChange={(scale) => updateWidgetTransform("leaderboard", { scale })}
-              />
-            </div>
+            {/* 기능 1: 순위표 (Top-Left) */}
+            <Show when={settings.widgets.leaderboard?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("leaderboard", e)}
+                style={{
+                  transform: `translate3d(${settings.widgets.leaderboard.x}px, ${settings.widgets.leaderboard.y}px, 0) scale(${settings.widgets.leaderboard.scale})`,
+                  "transform-origin": "top left",
+                }}
+                class={`fixed top-14 left-6 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
+                    : "pointer-events-none"
+                }`}
+              >
+                <F1TimingTower
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.leaderboard.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("leaderboard", { scale })}
+                />
+              </div>
+            </Show>
 
-            {/* Widget 2: F1 Tactical Relative (Bottom-Right) */}
-            <div
-              onMouseDown={(e) => handleMouseDown("relative", e)}
-              style={{
-                transform: `translate3d(${settings.widgets.relative.x}px, ${settings.widgets.relative.y}px, 0) scale(${settings.widgets.relative.scale})`,
-                "transform-origin": "bottom right",
-              }}
-              class={`fixed bottom-8 right-8 z-30 select-none transition-shadow duration-150 ${
-                settings.isEditMode
-                  ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
-                  : "pointer-events-none"
-              }`}
-            >
-              <F1Relative
-                isEditMode={settings.isEditMode}
-                scale={settings.widgets.relative.scale}
-                onScaleChange={(scale) => updateWidgetTransform("relative", { scale })}
-              />
-            </div>
+            {/* 기능 2: 렐러티브 (Bottom-Right) */}
+            <Show when={settings.widgets.relative?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("relative", e)}
+                style={{
+                  transform: `translate3d(${settings.widgets.relative.x}px, ${settings.widgets.relative.y}px, 0) scale(${settings.widgets.relative.scale})`,
+                  "transform-origin": "bottom right",
+                }}
+                class={`fixed bottom-6 right-6 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
+                    : "pointer-events-none"
+                }`}
+              >
+                <F1Relative
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.relative.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("relative", { scale })}
+                />
+              </div>
+            </Show>
 
-            {/* Widget 3: F1 Cockpit Telemetry Hub (Bottom-Center) */}
-            <div
-              onMouseDown={(e) => handleMouseDown("telemetryHub", e)}
-              style={{
-                transform: `translate3d(calc(-50% + ${settings.widgets.telemetryHub.x}px), ${settings.widgets.telemetryHub.y}px, 0) scale(${settings.widgets.telemetryHub.scale})`,
-                "transform-origin": "bottom center",
-              }}
-              class={`fixed bottom-8 left-1/2 z-30 select-none transition-shadow duration-150 ${
-                settings.isEditMode
-                  ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-xl"
-                  : "pointer-events-none"
-              }`}
-            >
-              <F1TelemetryHub
-                isEditMode={settings.isEditMode}
-                scale={settings.widgets.telemetryHub.scale}
-                onScaleChange={(scale) => updateWidgetTransform("telemetryHub", { scale })}
-              />
-            </div>
+            {/* 기능 3: 직전 랩타임 델타 (Top-Center) */}
+            <Show when={settings.widgets.lapDelta?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("lapDelta", e)}
+                style={{
+                  transform: `translate3d(calc(-50% + ${settings.widgets.lapDelta.x}px), ${settings.widgets.lapDelta.y}px, 0) scale(${settings.widgets.lapDelta.scale})`,
+                  "transform-origin": "top center",
+                }}
+                class={`fixed top-14 left-1/2 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    : "pointer-events-none"
+                }`}
+              >
+                <F1LapDelta
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.lapDelta.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("lapDelta", { scale })}
+                />
+              </div>
+            </Show>
+
+            {/* 기능 4: 리벤지 트래커 (Bottom-Right-Center) */}
+            <Show when={settings.widgets.revengeTracker?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("revengeTracker", e)}
+                style={{
+                  transform: `translate3d(${settings.widgets.revengeTracker.x}px, ${settings.widgets.revengeTracker.y}px, 0) scale(${settings.widgets.revengeTracker.scale})`,
+                  "transform-origin": "bottom right",
+                }}
+                class={`fixed bottom-24 right-80 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    : "pointer-events-none"
+                }`}
+              >
+                <F1RevengeTracker
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.revengeTracker.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("revengeTracker", { scale })}
+                />
+              </div>
+            </Show>
+
+            {/* 기능 5: 근접 스포터 (Cockpit Sides / Lower Center) */}
+            <Show when={settings.widgets.proximitySpotter?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("proximitySpotter", e)}
+                style={{
+                  transform: `translate3d(calc(-50% + ${settings.widgets.proximitySpotter.x}px), ${settings.widgets.proximitySpotter.y}px, 0) scale(${settings.widgets.proximitySpotter.scale})`,
+                  "transform-origin": "bottom center",
+                }}
+                class={`fixed bottom-48 left-1/2 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    : "pointer-events-none"
+                }`}
+              >
+                <F1ProximitySpotter
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.proximitySpotter.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("proximitySpotter", { scale })}
+                />
+              </div>
+            </Show>
+
+            {/* 기능 6: 연료 시뮬레이터 (Bottom-Left) */}
+            <Show when={settings.widgets.fuelCalculator?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("fuelCalculator", e)}
+                style={{
+                  transform: `translate3d(${settings.widgets.fuelCalculator.x}px, ${settings.widgets.fuelCalculator.y}px, 0) scale(${settings.widgets.fuelCalculator.scale})`,
+                  "transform-origin": "bottom left",
+                }}
+                class={`fixed bottom-6 left-6 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    : "pointer-events-none"
+                }`}
+              >
+                <F1FuelCalculator
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.fuelCalculator.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("fuelCalculator", { scale })}
+                />
+              </div>
+            </Show>
+
+            {/* 기능 7: 타이어 분석 (Bottom-Left-Center) */}
+            <Show when={settings.widgets.tireAnalysis?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("tireAnalysis", e)}
+                style={{
+                  transform: `translate3d(${settings.widgets.tireAnalysis.x}px, ${settings.widgets.tireAnalysis.y}px, 0) scale(${settings.widgets.tireAnalysis.scale})`,
+                  "transform-origin": "bottom left",
+                }}
+                class={`fixed bottom-6 left-76 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    : "pointer-events-none"
+                }`}
+              >
+                <F1TireAnalysis
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.tireAnalysis.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("tireAnalysis", { scale })}
+                />
+              </div>
+            </Show>
+
+            {/* 기능 8: 전방 사고 경고 (Center High Alert) */}
+            <Show when={settings.widgets.incidentHazard?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("incidentHazard", e)}
+                style={{
+                  transform: `translate3d(calc(-50% + ${settings.widgets.incidentHazard.x}px), ${settings.widgets.incidentHazard.y}px, 0) scale(${settings.widgets.incidentHazard.scale})`,
+                  "transform-origin": "top center",
+                }}
+                class={`fixed top-28 left-1/2 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    : "pointer-events-none"
+                }`}
+              >
+                <F1IncidentHazard
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.incidentHazard.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("incidentHazard", { scale })}
+                />
+              </div>
+            </Show>
+
+            {/* 기능 9: 날씨 & 트랙 컨디션 (Top-Center-Right) */}
+            <Show when={settings.widgets.weather?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("weather", e)}
+                style={{
+                  transform: `translate3d(${settings.widgets.weather.x}px, ${settings.widgets.weather.y}px, 0) scale(${settings.widgets.weather.scale})`,
+                  "transform-origin": "top right",
+                }}
+                class={`fixed top-14 right-76 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    : "pointer-events-none"
+                }`}
+              >
+                <F1WeatherWidget
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.weather.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("weather", { scale })}
+                />
+              </div>
+            </Show>
+
+            {/* 기능 10: 멀티클래스 레이더 (Center Alert) */}
+            <Show when={settings.widgets.multiclassRadar?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("multiclassRadar", e)}
+                style={{
+                  transform: `translate3d(calc(-50% + ${settings.widgets.multiclassRadar.x}px), ${settings.widgets.multiclassRadar.y}px, 0) scale(${settings.widgets.multiclassRadar.scale})`,
+                  "transform-origin": "top center",
+                }}
+                class={`fixed top-44 left-1/2 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    : "pointer-events-none"
+                }`}
+              >
+                <F1MulticlassRadar
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.multiclassRadar.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("multiclassRadar", { scale })}
+                />
+              </div>
+            </Show>
+
+            {/* 기능 11: 2D 실시간 트랙 맵 (Top-Right) */}
+            <Show when={settings.widgets.trackMap?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("trackMap", e)}
+                style={{
+                  transform: `translate3d(${settings.widgets.trackMap.x}px, ${settings.widgets.trackMap.y}px, 0) scale(${settings.widgets.trackMap.scale})`,
+                  "transform-origin": "top right",
+                }}
+                class={`fixed top-14 right-6 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    : "pointer-events-none"
+                }`}
+              >
+                <F1TrackMap
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.trackMap.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("trackMap", { scale })}
+                />
+              </div>
+            </Show>
+
+            {/* 콕핏 스티어링 허브 (Bottom-Center) */}
+            <Show when={settings.widgets.telemetryHub?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("telemetryHub", e)}
+                style={{
+                  transform: `translate3d(calc(-50% + ${settings.widgets.telemetryHub.x}px), ${settings.widgets.telemetryHub.y}px, 0) scale(${settings.widgets.telemetryHub.scale})`,
+                  "transform-origin": "bottom center",
+                }}
+                class={`fixed bottom-6 left-1/2 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-xl"
+                    : "pointer-events-none"
+                }`}
+              >
+                <F1TelemetryHub
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.telemetryHub.scale}
+                  onScaleChange={(scale) => updateWidgetTransform("telemetryHub", { scale })}
+                />
+              </div>
+            </Show>
           </div>
         </div>
       </Show>

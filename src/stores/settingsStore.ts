@@ -8,7 +8,22 @@ export interface WidgetTransform {
   x: number;
   y: number;
   scale: number;
+  visible: boolean;
 }
+
+export type WidgetKey =
+  | "leaderboard"
+  | "relative"
+  | "lapDelta"
+  | "revengeTracker"
+  | "proximitySpotter"
+  | "fuelCalculator"
+  | "tireAnalysis"
+  | "incidentHazard"
+  | "weather"
+  | "multiclassRadar"
+  | "trackMap"
+  | "telemetryHub";
 
 export interface SettingsState {
   hasCompletedSetup: boolean; // false = initial setup wizard required
@@ -17,12 +32,7 @@ export interface SettingsState {
   isEditMode: boolean; // Alt + J toggle
   tripleMonitorMode: TripleMonitorMode;
   storageTarget: "disk-file" | "local-storage";
-  widgets: {
-    telemetryHub: WidgetTransform;
-    leaderboard: WidgetTransform;
-    relative: WidgetTransform;
-    trackMap: WidgetTransform;
-  };
+  widgets: Record<WidgetKey, WidgetTransform>;
 }
 
 const STORAGE_KEY = "iracing_overlay_config_v1";
@@ -35,10 +45,18 @@ const defaultSettings: SettingsState = {
   tripleMonitorMode: "center-clamp",
   storageTarget: "local-storage",
   widgets: {
-    telemetryHub: { x: 0, y: 0, scale: 1.0 },
-    leaderboard: { x: 0, y: 0, scale: 1.0 },
-    relative: { x: 0, y: 0, scale: 1.0 },
-    trackMap: { x: 0, y: 0, scale: 1.0 },
+    leaderboard: { x: 0, y: 0, scale: 1.0, visible: true },
+    relative: { x: 0, y: 0, scale: 1.0, visible: true },
+    lapDelta: { x: 0, y: 0, scale: 1.0, visible: true },
+    revengeTracker: { x: 0, y: 0, scale: 1.0, visible: true },
+    proximitySpotter: { x: 0, y: 0, scale: 1.0, visible: true },
+    fuelCalculator: { x: 0, y: 0, scale: 1.0, visible: true },
+    tireAnalysis: { x: 0, y: 0, scale: 1.0, visible: true },
+    incidentHazard: { x: 0, y: 0, scale: 1.0, visible: true },
+    weather: { x: 0, y: 0, scale: 1.0, visible: true },
+    multiclassRadar: { x: 0, y: 0, scale: 1.0, visible: true },
+    trackMap: { x: 0, y: 0, scale: 1.0, visible: true },
+    telemetryHub: { x: 0, y: 0, scale: 1.0, visible: true },
   },
 };
 
@@ -50,6 +68,10 @@ function loadInitialSettings(): SettingsState {
       return {
         ...defaultSettings,
         ...parsed,
+        widgets: {
+          ...defaultSettings.widgets,
+          ...(parsed.widgets || {}),
+        },
         theme: "f1",
       };
     }
@@ -87,6 +109,10 @@ export function updateSettings<K extends keyof SettingsState>(key: K, value: Set
 
 export function updateWidgetTransform(widgetKey: keyof SettingsState["widgets"], transform: Partial<WidgetTransform>) {
   setSettings("widgets", widgetKey, (prev) => ({ ...prev, ...transform }));
+}
+
+export function toggleWidgetVisibility(widgetKey: WidgetKey) {
+  setSettings("widgets", widgetKey, "visible", (prev) => !prev);
 }
 
 export function toggleEditMode() {
