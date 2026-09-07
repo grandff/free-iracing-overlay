@@ -1,0 +1,80 @@
+/* // ponytail: zero-overhead dynamic theme switching via pure CSS variables */
+:root, [data-theme="f1"] {
+  --theme-bg: rgba(21, 21, 30, 0.88);
+  --theme-header-bg: rgba(225, 6, 0, 0.95);
+  --theme-header-text: #FFFFFF;
+  --theme-card-bg: rgba(30, 30, 42, 0.75);
+  --theme-border: rgba(255, 255, 255, 0.12);
+  --theme-accent: #E10600;
+  --theme-accent-hover: #B80500;
+  --theme-text: #FFFFFF;
+  --theme-text-muted: #A0A0B0;
+  --theme-delta-pos: #FF3B30;
+  --theme-delta-neg: #00D26A;
+  --theme-radius: 4px;
+  --theme-font: "Titillium Web", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+[data-theme="wec"] {
+  --theme-bg: rgba(10, 16, 28, 0.85);
+  --theme-header-bg: rgba(0, 102, 204, 0.9);
+  --theme-header-text: #FFFFFF;
+  --theme-card-bg: rgba(16, 26, 45, 0.7);
+  --theme-border: rgba(0, 102, 204, 0.35);
+  --theme-accent: #0066CC;
+  --theme-accent-hover: #0052A3;
+  --theme-text: #F0F4F8;
+  --theme-text-muted: #8AA0B8;
+  --theme-delta-pos: #FF4D4D;
+  --theme-delta-neg: #00E676;
+  --theme-radius: 6px;
+  --theme-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+[data-theme="wrc"] {
+  --theme-bg: rgba(18, 18, 20, 0.92);
+  --theme-header-bg: #FF5500;
+  --theme-header-text: #000000;
+  --theme-card-bg: rgba(32, 32, 36, 0.85);
+  --theme-border: rgba(255, 85, 0, 0.5);
+  --theme-accent: #FF5500;
+  --theme-accent-hover: #D94800;
+  --theme-text: #FFFFFF;
+  --theme-text-muted: #FFD200;
+  --theme-delta-pos: #FF3B30;
+  --theme-delta-neg: #28CD41;
+  --theme-radius: 2px;
+  --theme-font: Impact, "Arial Black", sans-serif;
+}
+
+[data-theme="indycar"] {
+  --theme-bg: rgba(8, 18, 38, 0.9);
+  --theme-header-bg: #002F6C;
+  --theme-header-text: #FFFFFF;
+  --theme-card-bg: rgba(15, 30, 60, 0.75);
+  --theme-border: rgba(200, 16, 46, 0.6);
+  --theme-accent: #C8102E;
+  --theme-accent-hover: #A00D25;
+  --theme-text: #FFFFFF;
+  --theme-text-muted: #9BB3D6;
+  --theme-delta-pos: #FF453A;
+  --theme-delta-neg: #30D158;
+  --theme-radius: 8px;
+  --theme-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+[data-theme="gt"] {
+  --theme-bg: rgba(12, 14, 18, 0.88);
+  --theme-header-bg: rgba(0, 255, 204, 0.9);
+  --theme-header-text: #0B0E14;
+  --theme-card-bg: rgba(22, 26, 34, 0.8);
+  --theme-border: rgba(0, 255, 204, 0.3);
+  --theme-accent: #00FFCC;
+  --theme-accent-hover: #00CCAA;
+  --theme-text: #FFFFFF;
+  --theme-text-muted: #7A889B;
+  --theme-delta-pos: #FF4757;
+  --theme-delta-neg: #2ED573;
+  --theme-radius: 3px;
+  --theme-font: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}

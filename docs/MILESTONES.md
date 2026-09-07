@@ -7,7 +7,7 @@
 
 ## 📌 마일스톤 전체 진행 요약
 
-- [ ] **Milestone 1: 프로젝트 기반 구축 & 가상 텔레메트리 파이프라인**
+- [x] **Milestone 1: 프로젝트 기반 구축 & 가상 텔레메트리 파이프라인** (완료)
 - [ ] **Milestone 2: 핵심 HUD 위젯 4종 & 테마 엔진 PoC**
 - [ ] **Milestone 3: 안전 및 레이스 관리 위젯 4종 구현**
 - [ ] **Milestone 4: 고급 인텔리전스 위젯 3종 & 5대 방송 테마 완성**
@@ -20,19 +20,11 @@
 > **목표:** 초경량 아키텍처 환경을 구성하고, macOS/Windows 모두에서 검증 가능한 60Hz 텔레메트리 파이프라인과 투명 오버레이 윈도우를 구현합니다.
 
 ### 세부 작업 항목
-- [ ] **M1.1: 프레임워크 스캐폴딩**
-  - Tauri v2 (Rust) + Solid.js + TypeScript + Tailwind CSS 프로젝트 구성
-  - 의존성 다이어트 (포니테일 원칙 준수, 무거운 외부 라이브러리 배제)
-- [ ] **M1.2: 텔레메트리 연동 계층 추상화**
-  - Windows: iRacing Shared Memory (`Local\IRSDKMemMapFileName`) 제로 카피 리더 인터페이스
-  - macOS/개발용: 60Hz 실시간 가상 주행 텔레메트리 생성기(Mock Engine) 내장
-- [ ] **M1.3: 투명 오버레이 윈도우 제어**
-  - 투명 배경 (`transparent: true`), 테두리 제거 (`decorations: false`), 최상단 고정 (`always_on_top: true`)
-  - `Ctrl + Shift + O` 단축키로 **[클릭스루 주행 모드]** ↔ **[마우스 상호작용 모드]** 즉시 전환
-- [ ] **M1.4: 초경량 SVG 아이콘 베이스 시스템**
-  - 무거운 폰트 번들 대신 인라인 SVG 컴포넌트 시스템 구축 (`assets/icons/`)
-- [ ] **M1.5: 고주사율(144Hz+) 대응 LERP 선형 보간 렌더 루프**
-  - 60Hz iRacing 텔레메트리를 `requestAnimationFrame` 주기에 맞춰 선형 보간(LERP) 처리하여 144Hz/240Hz 모니터에서 미세 저더(Judder) 방지
+- [x] **M1.1: 프레임워크 스캐폴딩** (Tauri v2 + Solid.js + TypeScript + Tailwind CSS 완료, 번들 < 50KB)
+- [x] **M1.2: 텔레메트리 연동 계층 추상화** (Win32 MMF reader + 60Hz mockEngine.ts 구현 완료)
+- [x] **M1.3: 투명 오버레이 윈도우 제어** (투명 윈도우 설정, Ctrl+Shift+O 및 툴바 클릭스루 토글 완료)
+- [x] **M1.4: 초경량 SVG 아이콘 베이스 시스템** (Icons.tsx 12종 인라인 SVG 구현 완료, 번들 0KB)
+- [x] **M1.5: 고주사율(144Hz+) 대응 LERP 선형 보간 렌더 루프** (lerpEngine.ts V-Sync 보간 완료)
 
 ### 완료 검증 기준 (DoD)
 1. 앱 실행 시 배경이 완전 투명한 상태로 게임/데스크톱 위에 최상단으로 렌더링되는가?
