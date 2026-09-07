@@ -27,7 +27,7 @@ import {
   EyeOff,
   Globe,
 } from "lucide-solid";
-import { F1TimingTower } from "../f1/F1TimingTower.tsx";
+import { Leaderboard } from "../widgets/Leaderboard.tsx";
 import { F1Relative } from "../f1/F1Relative.tsx";
 import { F1LapDelta } from "../f1/F1LapDelta.tsx";
 import { F1RevengeTracker } from "../f1/F1RevengeTracker.tsx";
@@ -585,10 +585,12 @@ export const SetupWizard: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1TimingTower
+                <Leaderboard
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.leaderboard.scale}
+                  width={settings.widgets.leaderboard.width || 460}
                   onScaleChange={(scale) => updateWidgetTransform("leaderboard", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("leaderboard", { width })}
                 />
               </div>
             </Show>

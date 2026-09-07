@@ -11,7 +11,7 @@ import { telemetry, initializeTelemetryPipeline } from "./stores/telemetryStore.
 import { HeaderBar } from "./components/common/HeaderBar.tsx";
 import { SetupWizard } from "./components/setup/SetupWizard.tsx";
 import { ControlApp } from "./components/control/ControlApp.tsx";
-import { F1TimingTower } from "./components/f1/F1TimingTower.tsx";
+import { Leaderboard } from "./components/widgets/Leaderboard.tsx";
 import { F1Relative } from "./components/f1/F1Relative.tsx";
 import { F1LapDelta } from "./components/f1/F1LapDelta.tsx";
 import { F1RevengeTracker } from "./components/f1/F1RevengeTracker.tsx";
@@ -239,12 +239,14 @@ export const App: Component = () => {
                     : "pointer-events-none"
                 }`}
               >
-                <F1TimingTower
-                  drivers={timingDrivers().length > 0 ? timingDrivers() : undefined}
+                <Leaderboard
+                  cars={telemetry.frame?.cars}
                   lapCurrent={telemetry.frame?.cars[0]?.lap}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.leaderboard.scale}
+                  width={settings.widgets.leaderboard.width || 460}
                   onScaleChange={(scale) => updateWidgetTransform("leaderboard", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("leaderboard", { width })}
                 />
               </div>
             </Show>
