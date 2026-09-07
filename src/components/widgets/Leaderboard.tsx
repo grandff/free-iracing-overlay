@@ -4,6 +4,7 @@ import { CarTelemetry, SafetyRating, LicenseClass } from "../../services/telemet
 import { createPresence } from "../../utils/presence.ts";
 import { t } from "../../i18n/index.ts";
 import { CarBrandIcon, BrandGenericRaceCar } from "../../assets/icons/CarBrandIcons.tsx";
+import { CountryFlag, getCountryInfo } from "../../assets/icons/CountryFlags.tsx";
 
 export interface LeaderboardProps {
   cars?: CarTelemetry[];
@@ -17,28 +18,6 @@ export interface LeaderboardProps {
   onWidthChange?: (newWidth: number) => void;
   onMaxRowsChange?: (newRows: number) => void;
 }
-
-// iRacing country code to flag emoji
-const countryFlags: Record<string, string> = {
-  KR: "🇰🇷",
-  US: "🇺🇸",
-  JP: "🇯🇵",
-  DE: "🇩🇪",
-  GB: "🇬🇧",
-  NL: "🇳🇱",
-  FR: "🇫🇷",
-  IT: "🇮🇹",
-  ES: "🇪🇸",
-  AU: "🇦🇺",
-  MC: "🇲🇨",
-  CO: "🇨🇴",
-  MX: "🇲🇽",
-  BR: "🇧🇷",
-  CA: "🇨🇦",
-  BE: "🇧🇪",
-  NZ: "🇳🇿",
-  CH: "🇨🇭",
-};
 
 // iRacing Safety Rating License Tier Colors
 const srTierStyles: Record<LicenseClass, { border: string; bg: string; text: string }> = {
@@ -220,7 +199,7 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
 
         {/* Optional Country Flag */}
         <Show when={showCountry()}>
-          <span class="w-6 text-center">NAT</span>
+          <span class="w-8 text-center font-bold" title="Country / iRacing Club (NAT)">NAT</span>
         </Show>
 
         {/* Optional Car Brand */}
@@ -257,7 +236,6 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
       <div class="flex flex-col gap-[1px] bg-black/60">
         <For each={sortedCars()}>
           {(car) => {
-            const flag = () => countryFlags[car.country] || car.country || "🏁";
             const srStyle = () =>
               srTierStyles[car.safetyRating?.license || "B"] || srTierStyles.B;
             const isLeader = () => car.overallPosition === 1;
@@ -291,10 +269,13 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
                   style={{ "background-color": car.carClassColor || "#E10600" }}
                 />
 
-                {/* 2. Optional Country */}
+                {/* 2. Optional Country Flag (Authentic Vector SVG) */}
                 <Show when={showCountry()}>
-                  <div class="w-6 flex items-center justify-center shrink-0 text-xs">
-                    <span title={car.country}>{flag()}</span>
+                  <div class="w-8 flex items-center justify-center shrink-0">
+                    <CountryFlag
+                      code={car.country}
+                      class="w-5 h-3.5 rounded-[2px] border border-white/20 shadow-sm"
+                    />
                   </div>
                 </Show>
 
