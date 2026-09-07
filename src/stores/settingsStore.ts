@@ -1,6 +1,8 @@
 import { createStore } from "solid-js/store";
 import { invoke, isTauri } from "@tauri-apps/api/core";
+import type { SupportedLanguage } from "../i18n/locales.ts";
 
+export type { SupportedLanguage };
 export type ThemeType = "f1" | "wec" | "wrc" | "indycar" | "gt";
 export type TripleMonitorMode = "center-clamp" | "full-span";
 
@@ -30,6 +32,7 @@ export interface SettingsState {
   hasCompletedSetup: boolean; // false = initial setup wizard required
   setupStep: 1 | 2; // 1 = Theme Selection, 2 = Overlay Preview & Layout
   theme: ThemeType; // currently only 'f1' active, others 'coming soon'
+  language: SupportedLanguage; // "ko" | "en" | "zh" | "ja" | "fr" | "de" | "it"
   isEditMode: boolean; // Alt + J toggle
   showControlPanel: boolean; // true = program settings dashboard visible
   tripleMonitorMode: TripleMonitorMode;
@@ -43,6 +46,7 @@ const defaultSettings: SettingsState = {
   hasCompletedSetup: false,
   setupStep: 1,
   theme: "f1",
+  language: "ko",
   isEditMode: false,
   showControlPanel: false,
   tripleMonitorMode: "center-clamp",
@@ -72,6 +76,7 @@ function loadInitialSettings(): SettingsState {
       return {
         ...defaultSettings,
         ...parsed,
+        language: parsed.language || "ko",
         widgets: {
           ...defaultSettings.widgets,
           ...(parsed.widgets || {}),
@@ -100,6 +105,7 @@ export async function hydrateFromDiskConfig() {
       setSettings({
         ...defaultSettings,
         ...parsed,
+        language: parsed.language || "ko",
         storageTarget: "disk-file",
         theme: "f1",
         widgets: {

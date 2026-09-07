@@ -25,6 +25,7 @@ import {
   Layers,
   Eye,
   EyeOff,
+  Globe,
 } from "lucide-solid";
 import { F1TimingTower } from "../f1/F1TimingTower.tsx";
 import { F1Relative } from "../f1/F1Relative.tsx";
@@ -40,6 +41,7 @@ import { F1MulticlassRadar } from "../f1/F1MulticlassRadar.tsx";
 import { F1TrackMap } from "../f1/F1TrackMap.tsx";
 import { F1TelemetryHub } from "../f1/F1TelemetryHub.tsx";
 import { createPresence } from "../../utils/presence.ts";
+import { t, setLanguage, SUPPORTED_LANGUAGES } from "../../i18n/index.ts";
 
 interface ThemeOption {
   id: "f1" | "wec" | "wrc" | "indycar" | "imsa";
@@ -51,6 +53,8 @@ interface ThemeOption {
 export const SetupWizard: Component = () => {
   const [selectedTheme, setSelectedTheme] = createSignal<string>("f1");
   const [isDropdownOpen, setIsDropdownOpen] = createSignal(false);
+  const [isLangDropdownOpen, setIsLangDropdownOpen] = createSignal(false);
+  const [isStep2LangOpen, setIsStep2LangOpen] = createSignal(false);
   const [showFontInfo, setShowFontInfo] = createSignal(false);
   const [showWidgetList, setShowWidgetList] = createSignal(false);
 
@@ -58,6 +62,8 @@ export const SetupWizard: Component = () => {
   const step1Presence = createPresence(() => settings.setupStep === 1, 220);
   const step2Presence = createPresence(() => settings.setupStep === 2, 220);
   const dropdownPresence = createPresence(() => isDropdownOpen(), 160);
+  const langDropdownPresence = createPresence(() => isLangDropdownOpen(), 160);
+  const step2LangPresence = createPresence(() => isStep2LangOpen(), 160);
   const fontModalPresence = createPresence(() => showFontInfo(), 220);
   const widgetListPresence = createPresence(() => showWidgetList(), 160);
 
@@ -74,21 +80,22 @@ export const SetupWizard: Component = () => {
   ];
 
   const currentTheme = () => themes.find((t) => t.id === selectedTheme()) || themes[0];
+  const currentLang = () => SUPPORTED_LANGUAGES.find((l) => l.code === settings.language) || SUPPORTED_LANGUAGES[0];
 
-  const widgetDefinitions: { key: WidgetKey; name: string; category: string }[] = [
-    { key: "leaderboard", name: "1. 실시간 순위표", category: "Timing" },
-    { key: "relative", name: "2. 렐러티브 (상대 간격)", category: "Timing" },
-    { key: "lapDelta", name: "3. 직전 랩타임 델타", category: "Timing" },
-    { key: "revengeTracker", name: "4. 리벤지 트래커", category: "Battle" },
-    { key: "spotterLeft", name: "5-L. 좌측 근접 스포터", category: "Safety" },
-    { key: "spotterRight", name: "5-R. 우측 근접 스포터", category: "Safety" },
-    { key: "fuelCalculator", name: "6. 연료 시뮬레이터", category: "Strategy" },
-    { key: "tireAnalysis", name: "7. 타이어 분석", category: "Strategy" },
-    { key: "incidentHazard", name: "8. 전방 사고 경고", category: "Safety" },
-    { key: "weather", name: "9. 날씨 & 트랙 컨디션", category: "Environment" },
-    { key: "multiclassRadar", name: "10. 멀티클래스 레이더", category: "Battle" },
-    { key: "trackMap", name: "11. 2D 실시간 트랙 맵", category: "Map" },
-    { key: "telemetryHub", name: "콕핏 스티어링 허브", category: "Cockpit" },
+  const widgetDefinitions = () => [
+    { key: "leaderboard" as WidgetKey, name: t().wLeaderboard, category: "Timing" },
+    { key: "relative" as WidgetKey, name: t().wRelative, category: "Timing" },
+    { key: "lapDelta" as WidgetKey, name: t().wLapDelta, category: "Timing" },
+    { key: "revengeTracker" as WidgetKey, name: t().wRevenge, category: "Battle" },
+    { key: "spotterLeft" as WidgetKey, name: t().wSpotterL, category: "Safety" },
+    { key: "spotterRight" as WidgetKey, name: t().wSpotterR, category: "Safety" },
+    { key: "fuelCalculator" as WidgetKey, name: t().wFuel, category: "Strategy" },
+    { key: "tireAnalysis" as WidgetKey, name: t().wTire, category: "Strategy" },
+    { key: "incidentHazard" as WidgetKey, name: t().wHazard, category: "Safety" },
+    { key: "weather" as WidgetKey, name: t().wWeather, category: "Environment" },
+    { key: "multiclassRadar" as WidgetKey, name: t().wMulticlass, category: "Battle" },
+    { key: "trackMap" as WidgetKey, name: t().wTrackMap, category: "Map" },
+    { key: "telemetryHub" as WidgetKey, name: t().wTelemetryHub, category: "Cockpit" },
   ];
 
   const activeWidgetCount = () => Object.values(settings.widgets).filter((w) => w.visible).length;
@@ -98,6 +105,14 @@ export const SetupWizard: Component = () => {
       const dropdown = document.getElementById("theme-dropdown-container");
       if (dropdown && !dropdown.contains(e.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      const langPop = document.getElementById("lang-dropdown-container");
+      if (langPop && !langPop.contains(e.target as Node)) {
+        setIsLangDropdownOpen(false);
+      }
+      const step2Lang = document.getElementById("step2-lang-container");
+      if (step2Lang && !step2Lang.contains(e.target as Node)) {
+        setIsStep2LangOpen(false);
       }
       const widgetPop = document.getElementById("widget-list-container");
       if (widgetPop && !widgetPop.contains(e.target as Node)) {
@@ -142,30 +157,86 @@ export const SetupWizard: Component = () => {
           }`}
         >
           <div
-            class={`max-w-[440px] w-full bg-[#1c1c1e]/90 backdrop-blur-3xl border border-white/[0.12] ring-1 ring-inset ring-white/[0.05] rounded-2xl p-7 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.85)] flex flex-col gap-5 text-[#f5f5f7] apple-modal-card ${
+            class={`max-w-[460px] w-full bg-[#1c1c1e]/90 backdrop-blur-3xl border border-white/[0.12] ring-1 ring-inset ring-white/[0.05] rounded-2xl p-7 shadow-[0_32px_64px_-16px_rgba(0,0,0,0.85)] flex flex-col gap-5 text-[#f5f5f7] apple-modal-card ${
               step1Presence.visible() ? "is-visible" : "is-hidden"
             }`}
           >
-            {/* Step Progress Bar */}
-            <div class="w-full flex items-center gap-2">
-              <div class="h-1 flex-1 rounded-full bg-[#E10600] shadow-[0_0_8px_rgba(225,6,0,0.6)] transition-all duration-300" />
-              <div class="h-1 flex-1 rounded-full bg-white/10 transition-all duration-300" />
+            {/* Top Bar: Step Progress Bar + Language Switcher */}
+            <div class="w-full flex items-center justify-between gap-4">
+              <div class="flex-1 flex items-center gap-2">
+                <div class="h-1 flex-1 rounded-full bg-[#E10600] shadow-[0_0_8px_rgba(225,6,0,0.6)] transition-all duration-300" />
+                <div class="h-1 flex-1 rounded-full bg-white/10 transition-all duration-300" />
+              </div>
+
+              {/* Step 1 Quick Language Selector Pill */}
+              <div class="relative" id="lang-dropdown-container">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsLangDropdownOpen((prev) => !prev);
+                  }}
+                  class="px-2.5 py-1 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-xs flex items-center gap-1.5 transition-all cursor-pointer pointer-events-auto active:scale-95"
+                  title={t().selectLanguageTitle}
+                >
+                  <span class="text-sm leading-none">{currentLang().flag}</span>
+                  <span class="text-[11px] font-medium text-white/90">{currentLang().name}</span>
+                  <ChevronDown class={`w-3 h-3 text-white/40 transition-transform ${isLangDropdownOpen() ? "rotate-180" : ""}`} />
+                </button>
+
+                {/* Language Popover */}
+                <Show when={langDropdownPresence.mounted()}>
+                  <div
+                    onClick={(e) => e.stopPropagation()}
+                    class={`absolute top-full right-0 mt-2 w-48 bg-[#252528] border border-white/15 rounded-xl p-1.5 shadow-[0_24px_48px_rgba(0,0,0,0.95)] z-50 flex flex-col gap-1 pointer-events-auto apple-popover ${
+                      langDropdownPresence.visible() ? "is-visible" : "is-hidden"
+                    }`}
+                  >
+                    <For each={SUPPORTED_LANGUAGES}>
+                      {(lang) => {
+                        const isSelected = () => settings.language === lang.code;
+                        return (
+                          <div
+                            onClick={() => {
+                              setLanguage(lang.code);
+                              setIsLangDropdownOpen(false);
+                            }}
+                            class={`px-3 py-2 rounded-lg flex items-center justify-between cursor-pointer text-xs transition-all ${
+                              isSelected()
+                                ? "bg-white/15 text-white font-semibold"
+                                : "text-white/70 hover:bg-white/10 hover:text-white"
+                            }`}
+                          >
+                            <div class="flex items-center gap-2.5">
+                              <span class="text-base leading-none">{lang.flag}</span>
+                              <span>{lang.name}</span>
+                            </div>
+                            <Show when={isSelected()}>
+                              <Check class="w-3.5 h-3.5 text-[#30d158] stroke-[2.5]" />
+                            </Show>
+                          </div>
+                        );
+                      }}
+                    </For>
+                  </div>
+                </Show>
+              </div>
             </div>
 
             {/* Header: Title */}
             <div class="flex flex-col gap-1 text-center items-center">
               <h1 class="text-2xl font-semibold tracking-tight text-white">
-                오버레이 테마 설정
+                {t().themeTitle}
               </h1>
               <p class="text-xs text-[#86868b] leading-relaxed">
-                사용할 방송 그래픽 테마를 선택하세요.
+                {t().themeSubtitle}
               </p>
             </div>
 
             {/* Dropdown Selector */}
             <div class="flex flex-col gap-2 relative" id="theme-dropdown-container">
               <label class="text-xs font-medium text-[#a1a1a6] px-0.5">
-                방송 테마 선택
+                {t().themeSelectLabel}
               </label>
 
               <div class="relative">
@@ -191,7 +262,7 @@ export const SetupWizard: Component = () => {
 
                   <div class="flex items-center gap-2">
                     <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-[#E10600]/15 text-[#ff453a] border border-[#ff453a]/25">
-                      사용 가능
+                      {t().availableBadge}
                     </span>
                     <ChevronDown
                       class={`w-4 h-4 text-[#86868b] transition-transform duration-200 ${
@@ -210,20 +281,20 @@ export const SetupWizard: Component = () => {
                     }`}
                   >
                     <For each={themes}>
-                      {(t) => {
-                        const LogoComponent = t.logo;
-                        const isSelected = () => selectedTheme() === t.id;
+                      {(th) => {
+                        const LogoComponent = th.logo;
+                        const isSelected = () => selectedTheme() === th.id;
 
                         return (
                           <div
                             onClick={(e) => {
                               e.stopPropagation();
-                              if (!t.available) return;
-                              setSelectedTheme(t.id);
+                              if (!th.available) return;
+                              setSelectedTheme(th.id);
                               setIsDropdownOpen(false);
                             }}
                             class={`px-3 py-2.5 rounded-lg flex items-center justify-between transition-all duration-150 ${
-                              t.available
+                              th.available
                                 ? isSelected()
                                   ? "bg-white/10 text-white cursor-pointer"
                                   : "hover:bg-white/[0.08] text-[#e5e5ea] cursor-pointer active:scale-[0.98]"
@@ -235,15 +306,15 @@ export const SetupWizard: Component = () => {
                                 <LogoComponent class="h-4 w-auto max-h-4 max-w-12" />
                               </div>
                               <span class="text-sm font-semibold tracking-tight">
-                                {t.name}
+                                {th.name}
                               </span>
                             </div>
 
                             <Show
-                              when={t.available}
+                              when={th.available}
                               fallback={
                                 <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-[#86868b] border border-white/5">
-                                  추후 제공
+                                  {t().comingSoonBadge}
                                 </span>
                               }
                             >
@@ -264,7 +335,7 @@ export const SetupWizard: Component = () => {
             <div class="bg-white/[0.04] border border-white/[0.08] rounded-xl p-3 text-xs text-[#a1a1a6] flex items-center gap-2.5">
               <Info class="w-4 h-4 text-[#86868b] shrink-0" />
               <p class="leading-relaxed">
-                다른 시리즈 테마는 업데이트를 통해 순차 지원됩니다.
+                {t().otherSeriesNotice}
               </p>
             </div>
 
@@ -278,7 +349,7 @@ export const SetupWizard: Component = () => {
                 }}
                 class="w-full bg-[#E10600] hover:bg-[#c30500] active:scale-[0.98] text-white font-semibold text-sm rounded-xl py-3.5 px-6 shadow-lg shadow-red-950/40 flex items-center justify-center gap-2 transition-all duration-150 cursor-pointer pointer-events-auto"
               >
-                <span>오버레이 배치 설정하기</span>
+                <span>{t().configureLayout}</span>
                 <ArrowRight class="w-4 h-4 stroke-[2.5]" />
               </button>
             </div>
@@ -310,7 +381,7 @@ export const SetupWizard: Component = () => {
                   : "bg-white/5 text-white/70 border-white/10 hover:bg-white/10"
               }`}
             >
-              <span>{settings.isEditMode ? "편집 모드 On" : "고정 모드"}</span>
+              <span>{settings.isEditMode ? t().editMode : t().drivingMode}</span>
               <kbd class="bg-black/40 px-1 py-0.5 rounded text-[10px] font-mono border border-white/15 text-white">
                 Alt+J
               </kbd>
@@ -323,7 +394,7 @@ export const SetupWizard: Component = () => {
                 class="px-2.5 py-1 rounded-full text-xs bg-white/5 hover:bg-white/10 text-white/90 border border-white/10 flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-[0.96]"
               >
                 <Layers class="w-3.5 h-3.5 text-[#00d26a]" />
-                <span>11대 위젯 관리 ({activeWidgetCount()}/13)</span>
+                <span>{t().manageWidgetsPill} ({activeWidgetCount()}/13)</span>
                 <ChevronDown class={`w-3 h-3 transition-transform ${showWidgetList() ? "rotate-180" : ""}`} />
               </button>
 
@@ -331,15 +402,15 @@ export const SetupWizard: Component = () => {
               <Show when={widgetListPresence.mounted()}>
                 <div
                   onClick={(e) => e.stopPropagation()}
-                  class={`absolute top-full left-0 mt-2 w-64 bg-[#1e1e24]/95 backdrop-blur-3xl border border-white/15 rounded-2xl p-2 shadow-2xl z-50 flex flex-col gap-1 pointer-events-auto apple-popover ${
+                  class={`absolute top-full left-0 mt-2 w-72 bg-[#1e1e24]/95 backdrop-blur-3xl border border-white/15 rounded-2xl p-2 shadow-2xl z-50 flex flex-col gap-1 pointer-events-auto apple-popover ${
                     widgetListPresence.visible() ? "is-visible" : "is-hidden"
                   }`}
                 >
                   <div class="px-2.5 py-1.5 text-[10px] font-semibold text-white/40 uppercase tracking-wider border-b border-white/10">
-                    전체 11대 오버레이 위젯 토글
+                    {t().widgetManagerTitle}
                   </div>
                   <div class="max-h-64 overflow-y-auto flex flex-col gap-0.5">
-                    <For each={widgetDefinitions}>
+                    <For each={widgetDefinitions()}>
                       {(w) => {
                         const isVis = () => settings.widgets[w.key]?.visible !== false;
                         return (
@@ -373,8 +444,59 @@ export const SetupWizard: Component = () => {
               class="px-2.5 py-1 rounded-full text-xs font-f1 bg-white/5 hover:bg-white/10 text-white/85 border border-white/10 flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-[0.96]"
             >
               <Type class="w-3.5 h-3.5 text-[#e10600]" />
-              <span>F1 폰트</span>
+              <span>{t().f1FontBadge}</span>
             </button>
+
+            {/* Step 2 Language Pill */}
+            <div class="relative" id="step2-lang-container">
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsStep2LangOpen((prev) => !prev);
+                }}
+                class="px-2.5 py-1 rounded-full text-xs bg-white/5 hover:bg-white/10 text-white/90 border border-white/10 flex items-center gap-1 cursor-pointer pointer-events-auto transition-all active:scale-[0.96]"
+              >
+                <span>{currentLang().flag}</span>
+                <ChevronDown class={`w-3 h-3 text-white/40 transition-transform ${isStep2LangOpen() ? "rotate-180" : ""}`} />
+              </button>
+
+              <Show when={step2LangPresence.mounted()}>
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  class={`absolute top-full right-0 mt-2 w-48 bg-[#1e1e24]/95 backdrop-blur-3xl border border-white/15 rounded-xl p-1.5 shadow-2xl z-50 flex flex-col gap-1 pointer-events-auto apple-popover ${
+                    step2LangPresence.visible() ? "is-visible" : "is-hidden"
+                  }`}
+                >
+                  <For each={SUPPORTED_LANGUAGES}>
+                    {(lang) => {
+                      const isSelected = () => settings.language === lang.code;
+                      return (
+                        <div
+                          onClick={() => {
+                            setLanguage(lang.code);
+                            setIsStep2LangOpen(false);
+                          }}
+                          class={`px-3 py-2 rounded-lg flex items-center justify-between cursor-pointer text-xs transition-all ${
+                            isSelected()
+                              ? "bg-white/15 text-white font-semibold"
+                              : "text-white/70 hover:bg-white/10 hover:text-white"
+                          }`}
+                        >
+                          <div class="flex items-center gap-2.5">
+                            <span class="text-base leading-none">{lang.flag}</span>
+                            <span>{lang.name}</span>
+                          </div>
+                          <Show when={isSelected()}>
+                            <Check class="w-3.5 h-3.5 text-[#30d158] stroke-[2.5]" />
+                          </Show>
+                        </div>
+                      );
+                    }}
+                  </For>
+                </div>
+              </Show>
+            </div>
 
             {/* Actions */}
             <div class="flex items-center gap-2 pl-2 border-l border-white/10">
@@ -383,14 +505,14 @@ export const SetupWizard: Component = () => {
                 class="px-2.5 py-1 rounded-full text-xs text-[#a1a1a6] hover:text-white hover:bg-white/10 transition-all active:scale-[0.96] flex items-center gap-1 cursor-pointer pointer-events-auto"
               >
                 <ArrowLeft class="w-3 h-3" />
-                <span>이전</span>
+                <span>{t().previous}</span>
               </button>
 
               <button
                 onClick={saveSettingsAsDefault}
                 class="px-3.5 py-1 rounded-full bg-[#00d26a] hover:bg-[#00ba5e] active:scale-[0.96] text-black font-semibold text-xs shadow-md transition-all duration-150 flex items-center gap-1.5 cursor-pointer pointer-events-auto"
               >
-                <span>최종 저장</span>
+                <span>{t().saveAndStart}</span>
                 <Check class="w-3 h-3 stroke-[2.5]" />
               </button>
             </div>
@@ -413,26 +535,26 @@ export const SetupWizard: Component = () => {
                 <div class="flex items-center justify-between border-b border-white/10 pb-3">
                   <div class="flex items-center gap-2">
                     <LogoF1 class="h-4 w-auto" />
-                    <h2 class="text-base font-bold font-f1">F1 공식 타이포그래피 안내</h2>
+                    <h2 class="text-base font-bold font-f1">Formula 1 Broadcast Typography</h2>
                   </div>
                   <button
                     onClick={() => setShowFontInfo(false)}
                     class="text-xs text-white/50 hover:text-white px-2 py-1 rounded hover:bg-white/10 cursor-pointer"
                   >
-                    닫기
+                    {t().close}
                   </button>
                 </div>
 
                 <div class="flex flex-col gap-2.5 text-xs text-[#a0a0b0] leading-relaxed">
-                  <p>본 오버레이는 Formula 1 공식 중계 폰트 스택을 지원합니다.</p>
+                  <p>Formula 1 Official Broadcast Font Stack & Web Fonts</p>
                   <div class="bg-black/40 border border-white/10 rounded-xl p-3 flex flex-col gap-1.5 font-mono text-[11px] text-white/90">
                     <div class="flex items-center gap-2">
                       <span class="w-2 h-2 rounded-full bg-[#00d26a]" />
-                      <span>현재 적용 상태: <strong>고품질 모터스포츠 폰트 활성</strong></span>
+                      <span>Status: <strong class="text-[#00d26a]">Active</strong></span>
                     </div>
                     <div class="pl-4 text-[10px] text-white/60">
-                      • 타이밍 & 보드: <code class="text-amber-300">DIN Alternate / Titillium Web</code><br/>
-                      • 디지털 텔레메트리: <code class="text-amber-300">Chakra Petch</code>
+                      • Timing & Leaderboard: <code class="text-amber-300">DIN Alternate / Titillium Web</code><br/>
+                      • Cockpit Telemetry: <code class="text-amber-300">Chakra Petch</code>
                     </div>
                   </div>
                 </div>
@@ -441,7 +563,7 @@ export const SetupWizard: Component = () => {
                   onClick={() => setShowFontInfo(false)}
                   class="w-full py-2.5 bg-white/10 hover:bg-white/15 text-white font-medium text-xs rounded-xl transition-all cursor-pointer"
                 >
-                  확인
+                  {t().close}
                 </button>
               </div>
             </div>
@@ -479,7 +601,7 @@ export const SetupWizard: Component = () => {
                   transform: `translate3d(${settings.widgets.relative.x}px, ${settings.widgets.relative.y}px, 0) scale(${settings.widgets.relative.scale})`,
                   "transform-origin": "bottom right",
                 }}
-                class={`fixed bottom-6 right-6 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed bottom-8 right-6 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
                     ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
@@ -493,7 +615,7 @@ export const SetupWizard: Component = () => {
               </div>
             </Show>
 
-            {/* 기능 3: 직전 랩타임 델타 (Top-Center) */}
+            {/* 기능 3: 직전 랩타임 비교 (Top-Center) */}
             <Show when={settings.widgets.lapDelta?.visible !== false}>
               <div
                 onMouseDown={(e) => handleMouseDown("lapDelta", e)}
@@ -503,7 +625,7 @@ export const SetupWizard: Component = () => {
                 }}
                 class={`fixed top-14 left-1/2 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
                 }`}
               >
@@ -525,11 +647,15 @@ export const SetupWizard: Component = () => {
                 }}
                 class={`fixed bottom-24 right-80 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
                 }`}
               >
                 <F1RevengeTracker
+                  hasTarget={true}
+                  targetCarNumber={33}
+                  targetDriverName="Max Verstappen"
+                  gapSeconds={1.42}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.revengeTracker.scale}
                   onScaleChange={(scale) => updateWidgetTransform("revengeTracker", { scale })}
@@ -547,13 +673,13 @@ export const SetupWizard: Component = () => {
                 }}
                 class={`fixed top-1/2 left-2 z-40 select-none transition-shadow duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-lg rounded-r-xl"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-r-xl"
                     : "pointer-events-none"
                 }`}
               >
                 <F1SpotterLeft
-                  distance={1.8}
-                  state="caution"
+                  distance={1.4}
+                  state="danger"
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.spotterLeft.scale}
                   onScaleChange={(scale) => updateWidgetTransform("spotterLeft", { scale })}
@@ -571,13 +697,13 @@ export const SetupWizard: Component = () => {
                 }}
                 class={`fixed top-1/2 right-2 z-40 select-none transition-shadow duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-lg rounded-l-xl"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-l-xl"
                     : "pointer-events-none"
                 }`}
               >
                 <F1SpotterRight
-                  distance={2.4}
-                  state="clear"
+                  distance={2.8}
+                  state="warning"
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.spotterRight.scale}
                   onScaleChange={(scale) => updateWidgetTransform("spotterRight", { scale })}
@@ -585,17 +711,17 @@ export const SetupWizard: Component = () => {
               </div>
             </Show>
 
-            {/* 기능 6: 연료 시뮬레이터 (Bottom-Left) */}
+            {/* 기능 6: 연료 시뮬레이터 (Top-Right-Center) */}
             <Show when={settings.widgets.fuelCalculator?.visible !== false}>
               <div
                 onMouseDown={(e) => handleMouseDown("fuelCalculator", e)}
                 style={{
                   transform: `translate3d(${settings.widgets.fuelCalculator.x}px, ${settings.widgets.fuelCalculator.y}px, 0) scale(${settings.widgets.fuelCalculator.scale})`,
-                  "transform-origin": "bottom left",
+                  "transform-origin": "top right",
                 }}
-                class={`fixed bottom-6 left-6 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed top-14 right-72 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
                 }`}
               >
@@ -607,7 +733,7 @@ export const SetupWizard: Component = () => {
               </div>
             </Show>
 
-            {/* 기능 7: 타이어 분석 (Bottom-Left-Center) */}
+            {/* 기능 7: 타이어 분석기 (Bottom-Left) */}
             <Show when={settings.widgets.tireAnalysis?.visible !== false}>
               <div
                 onMouseDown={(e) => handleMouseDown("tireAnalysis", e)}
@@ -615,9 +741,9 @@ export const SetupWizard: Component = () => {
                   transform: `translate3d(${settings.widgets.tireAnalysis.x}px, ${settings.widgets.tireAnalysis.y}px, 0) scale(${settings.widgets.tireAnalysis.scale})`,
                   "transform-origin": "bottom left",
                 }}
-                class={`fixed bottom-6 left-76 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed bottom-8 left-6 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
                 }`}
               >
@@ -629,7 +755,7 @@ export const SetupWizard: Component = () => {
               </div>
             </Show>
 
-            {/* 기능 8: 전방 사고 경고 (Center High Alert) */}
+            {/* 기능 8: 전방 사고 경고 (Center-Top-Floating) */}
             <Show when={settings.widgets.incidentHazard?.visible !== false}>
               <div
                 onMouseDown={(e) => handleMouseDown("incidentHazard", e)}
@@ -639,7 +765,7 @@ export const SetupWizard: Component = () => {
                 }}
                 class={`fixed top-28 left-1/2 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
                 }`}
               >
@@ -651,7 +777,7 @@ export const SetupWizard: Component = () => {
               </div>
             </Show>
 
-            {/* 기능 9: 날씨 & 트랙 컨디션 (Top-Center-Right) */}
+            {/* 기능 9: 날씨 & 트랙 컨디션 (Top-Right) */}
             <Show when={settings.widgets.weather?.visible !== false}>
               <div
                 onMouseDown={(e) => handleMouseDown("weather", e)}
@@ -659,9 +785,9 @@ export const SetupWizard: Component = () => {
                   transform: `translate3d(${settings.widgets.weather.x}px, ${settings.widgets.weather.y}px, 0) scale(${settings.widgets.weather.scale})`,
                   "transform-origin": "top right",
                 }}
-                class={`fixed top-14 right-76 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed top-14 right-6 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
                 }`}
               >
@@ -673,17 +799,17 @@ export const SetupWizard: Component = () => {
               </div>
             </Show>
 
-            {/* 기능 10: 멀티클래스 레이더 (Center Alert) */}
+            {/* 기능 10: 멀티클래스 레이더 (Center-Right-Floating) */}
             <Show when={settings.widgets.multiclassRadar?.visible !== false}>
               <div
                 onMouseDown={(e) => handleMouseDown("multiclassRadar", e)}
                 style={{
-                  transform: `translate3d(calc(-50% + ${settings.widgets.multiclassRadar.x}px), ${settings.widgets.multiclassRadar.y}px, 0) scale(${settings.widgets.multiclassRadar.scale})`,
-                  "transform-origin": "top center",
+                  transform: `translate3d(${settings.widgets.multiclassRadar.x}px, ${settings.widgets.multiclassRadar.y}px, 0) scale(${settings.widgets.multiclassRadar.scale})`,
+                  "transform-origin": "right center",
                 }}
-                class={`fixed top-44 left-1/2 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed top-1/3 right-12 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
                 }`}
               >
@@ -695,17 +821,17 @@ export const SetupWizard: Component = () => {
               </div>
             </Show>
 
-            {/* 기능 11: 2D 실시간 트랙 맵 (Top-Right) */}
+            {/* 기능 11: 2D 실시간 트랙 맵 (Bottom-Center-Left) */}
             <Show when={settings.widgets.trackMap?.visible !== false}>
               <div
                 onMouseDown={(e) => handleMouseDown("trackMap", e)}
                 style={{
                   transform: `translate3d(${settings.widgets.trackMap.x}px, ${settings.widgets.trackMap.y}px, 0) scale(${settings.widgets.trackMap.scale})`,
-                  "transform-origin": "top right",
+                  "transform-origin": "bottom left",
                 }}
-                class={`fixed top-14 right-6 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed bottom-8 left-64 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
                 }`}
               >
@@ -732,6 +858,14 @@ export const SetupWizard: Component = () => {
                 }`}
               >
                 <F1TelemetryHub
+                  gear="7"
+                  speedKmh={312}
+                  rpm={11800}
+                  maxRpm={12500}
+                  throttlePct={100}
+                  brakePct={0}
+                  drsAvailable={true}
+                  drsActive={true}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.telemetryHub.scale}
                   onScaleChange={(scale) => updateWidgetTransform("telemetryHub", { scale })}

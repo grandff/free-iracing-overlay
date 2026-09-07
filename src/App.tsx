@@ -25,6 +25,7 @@ import { F1MulticlassRadar } from "./components/f1/F1MulticlassRadar.tsx";
 import { F1TrackMap } from "./components/f1/F1TrackMap.tsx";
 import { F1TelemetryHub } from "./components/f1/F1TelemetryHub.tsx";
 import { createPresence } from "./utils/presence.ts";
+import { t } from "./i18n/index.ts";
 
 export const App: Component = () => {
   const [draggingWidget, setDraggingWidget] = createSignal<WidgetKey | null>(null);
@@ -182,10 +183,10 @@ export const App: Component = () => {
             <button
               onClick={toggleControlPanel}
               class="px-3 py-1.5 rounded-full bg-[#18181c]/90 hover:bg-[#25252b] text-white/90 border border-white/15 text-xs font-semibold shadow-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
-              title="프로그램 설정 제어판 열기 (테마/위젯 On/Off/모니터)"
+              title={t().programSettings}
             >
               <span class="text-sm">⚙️</span>
-              <span>프로그램 설정</span>
+              <span>{t().programSettings}</span>
             </button>
 
             <button
@@ -195,9 +196,9 @@ export const App: Component = () => {
                   ? "bg-amber-500 text-black border-amber-400 font-bold"
                   : "bg-[#18181c]/90 hover:bg-[#25252b] text-white/90 border-white/15"
               }`}
-              title="오버레이 위젯 직접 크기/위치 조절 (단축키: Alt + J)"
+              title={t().editOnOverlay}
             >
-              <span>{settings.isEditMode ? "편집 모드 종료" : "오버레이 편집"}</span>
+              <span>{settings.isEditMode ? t().exitEditMode : t().editOnOverlay}</span>
               <kbd class="text-[9px] font-mono px-1 py-0.2 rounded bg-black/40 text-white">Alt+J</kbd>
             </button>
           </div>
@@ -220,7 +221,7 @@ export const App: Component = () => {
                   drivingBannerPresence.visible() ? "is-visible" : "is-hidden"
                 }`}
               >
-                DRIVING MODE ACTIVE (Click-through enabled • Press Alt+J to edit)
+                {t().drivingModeNotice}
               </div>
             </Show>
 
