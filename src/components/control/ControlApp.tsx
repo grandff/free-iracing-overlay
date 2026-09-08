@@ -38,6 +38,7 @@ export const ControlApp: Component<{ standalone?: boolean }> = (props) => {
   const widgetDefinitions = () => [
     { key: "leaderboard" as WidgetKey, name: t().wLeaderboard, category: "Timing", desc: t().wLeaderboardDesc },
     { key: "relative" as WidgetKey, name: t().wRelative, category: "Timing", desc: t().wRelativeDesc },
+    { key: "teamRadio" as WidgetKey, name: t().wTeamRadio, category: "Comms", desc: t().wTeamRadioDesc },
     { key: "lapDelta" as WidgetKey, name: t().wLapDelta, category: "Timing", desc: t().wLapDeltaDesc },
     { key: "revengeTracker" as WidgetKey, name: t().wRevenge, category: "Battle", desc: t().wRevengeDesc },
     { key: "spotterLeft" as WidgetKey, name: t().wSpotterL, category: "Safety", desc: t().wSpotterLDesc },
@@ -474,10 +475,31 @@ export const ControlApp: Component<{ standalone?: boolean }> = (props) => {
                   <div class="flex items-center justify-between p-3.5 rounded-xl bg-[#202025] border border-white/10">
                     <div class="flex flex-col gap-0.5">
                       <span class="text-xs font-semibold text-white">
+                        {t().translateSystemMessagesTitle}
+                      </span>
+                      <span class="text-[11px] text-white/50">
+                        {t().translateSystemMessagesDesc}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => updateSettings("translateSystemMessages", !settings.translateSystemMessages)}
+                      class={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        settings.translateSystemMessages
+                          ? "bg-[#30d158]/20 text-[#30d158] border border-[#30d158]/40"
+                          : "bg-white/10 text-white/40 border border-white/15"
+                      }`}
+                    >
+                      {settings.translateSystemMessages ? "ON" : "OFF"}
+                    </button>
+                  </div>
+
+                  <div class="flex items-center justify-between p-3.5 rounded-xl bg-[#202025] border border-white/10">
+                    <div class="flex flex-col gap-0.5">
+                      <span class="text-xs font-semibold text-white">
                         {t().sessionMode || "시뮬레이터 세션 (미리보기)"}
                       </span>
                       <span class="text-[11px] text-white/50">
-                        iRacing 접속 시 실제 세션(연습/예선/결선)을 자동으로 따라갑니다. 이 설정은 미접속 시 미리보기 전용입니다.
+                        {t().sessionModeDesc}
                       </span>
                     </div>
                     <div class="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-white/10">

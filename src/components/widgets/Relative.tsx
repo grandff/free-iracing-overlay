@@ -1,7 +1,6 @@
 import { Component, For, Show, createSignal, createMemo, onCleanup } from "solid-js";
 import { createReorderFlip } from "../../utils/reorderFlip.ts";
 import { CountryFlag } from "../../assets/icons/CountryFlags.tsx";
-import { t } from "../../i18n/index.ts";
 
 export interface RelativeEntry {
   position?: number;
@@ -91,8 +90,8 @@ const TireBadge: Component<{ compound: "S" | "M" | "H" | "I" | "W"; class?: stri
 };
 
 export const Relative: Component<RelativeProps> = (props) => {
-  // Width control: default 320px, min 280px, max 500px
-  const currentWidth = () => Math.max(280, Math.min(500, props.width ?? 320));
+  // Width control: default 340px, min 280px, max 520px
+  const currentWidth = () => Math.max(280, Math.min(520, props.width ?? 340));
   // Ahead/Behind control: 2 to 5 cars (default: 3)
   const carsAheadBehind = () => Math.max(2, Math.min(5, props.maxRows ?? 3));
 
@@ -217,12 +216,9 @@ export const Relative: Component<RelativeProps> = (props) => {
         width: `${currentWidth()}px`,
       }}
     >
-      {/* Edit Mode Top Shaded Bar: 오직 선택된 언어의 깔끔한 타이틀("상대 간격")만 표시 */}
+      {/* Edit Mode Top Shaded Bar: 타이틀 일체 배제, 배율 조절 컨트롤만 깔끔하게 노출 */}
       <Show when={props.isEditMode}>
-        <div class="flex items-center justify-between px-3 py-1.5 bg-black/90 backdrop-blur-md border-t border-x border-white/20 rounded-t text-white select-none gap-2">
-          <span class="text-[11px] font-bold tracking-wider text-white/95 shrink-0">
-            {t().relativeTitle || "상대 간격"}
-          </span>
+        <div class="flex items-center justify-end px-3 py-1 bg-black/90 backdrop-blur-md border-t border-x border-white/20 rounded-t text-white select-none">
           <div class="flex items-center gap-1.5 shrink-0" onMouseDown={(e) => e.stopPropagation()}>
             <button
               onClick={(e) => {
@@ -282,12 +278,13 @@ export const Relative: Component<RelativeProps> = (props) => {
       </div>
 
       {/* Subheader: POS, #, DRIVER, TYRE, GAP */}
-      <div class="grid grid-cols-[28px_30px_1fr_32px_72px] items-center px-2 py-0.5 bg-black/85 text-[9px] font-mono text-white/45 tracking-wider border-b border-white/[0.08]">
+      {/* ponytail: unified grid layout and synchronized border-box padding ensure 100% mathematical text alignment between header and body rows */}
+      <div class="grid grid-cols-[40px_42px_1fr_36px_74px] items-center px-2 py-1 bg-black/85 text-[9px] font-mono text-white/45 tracking-wider border-b border-white/[0.08] border-l-[3.5px] border-l-transparent">
         <span class="text-center font-bold">POS</span>
         <span class="text-center font-bold">#</span>
-        <span class="pl-2.5 font-bold">DRIVER</span>
+        <span class="pl-2 font-bold text-left">DRIVER</span>
         <span class="text-center font-bold">TYRE</span>
-        <span class="text-right pr-1 font-bold">GAP</span>
+        <span class="text-right pr-2 font-bold">GAP</span>
       </div>
 
       {/* Rows */}
@@ -302,10 +299,10 @@ export const Relative: Component<RelativeProps> = (props) => {
             return (
               <div
                 ref={flip.row(d.carNumber)}
-                class={`grid grid-cols-[28px_30px_1fr_32px_72px] items-center h-[28px] transition-colors duration-150 ${
+                class={`grid grid-cols-[40px_42px_1fr_36px_74px] items-center h-[28px] px-2 transition-colors duration-150 border-l-[3.5px] ${
                   d.isPlayer
-                    ? "bg-[#00d26a]/15 ring-1 ring-inset ring-[#00d26a]/80 shadow-[0_0_16px_rgba(0,210,106,0.25)] border-l-[3.5px] border-l-[#00d26a]"
-                    : "bg-[#13141c]/95 hover:bg-[#181a24]/95"
+                    ? "bg-[#00d26a]/15 ring-1 ring-inset ring-[#00d26a]/80 shadow-[0_0_16px_rgba(0,210,106,0.25)] border-l-[#00d26a]"
+                    : "bg-[#13141c]/95 hover:bg-[#181a24]/95 border-l-transparent"
                 }`}
               >
                 {/* 1. POS: Overall/Class Position */}
@@ -331,7 +328,7 @@ export const Relative: Component<RelativeProps> = (props) => {
                 </div>
 
                 {/* 3. Driver: Clear gap from car number, Team stripe, Flag, YOU badge, Name */}
-                <div class="flex items-center h-full pl-2.5 pr-1 relative overflow-hidden min-w-0 gap-1.5">
+                <div class="flex items-center h-full pl-2 pr-1 relative overflow-hidden min-w-0 gap-1.5">
                   <Show when={!d.isPlayer}>
                     <div
                       class="w-[3px] h-3.5 shrink-0 rounded-full"

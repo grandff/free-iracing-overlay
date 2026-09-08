@@ -29,6 +29,7 @@ import {
 } from "lucide-solid";
 import { Leaderboard } from "../widgets/Leaderboard.tsx";
 import { Relative } from "../widgets/Relative.tsx";
+import { TeamRadio } from "../widgets/TeamRadio.tsx";
 import { LapDelta } from "../widgets/LapDelta.tsx";
 import { RevengeTracker } from "../widgets/RevengeTracker.tsx";
 import { SpotterLeft } from "../widgets/SpotterLeft.tsx";
@@ -85,6 +86,7 @@ export const SetupWizard: Component = () => {
   const widgetDefinitions = () => [
     { key: "leaderboard" as WidgetKey, name: t().wLeaderboard, category: "Timing" },
     { key: "relative" as WidgetKey, name: t().wRelative, category: "Timing" },
+    { key: "teamRadio" as WidgetKey, name: t().wTeamRadio, category: "Comms" },
     { key: "lapDelta" as WidgetKey, name: t().wLapDelta, category: "Timing" },
     { key: "revengeTracker" as WidgetKey, name: t().wRevenge, category: "Battle" },
     { key: "spotterLeft" as WidgetKey, name: t().wSpotterL, category: "Safety" },
@@ -614,11 +616,37 @@ export const SetupWizard: Component = () => {
                 <Relative
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.relative.scale}
-                  width={settings.widgets.relative.width || 320}
+                  width={settings.widgets.relative.width || 340}
                   maxRows={settings.widgets.relative.maxRows || 3}
                   onScaleChange={(scale) => updateWidgetTransform("relative", { scale })}
                   onWidthChange={(width) => updateWidgetTransform("relative", { width })}
                   onMaxRowsChange={(maxRows) => updateWidgetTransform("relative", { maxRows })}
+                />
+              </div>
+            </Show>
+
+            {/* 기능 17 (M2.3): 팀 라디오 & 통신 HUD (Top-Right) */}
+            <Show when={settings.widgets.teamRadio?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("teamRadio", e)}
+                style={{
+                  transform: `translate3d(${settings.widgets.teamRadio?.x ?? 0}px, ${settings.widgets.teamRadio?.y ?? 0}px, 0) scale(${settings.widgets.teamRadio?.scale ?? 1.0})`,
+                  "transform-origin": "top right",
+                }}
+                class={`fixed top-14 right-6 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
+                    : "pointer-events-none"
+                }`}
+              >
+                <TeamRadio
+                  radio={telemetry.frame?.radio}
+                  systemMessage={telemetry.frame?.systemMessage}
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.teamRadio?.scale ?? 1.0}
+                  width={settings.widgets.teamRadio?.width ?? 320}
+                  onScaleChange={(scale) => updateWidgetTransform("teamRadio", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("teamRadio", { width })}
                 />
               </div>
             </Show>

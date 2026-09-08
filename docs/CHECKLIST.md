@@ -9,7 +9,7 @@
 | 마일스톤 | 구분 | 진행 상태 | 검증 일자 | 검증자 |
 | :--- | :--- | :---: | :---: | :---: |
 | **Milestone 1** | 초기 설정 마법사 & 오버레이 배치/크기 에디터 (`Alt + J`) & 프로그램 제어판 분리 & 다국어 지원 | **PASSED (완료)** | 2026-09-07 | Antigravity AI / Claude Opus 5 |
-| **Milestone 2** | 코어 주행 HUD 위젯 5종 (2.1 순위표 완료, 2.2~2.6 대기) | **IN PROGRESS (2.1 완료)** | 2026-09-07 | Antigravity AI |
+| **Milestone 2** | 코어 주행 HUD 위젯 6종 (2.1 순위표 완료, 2.2 렐러티브 완료, 2.3 팀라디오 완료, 2.4~2.7 대기) | **IN PROGRESS (2.1~2.3 완료)** | 2026-09-08 | Antigravity AI |
 | **Milestone 3** | 안전 및 피트 전략 위젯 6종 (스포터 / 연료 / 사고 / 날씨 / 디지플래그 / 피트박스) | PENDING (대기) | - | - |
 | **Milestone 4** | 고급 인텔리전스 & 주행 분석 위젯 5종 (리벤지 / 타이어 / 멀티클래스 / 페달인풋 / iRating계산기) | PENDING (대기) | - | - |
 | **Milestone 5** | 다중 모터스포츠 테마(WEC/WRC/Indy/GT) 확장 & Windows Shared Memory 연동 & 패키징 | PENDING (대기) | - | - |
@@ -137,33 +137,58 @@
     - **Practice (연습):** `[시리즈 로고] PRACTICE` + `TIME MM:SS` + 최고 랩타임/최근 랩타임 기반 순위.
     - **세션 자동 전환 (수동 선택 폐기):** 세션 종류는 사용자가 고르는 설정이 아니라 텔레메트리 값(`TelemetryFrame.sessionType` ← 세션 YAML `Sessions[SessionNum].SessionType`)이며, 순위표는 이 값만 읽음. 편집 모드 상단 바의 `[RACE] [QUAL] [PRAC]` 수동 스위처는 제거했고, 제어판의 세션 탭은 iRacing 미접속 시에만 동작하는 **시뮬레이터 미리보기**로 명시.
     - 모든 수치(랩타임, iR, 순위)에 `tabular-nums` 고정 너비 폰트 적용으로 60Hz 갱신 지터 완전 제거.
+  - **순위 변동 스와프 애니메이션 (전 테마 공통, `src/utils/reorderFlip.ts`):** 순위가 바뀌면 해당 행이 이전 자리에서 새 자리로 미끄러져 들어옴. 네이티브 Web Animations API 기반 FLIP(transform만 사용 → 레이아웃 미발생), 애니메이션 라이브러리 의존성 0. 순위표와 렐러티브가 동일 헬퍼를 공유하며, 색상이 아닌 기하만 다루므로 F1/WEC/WRC/IndyCar/GT 전 테마에서 동일하게 동작. `prefers-reduced-motion: reduce` 존중.
+    - 검증 근거: 실제 모듈로 3행 리스트 P1↔P3 스와프 시 최초 렌더 0건 → 스와프 시 정확히 2건 발생, `translateY(-68px)` / `translateY(68px)` (= 2 × ROW_HEIGHT 34px), 이동하지 않은 행은 애니메이션 없음.
+    - `mockEngine`이 트랙 진행률(`lap + lapDistPct`)에서 순위를 실시간 재계산하도록 수정 (기존에는 `overallPosition`이 시드값 고정이라 순위가 영원히 바뀌지 않았음). ▲/▼ 인디케이터도 그리드 기준 실제 변동값으로 전환.
   - **25대 풀 그리드 목업 지원:** 기본 프리뷰 데이터 및 `mockEngine`을 25대 풀 그리드로 확장하여 세로로 길게 늘려도 모든 슬롯에 실감나는 드라이버/브랜드 데이터 렌더링.
   - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 번들 빌드 **3.70초**, JS 번들 **247.79KB (gzip 67.01KB)**, CSS **43.01KB** 초경량 달성.
   - **판정:** **PASS (mock verified — 실 SDK 미검증)**
 - [x] **DoD 2.2:** 렐러티브 (`Relative.tsx`) 위젯 정밀 구현 (완료)
   - **iRacing 타이어 SDK 변수 공식 검증:** `CarIdxTireCompound` (int[64]), `CarIdxQualTireCompound` (int[64]), `PlayerTireCompound` (int[1]) 공식 제공 확인 (`docs/IRACING_TELEMETRY_REFERENCE.md` L74, L78, L100).
   - **100% 퓨어 벡터 타이어 배지 (`TireBadge`):** 폰트 의존성 및 서브픽셀 뭉개짐/외곽선 충돌을 원천 차단하기 위해 `S`, `M`, `H`, `I`, `W` 컴파운드 문자를 24x24 정밀 벡터 `<path>`로 전면 재설계. 고대비·고채도 브로드캐스트 색상 적용으로 가시성 100% 확보.
-  - **순위(`POS`) 컬럼 및 차번호-드라이버 간격 확장:** 첫 번째 컬럼에 실시간 순위(`P1`, `P2`, `P3`, ...) 추가, `#` 차번호 전용 독립 컬럼(30px) 분리 및 드라이버 정보와의 여유로운 간격 확보.
+  - **순위(`POS`), 차번호(`#`), 드라이버 간격 확장 및 100% 수학적 열 정렬:**
+    - 기존 서브헤더-바디 간 패딩 불일치(서브헤더에만 `px-2` 적용) 및 플레이어 행의 단독 좌측 보더로 인한 픽셀 어긋남 현상을 포니테일 원칙으로 완전 해결.
+    - 서브헤더와 전체 바디 행에 동일한 `grid-cols-[40px_42px_1fr_36px_74px]`, 동일한 `px-2`, 동일한 `border-l-[3.5px]`(일반행 투명, 플레이어행 네온그린)을 부여하여 **헤더 텍스트와 바디 데이터가 0.01px 오차 없이 완벽하게 상하 1:1 수직 정렬**되도록 보정.
+    - `POS`(40px) 및 `#`(42px) 전용 너비를 대폭 넓혀 수치 간 답답한 겹침을 해소.
   - **헤더 비원형(Non-circle) 텔레메트리 델타 아이콘:** 단순 원형 점멸 점을 제거하고 전방 차량(`▲`), 내 차량 라인(`—`), 후방 차량(`▼`)을 상징하는 F1 하이테크 대향 셰브론 벡터 아이콘 적용.
   - **내 차량(YOU) 고휘도 하이라이트:** 눈에 확 띄는 네온 그린 좌측 악센트 보더(`border-l-[3.5px] border-l-[#00d26a]`), 눈부신 `YOU` 태그 배지(`bg-[#00d26a] text-black font-black`), 텍스트 드롭 섀도우 글로우 및 고정폭 `0.000s` 델타 적용.
   - **3방향 마우스 드래그 조절 (±2대 ~ ±5대):** 순위표와 동일한 마우스 드래그 리사이징 엔진 탑재. 가로 너비(280px~500px) 및 세로 앞/뒤 표시 차량 수(±2대 ~ ±5대, 총 5대~11대) 실시간 동적 조절. 드래그 중 `±N CARS` 실시간 툴팁 피드백.
   - **순위표와 100% 통일된 상단 음영 바:** 편집 모드 진입 시 순위표와 완전히 동일한 포맷의 상단 헤더 바(군더더기 없는 `"상대 간격"` 타이틀 + `[-] 100% [+]` 스케일 버튼) 적용.
   - **실측 성능:** `tsc --noEmit` 0 에러, Vite 빌드 **3.08초**, 초경량성 유지.
   - **판정:** **PASS (mock verified — 실 SDK 미검증)**
-- [ ] **DoD 2.3:** 직전 랩타임 델타 (`LapDelta.tsx`) 위젯 정밀 구현 (대기)
+- [x] **DoD 2.3: 팀 라디오 & 레이스 통신 HUD (`TeamRadio.tsx`) 위젯 정밀 구현 (완료)**
+  - **iRacing 공식 SDK 변수 100% 매핑 실증 근거:**
+    - `RadioTransmitCarIdx` (`int[1]`, 60Hz): 실시간 음성 무전 송신자 CarIdx 식별 (미송신 시 `-1`, 내 송신 시 `PlayerCarIdx`).
+    - `RadioTransmitRadioIdx`, `RadioTransmitFrequencyIdx` (`int[1]`): 무전 채널/주파수 식별 (`TEAM`, `DRIVERS`, `CLUB`).
+    - `SessionFlags` (Bitfield, 60Hz): 황기, 청기, 페널티, 밋볼수리 등 레이스 컨트롤 이벤트.
+    - `CarIdxTrackSurface` (60Hz): 피트 진입(`1 = irsdk_AproachingPits`), 피트 스톨 정차(`2`), 트랙 주행(`3`).
+    - `docs/IRACING_TELEMETRY_REFERENCE.md` Line 373-375 및 공식 Enum 해석표 기준 1:1 매핑 확인.
+  - **원문 그대로 표기 원칙 (No Fabricated Dialogues):**
+    - 가상 창작 대사를 배제하고 아이레이싱 공식 원문 시스템 메시지(`YELLOW FLAG`, `PIT LANE ENTRY - 60 KM/H`, `BLUE FLAG`, `MEATBALL FLAG` 등)를 왜곡 없이 그대로 출력.
+    - **7개 언어 하드코딩 다국어 번역 토글(`translateSystemMessages`):** 기본값은 F1 공식 영문 원문 표기이며, 옵션 토글 시 7개 국어(`ko`, `en`, `zh`, `ja`, `de`, `fr`, `it`) 모국어로 즉시 번역 표시 (외부 번역 API 호출 0, 오프라인 완비).
+  - **F1 공식 방송 그래픽 카드 완비:**
+    - 사용자 차량별 `드라이버 성 + 제조사 로고 + RADIO` 워드마크와 팀 컬러를 적용. 차량 번호와 메시지 출처는 작은 메타 정보로 내려 본문을 최우선 계층으로 구성.
+    - 두꺼운 이벤트색 테두리·대형 차번호·중첩 박스를 제거하고 1px 화이트 보더, 상단 3px 팀 컬러 스트립, 단일 다크 슬레이트 표면으로 단순화.
+    - 실제 오디오 없이 18밴드 팀 컬러 웨이브폼과 아이레이싱 시스템 원문을 무전 자막처럼 표시. 시스템 메시지는 보이스 송신 상태보다 우선 렌더링.
+  - **생명주기 및 편집 모드:**
+    - 이벤트 해제 후 2.2초 유지 + 220ms 페이드 아웃. 동일 메시지는 60Hz 프레임마다 재렌더링하지 않고 변경 시에만 갱신.
+    - `Alt + J` 편집 모드 상시 노출, 테스트 버튼으로 레이스 컨트롤/피트/페널티 문구 전환, 드래그 위치 이동 및 `[-] 100% [+]` 배율 조절 확인.
+  - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 번들 **279.23 kB (gzip 76.60 kB)**, 빌드 **6.69초**, Chrome `http://localhost:1420/`에서 피트 시스템 문구 및 편집 프리뷰 전환 확인.
+  - **판정:** **PASS (mock verified — 실 SDK 미검증)**
+- [ ] **DoD 2.4:** 직전 랩타임 델타 (`LapDelta.tsx`) 위젯 정밀 구현 (대기)
   - 직전 랩 대비 델타 초 단위 비교 게이지 (음수 녹색, 양수 적색, 보라색 최고 기록).
   - SDK 변수: `LapDeltaToSessionLastlLap`, `LapDeltaToBestLap`.
   - **판정:** **PENDING (대기)**
-- [ ] **DoD 2.4:** 2D 실시간 트랙 맵 (`TrackMap.tsx`) 위젯 정밀 구현 (대기)
+- [ ] **DoD 2.5:** 2D 실시간 트랙 맵 (`TrackMap.tsx`) 위젯 정밀 구현 (대기)
   - 2D SVG 서킷 레이아웃, 실시간 차량 위치 매핑, 내 차량 고휘도 시안/화살표 인디케이터.
   - SDK 변수: `CarIdxLapDistPct`, `CarIdxTrackSurface`, `CarIdxOnPitRoad`.
   - **판정:** **PENDING (대기)**
-- [ ] **DoD 2.5: 테마별 RPM 시프트 라이트 LED 바 (`ShiftLight.tsx`) 정밀 구현 (대기)**
+- [ ] **DoD 2.6: 테마별 RPM 시프트 라이트 LED 바 (`ShiftLight.tsx`) 정밀 구현 (대기)**
   - F1 수평 아치형 LED, WEC/GT3 시퀀셜 듀얼 LED, IndyCar 스타일 등 선택된 테마에 맞춰 동적으로 전환되는 반응형 타코미터.
   - 최적 변속 RPM 도달 시 고휘도 시프트 플래시.
   - SDK 변수: `RPM`, `EngineWarnings`, YAML `DriverInfo.DriverCarSLFirstRPM`, `DriverCarSLShiftRPM`, `DriverCarSLBlinkRPM`.
   - **판정:** **PENDING (대기)**
-- [ ] **DoD 2.6:** 트리플 모니터(48:9) 뷰포트 센터 클램프 정밀 정렬 (대기)
+- [ ] **DoD 2.7:** 트리플 모니터(48:9) 뷰포트 센터 클램프 정밀 정렬 (대기)
   - 가로 5760/7680 환경에서 중앙 16:9 안전 영역 클램프 모드 지원.
   - **판정:** **PENDING (대기)**
 

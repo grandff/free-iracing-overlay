@@ -10,7 +10,7 @@
 | 마일스톤 | 구분 | 진행 상태 | 완료 위젯 / 목표 |
 | :--- | :--- | :---: | :--- |
 | **Milestone 1** | 초기 설정 마법사 & 오버레이 에디터 (`Alt + J`) & 제어판 분리 & 다국어 | **PASSED (완료)** | 온보딩, 위젯 크기/배치 제어, 7개 국어, 영구 저장 |
-| **Milestone 2** | 코어 주행 HUD 위젯 5종 | **IN PROGRESS (2.1 완료)** | M2.1 순위표 완료, 렐러티브, 랩 델타, 2D 트랙맵, 테마별 RPM 시프트 라이트, 트리플 모니터 |
+| **Milestone 2** | 코어 주행 HUD 위젯 6종 | **IN PROGRESS (2.1~2.3 완료)** | M2.1 순위표 완료, M2.2 렐러티브 완료, M2.3 팀 라디오 완료, 랩 델타, 2D 트랙맵, 테마별 RPM 시프트 라이트, 트리플 모니터 |
 | **Milestone 3** | 안전 & 피트 전략 관리 위젯 6종 | PENDING (대기) | 독립 스포터, 연료 시뮬, 전방 사고 경고, 날씨, **디지플래그**, **피트박스 헬퍼** |
 | **Milestone 4** | 고급 인텔리전스 & 주행 분석 위젯 5종 | PENDING (대기) | 리벤지 트래커, 타이어 분석, 멀티클래스 레이더, **페달 인풋 트레이스**, **실시간 iRating 변동 & SOF** |
 | **Milestone 5** | 멀티 테마(WEC/WRC/Indy/GT) 확장 & Windows 네이티브 빌드 | PENDING (대기) | 다중 테마 전면 개방, Windows Shared Memory 연동, 단일 실행 파일 배포 |
@@ -67,18 +67,25 @@
   - 내 차량(YOU) 고휘도 네온 그린 하이라이트 및 두꺼운 악센트 보더.
   - 순위표와 100% 통일된 상단 음영 바("상대 간격", 배율 조절 `[-] 100% [+]`).
   - SDK 변수: `CarIdxEstTime`, `CarIdxLapDistPct`, `CarIdxLap`, `PlayerCarIdx`, `CarIdxTireCompound`.
-- [ ] **M2.3: 위젯 3 - 직전 랩타임 델타 (`LapDelta.tsx`)**
+- [x] **M2.3: 위젯 17 - 팀 라디오 & 레이스 통신 HUD (`TeamRadio.tsx`)**
+  - 실시간 보이스 무전 송신자 식별 (`RadioTransmitCarIdx`, `RadioTransmitRadioIdx`, `RadioTransmitFrequencyIdx`).
+  - F1 공식 방송 그래픽 카드 레이아웃 (드라이버 성 + `RADIO`, 대형 볼드 차량 번호, 팀 공식 벡터 SVG 로고, 5밴드 네온 오디오 이퀄라이저 파형).
+  - 아이레이싱 시스템 메시지 및 레이스 컨트롤 이벤트 원문 그대로 표기 (`YELLOW FLAG`, `PIT LANE ENTRY`, `BLUE FLAG` 등).
+  - 다국어 번역 토글 옵션 (`translateSystemMessages`): 원문 영문 표기 기본값 + 7개 국어(`ko`, `en`, `zh`, `ja`, `de`, `fr`, `it`) 모국어 번역 지원.
+  - 이벤트 발생 시 매끄러운 슬라이드 팝업 후 3.5초 자동 숨김(Auto-hide) 생명주기.
+  - `Alt + J` 편집 모드 상시 미리보기, 드래그 위치 이동, 배율 조절 지원.
+- [ ] **M2.4: 위젯 3 - 직전 랩타임 델타 (`LapDelta.tsx`)**
   - 초 단위 델타 비교 (-0.23s 녹색 음수, +0.42s 적색 양수, 보라색 세션 베스트).
   - SDK 변수: `LapDeltaToSessionLastlLap`, `LapDeltaToBestLap`.
-- [ ] **M2.4: 위젯 11 - 실시간 2D 트랙 맵 (`TrackMap.tsx`)**
+- [ ] **M2.5: 위젯 11 - 실시간 2D 트랙 맵 (`TrackMap.tsx`)**
   - 2D SVG 서킷 레이아웃 위 실시간 차량 위치(내 차량 네온 화살표, 상대 차량 클래스별 컬러 점).
   - 피트 레인 진입 차량 반투명화 및 사고 섹터 옐로우 발광.
   - SDK 변수: `CarIdxLapDistPct`, `CarIdxTrackSurface`, `CarIdxOnPitRoad`.
-- [ ] **M2.5: 위젯 16 - 테마별 RPM 시프트 라이트 LED 바 (`ShiftLight.tsx`)**
+- [ ] **M2.6: 위젯 16 - 테마별 RPM 시프트 라이트 LED 바 (`ShiftLight.tsx`)**
   - **테마 적응형 디자인:** 단일 고정이 아닌, **선택된 테마(F1 수평 아치형 LED, WEC/GT3 시퀀셜 듀얼 LED, IndyCar 스타일 등)에 맞춰 외형과 점멸 스타일이 동적으로 적응**.
   - 차종별 최적 변속 RPM 도달 시 고휘도 시프트 플래시.
   - SDK 변수: `RPM`, `EngineWarnings`, YAML `DriverInfo.DriverCarSLFirstRPM`, `DriverCarSLShiftRPM`, `DriverCarSLBlinkRPM`.
-- [ ] **M2.6: 트리플 모니터(48:9) 뷰포트 센터 클램프**
+- [ ] **M2.7: 트리플 모니터(48:9) 뷰포트 센터 클램프**
   - 가로 5760x1080 / 7680x1440 환경에서 중앙 16:9 모니터 영역 안전 배치 및 베젤 앵커링.
 
 ---

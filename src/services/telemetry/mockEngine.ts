@@ -1,5 +1,5 @@
 import { settings } from "../../stores/settingsStore.ts";
-import { TelemetryFrame, CarTelemetry } from "./types.ts";
+import { TelemetryFrame, CarTelemetry, SystemEventKind } from "./types.ts";
 
 // ponytail: lightweight 60Hz simulated telemetry generator for macOS/Linux dev without iRacing running
 export class MockTelemetryEngine {
@@ -100,7 +100,7 @@ export class MockTelemetryEngine {
         // ponytail: speedKmh stays at its seeded value, so the displayed speed does
         // not track this pace wobble. Fine for a preview; the shmem reader replaces
         // this whole block with real CarIdx* arrays.
-        const pace = c.speedKmh / 245 + Math.sin(now / 9000 + c.carIdx) * 0.35;
+        const pace = c.speedKmh / 245 + Math.sin(now / 9000 + c.carIdx) * 0.2;
         const advanced = c.lapDistPct + deltaPct * pace;
         if (advanced >= 1.0) c.lap += 1; // was missing: only the player's lap ever counted up
         c.lapDistPct = advanced % 1.0;
@@ -117,6 +117,35 @@ export class MockTelemetryEngine {
     // Hazard simulation: Car #42 is spinning ahead around lapDist 0.21
     const hazardDist = Math.max(0, (0.21 - this.lapDist) * this.trackLength);
     const hasHazard = hazardDist > 0 && hazardDist < 400;
+
+    // Radio & System Comms simulation cycle (every 24 seconds)
+    const cycleSec = (Date.now() / 1000) % 24;
+    let isTransmitting = false;
+    const radioDriver = settings.userProfile.driverName || "K. Jeongmin";
+    const radioCarNumber = settings.userProfile.carNumber || "7";
+    const radioCarBrand = settings.userProfile.carBrand || "Porsche";
+    let radioMessage = "";
+    let radioChannel = "TEAM";
+
+    let activeEvent: SystemEventKind = "none";
+    let rawSysText = "";
+    let sysDist: number | undefined = undefined;
+
+    if (cycleSec < 6.0) {
+      // Radio transmission from player / pit wall
+      isTransmitting = true;
+      radioMessage = "BOX THIS LAP FOR HARD TIRES. CONFIRM?";
+      radioChannel = "TEAM";
+    } else if (cycleSec >= 8.0 && cycleSec < 14.0) {
+      // System event: Yellow flag
+      activeEvent = "yellowFlag";
+      rawSysText = "YELLOW FLAG - SECTOR 2 CAUTION";
+      sysDist = 240;
+    } else if (cycleSec >= 16.0 && cycleSec < 22.0) {
+      // System event: Pit lane entry
+      activeEvent = "pitEntry";
+      rawSysText = "PIT LANE ENTRY - 60 KM/H LIMIT";
+    }
 
     const frame: TelemetryFrame = {
       timestamp: performance.now(),
@@ -186,6 +215,24 @@ export class MockTelemetryEngine {
         carClass: "Hypercar",
         carNumber: "1",
         gapSeconds: 0,
+      },
+      radio: {
+        isTransmitting,
+        carIdx: isTransmitting ? 1 : -1,
+        radioIdx: 0,
+        frequencyIdx: 1,
+        channelName: radioChannel,
+        driverName: radioDriver,
+        carNumber: radioCarNumber,
+        carBrand: radioCarBrand,
+        isPlayer: true,
+        messageText: radioMessage,
+      },
+      systemMessage: {
+        activeEvent,
+        rawText: rawSysText,
+        distanceMeters: sysDist,
+        timestamp: performance.now(),
       },
     };
 

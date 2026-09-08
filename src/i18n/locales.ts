@@ -105,12 +105,30 @@ export interface Translations {
   wTrackMapDesc: string;
   wTelemetryHub: string;
   wTelemetryHubDesc: string;
-  showThemeLogoTitle?: string;
-  showThemeLogoDesc?: string;
-  sessionMode?: string;
-  sessionPractice?: string;
-  sessionQualify?: string;
-  sessionRace?: string;
+  showThemeLogoTitle: string;
+  showThemeLogoDesc: string;
+  sessionMode: string;
+  sessionModeDesc: string;
+  sessionPractice: string;
+  sessionQualify: string;
+  sessionRace: string;
+  teamRadioTitle: string;
+  wTeamRadio: string;
+  wTeamRadioDesc: string;
+  translateSystemMessagesTitle: string;
+  translateSystemMessagesDesc: string;
+  testRadioBtn: string;
+  sysYellowFlag: string;
+  sysBlueFlag: string;
+  sysMeatballFlag: string;
+  sysBlackFlag: string;
+  sysDisqualified: string;
+  sysCheckeredFlag: string;
+  sysPitEntry: string;
+  sysPitExit: string;
+  sysPitComplete: string;
+  sysHazardAhead: string;
+  sysRadioTransmitting: string;
 }
 
 export const translations: Record<SupportedLanguage, Translations> = {
@@ -205,9 +223,27 @@ export const translations: Record<SupportedLanguage, Translations> = {
     showThemeLogoTitle: "상단 시리즈 로고 표시",
     showThemeLogoDesc: "순위표 헤더 좌측에 현재 선택된 테마의 공식 로고를 표시합니다.",
     sessionMode: "시뮬레이터 세션 (미리보기)",
+    sessionModeDesc: "iRacing 접속 시 실제 세션(연습/예선/결선)을 자동으로 동기화합니다.",
     sessionPractice: "연습 (PRACTICE)",
     sessionQualify: "예선 (QUALIFY)",
     sessionRace: "결선 (RACE)",
+    teamRadioTitle: "팀 라디오 & 통신",
+    wTeamRadio: "팀 라디오 & 통신 HUD",
+    wTeamRadioDesc: "F1 방송 스타일의 실시간 음성 무전 송신자 및 시스템 이벤트 메시지 카드",
+    translateSystemMessagesTitle: "시스템 메시지 번역",
+    translateSystemMessagesDesc: "끄면 F1 공식 영문 원문(YELLOW FLAG 등) 표시, 켜면 현재 언어로 번역 표시",
+    testRadioBtn: "무전 테스트",
+    sysYellowFlag: "황색기 (서행 / 사고 경보)",
+    sysBlueFlag: "청기 (선두 차량 접근)",
+    sysMeatballFlag: "수리 지시 (차량 파손)",
+    sysBlackFlag: "페널티 지시 (블랙 플래그)",
+    sysDisqualified: "실격 (경기 퇴장)",
+    sysCheckeredFlag: "체커기 (경기 종료)",
+    sysPitEntry: "피트 진입 (속도 제한)",
+    sysPitExit: "피트 출발",
+    sysPitComplete: "피트 작업 완료",
+    sysHazardAhead: "전방 사고 경보",
+    sysRadioTransmitting: "무전 송신 중",
   },
   en: {
     appName: "Free iRacing Overlay",
@@ -300,9 +336,27 @@ export const translations: Record<SupportedLanguage, Translations> = {
     showThemeLogoTitle: "Show Series Logo",
     showThemeLogoDesc: "Display current theme's official series logo on leaderboard header.",
     sessionMode: "Simulator Session (Preview)",
+    sessionModeDesc: "Automatically syncs with live session when connected to iRacing.",
     sessionPractice: "Practice",
     sessionQualify: "Qualify",
     sessionRace: "Race",
+    teamRadioTitle: "Team Radio & Comms",
+    wTeamRadio: "Team Radio & Comms HUD",
+    wTeamRadioDesc: "F1 broadcast style live voice radio speaker & race comms HUD card",
+    translateSystemMessagesTitle: "Translate System Messages",
+    translateSystemMessagesDesc: "Keep off for official English broadcast text, toggle on to localize messages",
+    testRadioBtn: "Test Radio",
+    sysYellowFlag: "YELLOW FLAG (CAUTION)",
+    sysBlueFlag: "BLUE FLAG (YIELD TO LEADER)",
+    sysMeatballFlag: "MEATBALL FLAG (REPAIRS REQUIRED)",
+    sysBlackFlag: "BLACK FLAG (PENALTY)",
+    sysDisqualified: "DISQUALIFIED",
+    sysCheckeredFlag: "CHECKERED FLAG (RACE END)",
+    sysPitEntry: "PIT ENTRY (SPEED LIMIT)",
+    sysPitExit: "PIT EXIT",
+    sysPitComplete: "PIT STOP COMPLETE",
+    sysHazardAhead: "HAZARD AHEAD",
+    sysRadioTransmitting: "TRANSMITTING...",
   },
   zh: {
     appName: "Free iRacing Overlay",
@@ -392,6 +446,30 @@ export const translations: Record<SupportedLanguage, Translations> = {
     wTrackMapDesc: "完整 2D 矢量赛道与全场车辆实时位置",
     wTelemetryHub: "座舱方向盘仪表",
     wTelemetryHubDesc: "当前挡位、数字车速、15 段 RPM LED 与踏板行程",
+    showThemeLogoTitle: "显示赛事系列图标",
+    showThemeLogoDesc: "在排位榜顶部显示当前选中主题的官方标识。",
+    sessionMode: "模拟器会话 (预览)",
+    sessionModeDesc: "连接 iRacing 时自动跟随实际练习/排位/正赛阶段。",
+    sessionPractice: "练习赛 (PRACTICE)",
+    sessionQualify: "排位赛 (QUALIFY)",
+    sessionRace: "正赛 (RACE)",
+    teamRadioTitle: "车队无线电与通讯",
+    wTeamRadio: "车队无线电与通讯 HUD",
+    wTeamRadioDesc: "F1转播风格的实时语音无线电与赛事控制系统通知HUD卡片",
+    translateSystemMessagesTitle: "翻译系统消息",
+    translateSystemMessagesDesc: "关闭时显示F1官方英文原文，开启时翻译为当前语言",
+    testRadioBtn: "测试无线电",
+    sysYellowFlag: "黄旗 (减速 / 事故警报)",
+    sysBlueFlag: "蓝旗 (让车后方领先车)",
+    sysMeatballFlag: "机械故障旗 (强制进站维修)",
+    sysBlackFlag: "黑旗 (处罚指示)",
+    sysDisqualified: "取消比赛资格",
+    sysCheckeredFlag: "方格旗 (比赛结束)",
+    sysPitEntry: "进站通道 (限速)",
+    sysPitExit: "出站通道",
+    sysPitComplete: "停站作业完成",
+    sysHazardAhead: "前方赛道险情",
+    sysRadioTransmitting: "无线电发送中...",
   },
   ja: {
     appName: "Free iRacing Overlay",
@@ -481,6 +559,30 @@ export const translations: Record<SupportedLanguage, Translations> = {
     wTrackMapDesc: "サーキット全周 2D ベクターと全車のリアルタイム位置",
     wTelemetryHub: "コックピット ステアリング ハブ",
     wTelemetryHubDesc: "ギア数、デジタル速度、15連 RPM LED、ペダルトレース",
+    showThemeLogoTitle: "シリーズ公式ロゴ表示",
+    showThemeLogoDesc: "順位表ヘッダーに選択中テーマの公式ロゴを表示します。",
+    sessionMode: "シミュレーターセッション (プレビュー)",
+    sessionModeDesc: "iRacing接続時に実際のセッション(練習/予選/決勝)と自動同期します。",
+    sessionPractice: "練習 (PRACTICE)",
+    sessionQualify: "予选 (QUALIFY)",
+    sessionRace: "決勝 (RACE)",
+    teamRadioTitle: "チームラジオ＆通信",
+    wTeamRadio: "チームラジオ＆通信 HUD",
+    wTeamRadioDesc: "F1公式中継スタイルのリアルタイム音声無線＆レース管制メッセージHUD",
+    translateSystemMessagesTitle: "システムメッセージの翻訳",
+    translateSystemMessagesDesc: "オフで公式英語原文を表示、オンで現在選択中の言語に翻訳して表示",
+    testRadioBtn: "無線テスト",
+    sysYellowFlag: "イエローフラッグ (減速・事故警告)",
+    sysBlueFlag: "ブルーフラッグ (先頭車両接近)",
+    sysMeatballFlag: "オレンジボール旗 (ピット修理指示)",
+    sysBlackFlag: "ブラックフラッグ (ペナルティ指示)",
+    sysDisqualified: "失格 (レース除外)",
+    sysCheckeredFlag: "チェッカーフラッグ (レース終了)",
+    sysPitEntry: "ピット進入 (速度制限)",
+    sysPitExit: "ピット退出",
+    sysPitComplete: "ピット作業完了",
+    sysHazardAhead: "前方アクシデント警告",
+    sysRadioTransmitting: "無線送信中...",
   },
   fr: {
     appName: "Free iRacing Overlay",
@@ -570,6 +672,30 @@ export const translations: Record<SupportedLanguage, Translations> = {
     wTrackMapDesc: "Tracé vectoriel 2D complet avec positions en temps réel",
     wTelemetryHub: "Hub Volant & Télémétrie",
     wTelemetryHubDesc: "Rapport de boîte, tachymètre digital, 15 LEDs RPM, pédales",
+    showThemeLogoTitle: "Afficher le logo de la série",
+    showThemeLogoDesc: "Affiche le logo officiel du thème dans l'en-tête du classement.",
+    sessionMode: "Session de simulation (Aperçu)",
+    sessionModeDesc: "Se synchronise automatiquement avec la session réelle une fois connecté à iRacing.",
+    sessionPractice: "Essais (PRACTICE)",
+    sessionQualify: "Qualifications (QUALIFY)",
+    sessionRace: "Course (RACE)",
+    teamRadioTitle: "Radio d'équipe & Comms",
+    wTeamRadio: "Radio d'équipe & Comms HUD",
+    wTeamRadioDesc: "Affichage style broadcast F1 pour la radio vocale et messages système",
+    translateSystemMessagesTitle: "Traduire les messages système",
+    translateSystemMessagesDesc: "Désactivé pour l'anglais F1 officiel, activé pour traduire dans votre langue",
+    testRadioBtn: "Tester Radio",
+    sysYellowFlag: "DRAPEAU JAUNE (DANGER)",
+    sysBlueFlag: "DRAPEAU BLEU (LAISSER PASSER)",
+    sysMeatballFlag: "DRAPEAU NOIR ET ORANGE (RÉPARATION REQUISE)",
+    sysBlackFlag: "DRAPEAU NOIR (PÉNALITÉ)",
+    sysDisqualified: "DISQUALIFIÉ",
+    sysCheckeredFlag: "DRAPEAU À DAMIER (FIN DE COURSE)",
+    sysPitEntry: "ENTRÉE DES STANDS (LIMITE DE VITESSE)",
+    sysPitExit: "SORTIE DES STANDS",
+    sysPitComplete: "ARRÊT AUX STANDS TERMINÉ",
+    sysHazardAhead: "DANGER EN PISTE",
+    sysRadioTransmitting: "EN ÉMISSION...",
   },
   de: {
     appName: "Free iRacing Overlay",
@@ -659,6 +785,30 @@ export const translations: Record<SupportedLanguage, Translations> = {
     wTrackMapDesc: "2D-Vektor-Streckenlayout mit Fahrzeugpositionen in Echtzeit",
     wTelemetryHub: "Cockpit-Lenkrad-Hub",
     wTelemetryHubDesc: "Ganganzeige, digitaler Tacho, 15-LED-Drehzahlband, Pedalanzeige",
+    showThemeLogoTitle: "Serien-Logo anzeigen",
+    showThemeLogoDesc: "Zeigt das offizielle Serien-Logo des gewählten Themas in der Rangliste an.",
+    sessionMode: "Simulator-Sitzung (Vorschau)",
+    sessionModeDesc: "Synchronisiert sich automatisch mit der echten Sitzung bei Verbindung mit iRacing.",
+    sessionPractice: "Training (PRACTICE)",
+    sessionQualify: "Qualifying (QUALIFY)",
+    sessionRace: "Rennen (RACE)",
+    teamRadioTitle: "Boxenfunk & Rennleitung",
+    wTeamRadio: "Boxenfunk & Rennleitung HUD",
+    wTeamRadioDesc: "F1-Broadcast-HUD für Live-Funkübertragung und Systemmeldungen",
+    translateSystemMessagesTitle: "Systemmeldungen übersetzen",
+    translateSystemMessagesDesc: "Aus für offiziellen englischen F1-Text, Ein für Übersetzung in Ihre Sprache",
+    testRadioBtn: "Funk testen",
+    sysYellowFlag: "GELBE FLAGGE (GEFAHR)",
+    sysBlueFlag: "BLAUE FLAGGE (FÜHRENDEN VORBEILASSEN)",
+    sysMeatballFlag: "SCHWARZ-ORANGE FLAGGE (REPARATUR ERFORDERLICH)",
+    sysBlackFlag: "SCHWARZE FLAGGE (STRAFE)",
+    sysDisqualified: "DISQUALIFIZIERT",
+    sysCheckeredFlag: "ZIELFLAGGE (RENNEN BEENDET)",
+    sysPitEntry: "BOXENEINFAHRT (TEMPOLIMIT)",
+    sysPitExit: "BOXENAUSFAHRT",
+    sysPitComplete: "BOXENSTOPP ABGESCHLOSSEN",
+    sysHazardAhead: "GEFAHR VORAUS",
+    sysRadioTransmitting: "FUNKÜBERTRAGUNG...",
   },
   it: {
     appName: "Free iRacing Overlay",
@@ -748,5 +898,29 @@ export const translations: Record<SupportedLanguage, Translations> = {
     wTrackMapDesc: "Tracciato vettoriale 2D completo con posizioni in tempo reale",
     wTelemetryHub: "Hub Volante & Telemetria",
     wTelemetryHubDesc: "Marcia inserita, tachimetro digitale, barra LED 15 giri, pedali",
+    showThemeLogoTitle: "Mostra logo serie",
+    showThemeLogoDesc: "Mostra il logo ufficiale del tema selezionato nell'intestazione della classifica.",
+    sessionMode: "Sessione simulatore (Anteprima)",
+    sessionModeDesc: "Si sincronizza automaticamente con la sessione reale una volta connesso a iRacing.",
+    sessionPractice: "Prove (PRACTICE)",
+    sessionQualify: "Qualifiche (QUALIFY)",
+    sessionRace: "Gara (RACE)",
+    teamRadioTitle: "Team Radio & Comunicazioni",
+    wTeamRadio: "Team Radio & Comunicazioni HUD",
+    wTeamRadioDesc: "Grafica stile broadcast F1 per trasmissione radio live e messaggi di gara",
+    translateSystemMessagesTitle: "Traduci messaggi di sistema",
+    translateSystemMessagesDesc: "Disattiva per il testo ufficiale F1 in inglese, attiva per tradurre nella tua lingua",
+    testRadioBtn: "Test Radio",
+    sysYellowFlag: "BANDIERA GIALLA (PERICOLO)",
+    sysBlueFlag: "BANDIERA BLU (FAI PASSARE IL LEADER)",
+    sysMeatballFlag: "BANDIERA NERA CON DISCO ARANCIONE (RIPARAZIONE)",
+    sysBlackFlag: "BANDIERA NERA (PENALITÀ)",
+    sysDisqualified: "SQUALIFICATO",
+    sysCheckeredFlag: "BANDIERA A SCACCHI (FINE GARA)",
+    sysPitEntry: "INGRESSO PIT LANE (LIMITE VELOCITÀ)",
+    sysPitExit: "USCITA PIT LANE",
+    sysPitComplete: "PIT STOP COMPLETATO",
+    sysHazardAhead: "PERICOLO DAVANTI",
+    sysRadioTransmitting: "TRASMISSIONE IN CORSO...",
   },
 };

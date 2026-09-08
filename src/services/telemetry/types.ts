@@ -100,6 +100,39 @@ export interface MulticlassTelemetry {
   gapSeconds: number;
 }
 
+export interface RadioTelemetry {
+  isTransmitting: boolean;
+  carIdx: number; // RadioTransmitCarIdx: -1 when quiet, 0..63 when someone is speaking
+  radioIdx: number; // RadioTransmitRadioIdx
+  frequencyIdx: number; // RadioTransmitFrequencyIdx
+  channelName: string; // e.g. "TEAM", "DRIVERS", "CLUB"
+  driverName: string;
+  carNumber: string;
+  carBrand: string;
+  isPlayer: boolean;
+  messageText?: string;
+}
+
+export type SystemEventKind =
+  | "none"
+  | "yellowFlag"
+  | "blueFlag"
+  | "meatballFlag"
+  | "blackFlag"
+  | "disqualified"
+  | "checkeredFlag"
+  | "pitEntry"
+  | "pitExit"
+  | "pitComplete"
+  | "hazardAhead";
+
+export interface SystemMessageTelemetry {
+  activeEvent: SystemEventKind;
+  rawText: string; // Official original English verbatim: "YELLOW FLAG", "PIT ENTRY", etc.
+  distanceMeters?: number;
+  timestamp: number;
+}
+
 export interface TelemetryFrame {
   timestamp: number;
   tickRateHz: number;
@@ -116,4 +149,6 @@ export interface TelemetryFrame {
   revenge: RevengeTelemetry;
   weather: WeatherTelemetry;
   multiclass: MulticlassTelemetry;
+  radio: RadioTelemetry;
+  systemMessage: SystemMessageTelemetry;
 }

@@ -18,6 +18,7 @@ export interface WidgetTransform {
 export type WidgetKey =
   | "leaderboard"
   | "relative"
+  | "teamRadio"
   | "lapDelta"
   | "revengeTracker"
   | "spotterLeft"
@@ -46,6 +47,7 @@ export interface SettingsState {
   showControlPanel: boolean; // true = program settings dashboard visible
   showThemeLogo: boolean; // true = display current theme series logo at top of HUD
   sessionType: "PRACTICE" | "QUALIFY" | "RACE"; // Session mode (Practice, Qualify, Race)
+  translateSystemMessages: boolean; // true = translate system messages into current language, false = verbatim English
   tripleMonitorMode: TripleMonitorMode;
   storageTarget: "disk-file" | "local-storage";
   userProfile: UserProfile;
@@ -63,6 +65,7 @@ const defaultSettings: SettingsState = {
   showControlPanel: false,
   showThemeLogo: true,
   sessionType: "RACE",
+  translateSystemMessages: false,
   tripleMonitorMode: "center-clamp",
   storageTarget: "local-storage",
   userProfile: {
@@ -73,7 +76,8 @@ const defaultSettings: SettingsState = {
   },
   widgets: {
     leaderboard: { x: 0, y: 0, scale: 1.0, width: 520, maxRows: 10, visible: true },
-    relative: { x: 0, y: 0, scale: 1.0, width: 320, maxRows: 3, visible: true },
+    relative: { x: 0, y: 0, scale: 1.0, width: 340, maxRows: 3, visible: true },
+    teamRadio: { x: 0, y: 0, scale: 1.0, width: 340, visible: true },
     lapDelta: { x: 0, y: 0, scale: 1.0, visible: true },
     revengeTracker: { x: 0, y: 0, scale: 1.0, visible: true },
     spotterLeft: { x: 0, y: 0, scale: 1.0, visible: true },
@@ -99,6 +103,7 @@ function loadInitialSettings(): SettingsState {
         language: parsed.language || "ko",
         showThemeLogo: parsed.showThemeLogo !== undefined ? parsed.showThemeLogo : true,
         sessionType: parsed.sessionType || "RACE",
+        translateSystemMessages: parsed.translateSystemMessages !== undefined ? parsed.translateSystemMessages : false,
         userProfile: {
           ...defaultSettings.userProfile,
           ...(parsed.userProfile || {}),
@@ -106,7 +111,7 @@ function loadInitialSettings(): SettingsState {
         widgets: {
           ...defaultSettings.widgets,
           ...(parsed.widgets || {}),
-          // Ensure spotterLeft and spotterRight are populated
+          teamRadio: parsed.widgets?.teamRadio || defaultSettings.widgets.teamRadio,
           spotterLeft: parsed.widgets?.spotterLeft || defaultSettings.widgets.spotterLeft,
           spotterRight: parsed.widgets?.spotterRight || defaultSettings.widgets.spotterRight,
         },
@@ -134,11 +139,13 @@ export async function hydrateFromDiskConfig() {
         language: parsed.language || "ko",
         showThemeLogo: parsed.showThemeLogo !== undefined ? parsed.showThemeLogo : true,
         sessionType: parsed.sessionType || "RACE",
+        translateSystemMessages: parsed.translateSystemMessages !== undefined ? parsed.translateSystemMessages : false,
         storageTarget: "disk-file",
         theme: "f1",
         widgets: {
           ...defaultSettings.widgets,
           ...(parsed.widgets || {}),
+          teamRadio: parsed.widgets?.teamRadio || defaultSettings.widgets.teamRadio,
           spotterLeft: parsed.widgets?.spotterLeft || defaultSettings.widgets.spotterLeft,
           spotterRight: parsed.widgets?.spotterRight || defaultSettings.widgets.spotterRight,
         },
@@ -195,6 +202,11 @@ export async function flushSettings() {
 
 export function updateSettings<K extends keyof SettingsState>(key: K, value: SettingsState[K]) {
   setSettings(key, value);
+  schedulePersist();
+}
+
+export function setTranslateSystemMessages(enabled: boolean) {
+  setSettings("translateSystemMessages", enabled);
   schedulePersist();
 }
 
