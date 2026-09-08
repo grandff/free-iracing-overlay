@@ -26,6 +26,10 @@ export interface Translations {
   drivingModeNotice: string;
   editModeNotice: string;
   overlayActiveBg: string;
+  iracingConnected: string;
+  iracingWaiting: string;
+  overlayHiddenNotice: string;
+  settingsAutoSaved: string;
   save: string;
   saved: string;
   cancel: string;
@@ -73,6 +77,8 @@ export interface Translations {
   selectLanguageTitle: string;
   selectLanguageSubtitle: string;
   currentLanguageBadge: string;
+  leaderboardTitle: string;
+  relativeTitle: string;
   wLeaderboard: string;
   wLeaderboardDesc: string;
   wRelative: string;
@@ -99,6 +105,12 @@ export interface Translations {
   wTrackMapDesc: string;
   wTelemetryHub: string;
   wTelemetryHubDesc: string;
+  showThemeLogoTitle?: string;
+  showThemeLogoDesc?: string;
+  sessionMode?: string;
+  sessionPractice?: string;
+  sessionQualify?: string;
+  sessionRace?: string;
 }
 
 export const translations: Record<SupportedLanguage, Translations> = {
@@ -111,6 +123,10 @@ export const translations: Record<SupportedLanguage, Translations> = {
     drivingModeNotice: "클릭 관통 주행 모드 활성화됨 • Alt+J를 눌러 편집",
     editModeNotice: "위젯을 마우스로 드래그 이동하고 - / + 버튼으로 크기를 조절하세요",
     overlayActiveBg: "오버레이 백그라운드 활성",
+    iracingConnected: "iRacing 연결됨",
+    settingsAutoSaved: "모든 변경사항 자동 저장됨",
+    iracingWaiting: "iRacing 대기 중",
+    overlayHiddenNotice: "iRacing이 실행되면 오버레이가 자동으로 표시됩니다.",
     save: "저장",
     saved: "저장 완료",
     cancel: "취소",
@@ -158,6 +174,8 @@ export const translations: Record<SupportedLanguage, Translations> = {
     selectLanguageTitle: "언어 설정 (Language)",
     selectLanguageSubtitle: "인터페이스에 표시할 언어를 선택하세요.",
     currentLanguageBadge: "현재 언어",
+    leaderboardTitle: "순위표",
+    relativeTitle: "상대 간격",
     wLeaderboard: "1. 실시간 순위표 (Timing Tower)",
     wLeaderboardDesc: "F1 공식 타이밍 타워, 실시간 순위 및 랩 델타",
     wRelative: "2. 렐러티브 (상대 간격)",
@@ -184,6 +202,12 @@ export const translations: Record<SupportedLanguage, Translations> = {
     wTrackMapDesc: "전체 서킷 2D 벡터 트랙 및 실시간 차량 위치",
     wTelemetryHub: "콕핏 스티어링 허브",
     wTelemetryHubDesc: "기어 단수, 디지털 속도계, 15구간 RPM LED, 페달 트레이스",
+    showThemeLogoTitle: "상단 시리즈 로고 표시",
+    showThemeLogoDesc: "순위표 헤더 좌측에 현재 선택된 테마의 공식 로고를 표시합니다.",
+    sessionMode: "시뮬레이터 세션 (미리보기)",
+    sessionPractice: "연습 (PRACTICE)",
+    sessionQualify: "예선 (QUALIFY)",
+    sessionRace: "결선 (RACE)",
   },
   en: {
     appName: "Free iRacing Overlay",
@@ -194,6 +218,10 @@ export const translations: Record<SupportedLanguage, Translations> = {
     drivingModeNotice: "Click-through driving mode active • Press Alt+J to edit",
     editModeNotice: "Drag widgets with mouse and adjust size with - / + buttons",
     overlayActiveBg: "Overlay Active in Background",
+    iracingConnected: "iRacing connected",
+    settingsAutoSaved: "All changes saved automatically",
+    iracingWaiting: "Waiting for iRacing",
+    overlayHiddenNotice: "The overlay appears automatically once iRacing is running.",
     save: "Save",
     saved: "Saved",
     cancel: "Cancel",
@@ -241,6 +269,8 @@ export const translations: Record<SupportedLanguage, Translations> = {
     selectLanguageTitle: "Select Language",
     selectLanguageSubtitle: "Choose your preferred user interface language.",
     currentLanguageBadge: "Active",
+    leaderboardTitle: "Standings",
+    relativeTitle: "Relative",
     wLeaderboard: "1. Live Timing Tower",
     wLeaderboardDesc: "Official F1 timing tower with positions and lap deltas",
     wRelative: "2. Tactical Relative",
@@ -267,6 +297,12 @@ export const translations: Record<SupportedLanguage, Translations> = {
     wTrackMapDesc: "Full 2D vector circuit layout with real-time car positions",
     wTelemetryHub: "Cockpit Telemetry Hub",
     wTelemetryHubDesc: "Gear indicator, digital speedometer, 15-LED rev lights, pedal trace",
+    showThemeLogoTitle: "Show Series Logo",
+    showThemeLogoDesc: "Display current theme's official series logo on leaderboard header.",
+    sessionMode: "Simulator Session (Preview)",
+    sessionPractice: "Practice",
+    sessionQualify: "Qualify",
+    sessionRace: "Race",
   },
   zh: {
     appName: "Free iRacing Overlay",
@@ -277,6 +313,10 @@ export const translations: Record<SupportedLanguage, Translations> = {
     drivingModeNotice: "点击穿透驾驶模式已启用 • 按 Alt+J 进行编辑",
     editModeNotice: "使用鼠标拖动小组件并通过 - / + 按钮调整大小",
     overlayActiveBg: "悬浮窗在后台运行中",
+    iracingConnected: "已连接 iRacing",
+    settingsAutoSaved: "所有更改已自动保存",
+    iracingWaiting: "等待 iRacing",
+    overlayHiddenNotice: "iRacing 启动后将自动显示悬浮窗。",
     save: "保存",
     saved: "已保存",
     cancel: "取消",
@@ -324,6 +364,8 @@ export const translations: Record<SupportedLanguage, Translations> = {
     selectLanguageTitle: "语言设置 (Language)",
     selectLanguageSubtitle: "选择您偏好的界面语言。",
     currentLanguageBadge: "当前语言",
+    leaderboardTitle: "排位榜",
+    relativeTitle: "相对间距",
     wLeaderboard: "1. 实时排位榜 (Timing Tower)",
     wLeaderboardDesc: "F1 官方排位榜，实时名次与单圈秒差",
     wRelative: "2. 相对间距 (Relative)",
@@ -360,6 +402,10 @@ export const translations: Record<SupportedLanguage, Translations> = {
     drivingModeNotice: "クリック透過走行モード有効 • Alt+J で編集",
     editModeNotice: "マウスでドラッグ移動し、- / + ボタンでサイズを調整できます",
     overlayActiveBg: "オーバーレイ バックグラウンド動作中",
+    iracingConnected: "iRacing 接続済み",
+    settingsAutoSaved: "すべての変更を自動保存しました",
+    iracingWaiting: "iRacing を待機中",
+    overlayHiddenNotice: "iRacing を起動するとオーバーレイが自動で表示されます。",
     save: "保存",
     saved: "保存完了",
     cancel: "キャンセル",
@@ -407,6 +453,8 @@ export const translations: Record<SupportedLanguage, Translations> = {
     selectLanguageTitle: "言語設定 (Language)",
     selectLanguageSubtitle: "使用する言語を選択してください。",
     currentLanguageBadge: "現在の言語",
+    leaderboardTitle: "順位表",
+    relativeTitle: "相対間隔",
     wLeaderboard: "1. リアルタイム順位表 (Timing Tower)",
     wLeaderboardDesc: "F1公式タイミングタワー、順位とラップ差表示",
     wRelative: "2. レラティブ (相対間隔)",
@@ -443,6 +491,10 @@ export const translations: Record<SupportedLanguage, Translations> = {
     drivingModeNotice: "Mode conduite traversée de clic actif • Appuyez sur Alt+J pour modifier",
     editModeNotice: "Glissez les widgets à la souris et ajustez la taille avec les boutons - / +",
     overlayActiveBg: "Overlay actif en arrière-plan",
+    iracingConnected: "iRacing connecté",
+    settingsAutoSaved: "Toutes les modifications sont enregistrées",
+    iracingWaiting: "En attente d'iRacing",
+    overlayHiddenNotice: "L'overlay s'affiche automatiquement dès qu'iRacing est lancé.",
     save: "Sauvegarder",
     saved: "Enregistré",
     cancel: "Annuler",
@@ -490,6 +542,8 @@ export const translations: Record<SupportedLanguage, Translations> = {
     selectLanguageTitle: "Sélection de la langue",
     selectLanguageSubtitle: "Choisissez votre langue d'interface préférée.",
     currentLanguageBadge: "Actif",
+    leaderboardTitle: "Classement",
+    relativeTitle: "Écarts relatifs",
     wLeaderboard: "1. Tour de chronométrage (Timing Tower)",
     wLeaderboardDesc: "Tour de chronométrage officielle F1, positions et deltas",
     wRelative: "2. Écarts relatifs (Relative)",
@@ -526,6 +580,10 @@ export const translations: Record<SupportedLanguage, Translations> = {
     drivingModeNotice: "Durchklick-Fahrmodus aktiv • Drücken Sie Alt+J zum Bearbeiten",
     editModeNotice: "Widgets mit der Maus ziehen und mit den Tasten - / + skalieren",
     overlayActiveBg: "Overlay im Hintergrund aktiv",
+    iracingConnected: "iRacing verbunden",
+    settingsAutoSaved: "Alle Änderungen automatisch gespeichert",
+    iracingWaiting: "Warte auf iRacing",
+    overlayHiddenNotice: "Das Overlay erscheint automatisch, sobald iRacing läuft.",
     save: "Speichern",
     saved: "Gespeichert",
     cancel: "Abbrechen",
@@ -573,6 +631,8 @@ export const translations: Record<SupportedLanguage, Translations> = {
     selectLanguageTitle: "Sprache auswählen",
     selectLanguageSubtitle: "Wählen Sie Ihre bevorzugte Benutzeroberflächensprache.",
     currentLanguageBadge: "Aktiv",
+    leaderboardTitle: "Rangliste",
+    relativeTitle: "Relativ-Abstand",
     wLeaderboard: "1. Live-Timing-Tower",
     wLeaderboardDesc: "Offizieller F1-Timing-Tower, Positionen und Runden-Deltas",
     wRelative: "2. Relativ-Abstand (Relative)",
@@ -609,6 +669,10 @@ export const translations: Record<SupportedLanguage, Translations> = {
     drivingModeNotice: "Modalità guida click-through attiva • Premi Alt+J per modificare",
     editModeNotice: "Trascina i widget con il mouse e regola le dimensioni con i pulsanti - / +",
     overlayActiveBg: "Overlay attivo in background",
+    iracingConnected: "iRacing connesso",
+    settingsAutoSaved: "Tutte le modifiche salvate automaticamente",
+    iracingWaiting: "In attesa di iRacing",
+    overlayHiddenNotice: "L'overlay compare automaticamente all'avvio di iRacing.",
     save: "Salva",
     saved: "Salvato",
     cancel: "Annulla",
@@ -656,6 +720,8 @@ export const translations: Record<SupportedLanguage, Translations> = {
     selectLanguageTitle: "Selezione lingua",
     selectLanguageSubtitle: "Scegli la tua lingua preferita per l'interfaccia utente.",
     currentLanguageBadge: "Attiva",
+    leaderboardTitle: "Classifica",
+    relativeTitle: "Distacchi relativi",
     wLeaderboard: "1. Timing Tower live",
     wLeaderboardDesc: "Timing Tower ufficiale F1, posizioni e distacchi sul giro in tempo reale",
     wRelative: "2. Distacchi relativi (Relative)",

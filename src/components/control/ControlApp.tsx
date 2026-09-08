@@ -5,7 +5,6 @@ import {
   updateUserProfile,
   toggleWidgetVisibility,
   toggleEditMode,
-  saveSettingsAsDefault,
   closeControlPanel,
   WidgetKey,
 } from "../../stores/settingsStore.ts";
@@ -31,8 +30,9 @@ import {
 import { t, setLanguage, SUPPORTED_LANGUAGES } from "../../i18n/index.ts";
 import { CountryFlag, getCountryInfo } from "../../assets/icons/CountryFlags.tsx";
 import { CarBrandIcon } from "../../assets/icons/CarBrandIcons.tsx";
+import { telemetry } from "../../stores/telemetryStore.ts";
 
-export const ControlApp: Component = () => {
+export const ControlApp: Component<{ standalone?: boolean }> = (props) => {
   const [activeTab, setActiveTab] = createSignal<"widgets" | "profile" | "theme" | "display" | "shortcuts" | "language">("widgets");
 
   const widgetDefinitions = () => [
@@ -53,46 +53,73 @@ export const ControlApp: Component = () => {
 
   const activeCount = () => Object.values(settings.widgets).filter((w) => w.visible).length;
 
+  // standalone = this is its own OS window (Tauri "control"), so no backdrop,
+  // no fake traffic lights, and no click-outside-to-close. The browser preview
+  // keeps the modal-card presentation.
+  const standalone = () => !!props.standalone;
+
   return (
     <div
-      class="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 pointer-events-auto select-none"
+      class={
+        standalone()
+          ? "w-full h-full flex text-white font-sans select-none"
+          : "fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 pointer-events-auto select-none"
+      }
       onClick={(e) => {
-        if (e.target === e.currentTarget) closeControlPanel();
+        if (!standalone() && e.target === e.currentTarget) closeControlPanel();
       }}
     >
       {/* Program Window Container */}
       <div
-        class="w-full max-w-[840px] bg-[#1a1a1e] border border-white/15 rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col text-white font-sans"
+        class={`bg-[#1a1a1e] overflow-hidden flex flex-col text-white font-sans ${
+          standalone()
+            ? "w-full h-full"
+            : "w-full max-w-[840px] border border-white/15 rounded-2xl shadow-[0_32px_80px_rgba(0,0,0,0.9)]"
+        }`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Window Titlebar */}
         <div class="flex items-center justify-between px-5 py-3.5 bg-[#141417] border-b border-white/10">
           <div class="flex items-center gap-2.5">
-            <div class="w-3 h-3 rounded-full bg-[#ff5f56] hover:opacity-80 cursor-pointer" onClick={closeControlPanel} title={t().close} />
-            <div class="w-3 h-3 rounded-full bg-[#ffbd2e] opacity-40" />
-            <div class="w-3 h-3 rounded-full bg-[#27c93f] opacity-40" />
-            <div class="h-4 w-px bg-white/10 mx-1" />
+            <Show when={!standalone()}>
+              <div class="w-3 h-3 rounded-full bg-[#ff5f56] hover:opacity-80 cursor-pointer" onClick={closeControlPanel} title={t().close} />
+              <div class="w-3 h-3 rounded-full bg-[#ffbd2e] opacity-40" />
+              <div class="w-3 h-3 rounded-full bg-[#27c93f] opacity-40" />
+              <div class="h-4 w-px bg-white/10 mx-1" />
+            </Show>
             <span class="text-xs font-semibold text-white/90">{t().appName} — {t().programSettings}</span>
             <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-white/10 text-white/60">{t().version}</span>
           </div>
 
           <div class="flex items-center gap-3">
-            <span class="text-[11px] text-[#30d158] flex items-center gap-1.5">
-              <span class="w-2 h-2 rounded-full bg-[#30d158]" />
-              {t().overlayActiveBg}
-            </span>
-            <button
-              onClick={closeControlPanel}
-              class="p-1 rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
-              title={t().close}
+            {/* Live iRacing link state — the HUD appears on its own when this is green. */}
+            <span
+              class={`text-[11px] flex items-center gap-1.5 ${
+                telemetry.isConnected ? "text-[#30d158]" : "text-white/45"
+              }`}
+              title={telemetry.isConnected ? t().overlayActiveBg : undefined}
             >
-              <X class="w-4 h-4" />
-            </button>
+              <span
+                class={`w-2 h-2 rounded-full ${
+                  telemetry.isConnected ? "bg-[#30d158]" : "bg-white/30 animate-pulse"
+                }`}
+              />
+              {telemetry.isConnected ? t().iracingConnected : t().iracingWaiting}
+            </span>
+            <Show when={!standalone()}>
+              <button
+                onClick={closeControlPanel}
+                class="p-1 rounded-md text-white/40 hover:text-white hover:bg-white/10 transition-all cursor-pointer"
+                title={t().close}
+              >
+                <X class="w-4 h-4" />
+              </button>
+            </Show>
           </div>
         </div>
 
         {/* Window Body: Sidebar + Main Content */}
-        <div class="flex flex-1 min-h-[460px]">
+        <div class={`flex flex-1 ${standalone() ? "min-h-0" : "min-h-[460px]"}`}>
           {/* Left Sidebar Tabs */}
           <div class="w-48 bg-[#161619] border-r border-white/10 p-3 flex flex-col gap-1 shrink-0">
             <button
@@ -169,7 +196,7 @@ export const ControlApp: Component = () => {
           </div>
 
           {/* Right Main Content Area */}
-          <div class="flex-1 p-6 overflow-y-auto max-h-[500px]">
+          <div class={`flex-1 p-6 overflow-y-auto ${standalone() ? "min-h-0" : "max-h-[500px]"}`}>
             {/* 0. 사용자 프로필 & 국가 설정 탭 */}
             <Show when={activeTab() === "profile"}>
               <div class="flex flex-col gap-5">
@@ -420,6 +447,67 @@ export const ControlApp: Component = () => {
                 <div class="text-[11px] text-white/40 text-center py-2">
                   {t().otherSeriesNotice}
                 </div>
+
+                {/* 상단 시리즈 로고 On/Off 토글 및 세션 모드 설정 */}
+                <div class="mt-1 pt-3 border-t border-white/10 flex flex-col gap-2.5">
+                  <div class="flex items-center justify-between p-3.5 rounded-xl bg-[#202025] border border-white/10">
+                    <div class="flex flex-col gap-0.5">
+                      <span class="text-xs font-semibold text-white">
+                        {t().showThemeLogoTitle || "상단 시리즈 로고 표시"}
+                      </span>
+                      <span class="text-[11px] text-white/50">
+                        {t().showThemeLogoDesc || "순위표 헤더에 현재 선택된 테마의 공식 로고를 노출합니다."}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => updateSettings("showThemeLogo", !settings.showThemeLogo)}
+                      class={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        settings.showThemeLogo !== false
+                          ? "bg-[#30d158]/20 text-[#30d158] border border-[#30d158]/40"
+                          : "bg-white/10 text-white/40 border border-white/15"
+                      }`}
+                    >
+                      {settings.showThemeLogo !== false ? "ON" : "OFF"}
+                    </button>
+                  </div>
+
+                  <div class="flex items-center justify-between p-3.5 rounded-xl bg-[#202025] border border-white/10">
+                    <div class="flex flex-col gap-0.5">
+                      <span class="text-xs font-semibold text-white">
+                        {t().sessionMode || "시뮬레이터 세션 (미리보기)"}
+                      </span>
+                      <span class="text-[11px] text-white/50">
+                        iRacing 접속 시 실제 세션(연습/예선/결선)을 자동으로 따라갑니다. 이 설정은 미접속 시 미리보기 전용입니다.
+                      </span>
+                    </div>
+                    <div class="flex items-center gap-1 bg-black/40 p-1 rounded-lg border border-white/10">
+                      <button
+                        onClick={() => updateSettings("sessionType", "RACE")}
+                        class={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                          settings.sessionType === "RACE" ? "bg-[#e10600] text-white" : "text-white/50 hover:text-white"
+                        }`}
+                      >
+                        RACE
+                      </button>
+                      <button
+                        onClick={() => updateSettings("sessionType", "QUALIFY")}
+                        class={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                          settings.sessionType === "QUALIFY" ? "bg-[#ffd60a] text-black" : "text-white/50 hover:text-white"
+                        }`}
+                      >
+                        QUAL
+                      </button>
+                      <button
+                        onClick={() => updateSettings("sessionType", "PRACTICE")}
+                        class={`px-2.5 py-1 rounded text-xs font-mono font-bold transition-all cursor-pointer ${
+                          settings.sessionType === "PRACTICE" ? "bg-[#0a84ff] text-white" : "text-white/50 hover:text-white"
+                        }`}
+                      >
+                        PRAC
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             </Show>
 
@@ -558,29 +646,26 @@ export const ControlApp: Component = () => {
 
         {/* Window Footer Action Bar */}
         <div class="flex items-center justify-between px-6 py-3.5 bg-[#141417] border-t border-white/10">
-          <div class="text-xs text-white/40">
-            {t().appName} {t().version} • {t().overlayActiveBg}
+          {/* Changes persist on their own, so this reports state instead of asking
+              the user to remember to save. */}
+          <div class="text-xs text-white/40 flex items-center gap-1.5">
+            <Check class="w-3.5 h-3.5 text-[#30d158] stroke-[2.5]" />
+            <span>{t().settingsAutoSaved}</span>
           </div>
 
           <div class="flex items-center gap-3">
+            <Show when={!telemetry.isConnected}>
+              <span class="text-[11px] text-white/40">{t().overlayHiddenNotice}</span>
+            </Show>
             <button
               onClick={() => {
-                closeControlPanel();
+                if (!standalone()) closeControlPanel();
                 toggleEditMode();
               }}
-              class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 text-xs font-semibold text-white transition-all cursor-pointer"
+              disabled={!telemetry.isConnected}
+              class="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/15 active:scale-95 text-xs font-semibold text-white transition-all cursor-pointer disabled:opacity-35 disabled:cursor-not-allowed disabled:active:scale-100"
             >
               {t().editOnOverlay}
-            </button>
-            <button
-              onClick={() => {
-                saveSettingsAsDefault();
-                closeControlPanel();
-              }}
-              class="px-5 py-2 rounded-xl bg-[#30d158] hover:bg-[#28c840] active:scale-95 text-xs font-bold text-black shadow-lg transition-all cursor-pointer flex items-center gap-1.5"
-            >
-              <Check class="w-4 h-4 stroke-[2.5]" />
-              <span>{t().saveAndReturn}</span>
             </button>
           </div>
         </div>

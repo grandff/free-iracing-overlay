@@ -44,7 +44,7 @@
 
 ---
 
-## 3. 기능 요구사항 상세 명세 (11대 핵심 기능)
+## 3. 기능 요구사항 상세 명세 (16대 핵심 기능)
 
 ### 3.0 ⚠️ 기능 구현 전 필수 선행 규칙 (Telemetry-First Rule)
 
@@ -85,8 +85,8 @@
 ---
 
 ### 기능 1: 순위표 (Leaderboard / Standings)
-- **설명:** 현재 세션 참가 차량의 실시간 순위 및 랩 정보 표시.
-- **아이콘:** 순위 변동 아이콘(▲/▼/–), 클래스 배지, 피트 인 렌치 아이콘(`Wrench`), 베스트 랩 스톱워치(`Stopwatch`).
+- **설명:** 현재 세션 참가 차량의 실시간 순위 및 랩 정보 표시. (P1부터 순차 정렬, 가로 너비 220px~720px 및 세로 행 수 3대~25대 3방향 실시간 마우스 드래그 조절 지원).
+- **아이콘 및 에셋:** 순위 변동 아이콘(▲/▼/–), 클래스 배지, 피트 인 렌치(`IconPit`), 베스트 랩 스톱워치(`IconStopwatch`), 드라이버별 영구 국기(SVG), 실제 공식 제조사 브랜드 고해상도 로고 이미지(PNG/SVG 28종).
 - **텔레메트리 변수:** `CarIdxClassPosition`, `CarIdxLap`, `CarIdxLapDistPct`, `CarIdxBestLapTime`, `CarIdxLastLapTime`, `CarIdxTrackSurface`, `CarIdxPaceLine`.
 
 ### 기능 2: 렐러티브 (Relative - 내 기준 위/아래 2~5대)
@@ -137,6 +137,31 @@
   - 피트 레인: 피트 진입 중인 차량은 반투명/렌치 아이콘 표시.
   - 옐로우 플래그 섹터: 사고 발생 섹터 트랙 라인을 고휘도 옐로우로 발광 하이라이트.
   - 리벤지 타깃: 사고 유발 차량 위치에 타깃 조준선(`Crosshair`) 오버레이.
+
+### 기능 12: 페달 인풋 트레이스 (Input Telemetry / Pedal Trace)
+- **설명:** 스로틀(가속), 브레이크(감속), 클러치, 스티어링 휠 조향각의 실시간 입력값과 직전 3초간의 실시간 입력 파형(Waveform) 그래프를 표시하여 트레일 브레이킹 및 조작 분석 지원.
+- **아이콘:** 페달 게이지, 스티어링 휠 각도계, 파형 트레이스 캔버스.
+- **텔레메트리 변수:** `Throttle`, `Brake`, `Clutch`, `SteeringWheelAngle` (60Hz 실시간 공유 메모리).
+
+### 기능 13: 실시간 예상 iRating 증감 & SOF 계산기 (Live iRating Gain/Loss & SOF)
+- **설명:** 현재 참가한 스플릿의 공식 SOF(Strength of Field) 난이도를 표기하고, 현재 내 주행 순위로 완주할 경우 경기 종료 후 변동될 예상 iRating(예: `+38 iR`, `-15 iR`)을 실시간 계산하여 HUD에 표기.
+- **아이콘:** SOF 트로피, iRating 상승(Green ▲) / 하강(Red ▼) 델타 배지.
+- **텔레메트리 변수:** 세션 YAML `DriverInfo: Drivers[carIdx].IRating`, `CarIdxPosition`, 공식 iRacing ELO 공식 기반 알고리즘.
+
+### 기능 14: 피트박스 카운트다운 & 리미터 헬퍼 (Pit Box Countdown & Pit Lane Helper)
+- **설명:** 피트 레인 진입 시 제한 속도 초과 경고 표시 및 내 피트 스톨(Pit Stall) 정차 지점까지 남은 거리(m)와 50m ➔ 30m ➔ 10m ➔ STOP! 정밀 카운트다운 표시로 피트 실수 원천 차단.
+- **아이콘:** 속도 제한 피트 리미터 게이지, 피트스탑 스톱사인(`IconPit`), 거리 카운트다운 바.
+- **텔레메트리 변수:** `CarIdxTrackSurface`, `Speed`, `PitSvFlags`, `CarIdxLapDistPct`.
+
+### 기능 15: 디지플래그 / 세션 플래그 경보 (Digiflag / Prominent Session Flag HUD)
+- **설명:** 황기(사고/서행 차량 진입), 청기(뒤에서 빠른 클래스 또는 랩 선두 접근 중 - 추월 차량 번호 함께 표기), 흑백 반반기(Meatball/강제 수리 지시), 백기, 체커기 등 트랙 상황을 F1 및 공식 레이스 전광판 스타일로 고휘도 발광 경보.
+- **아이콘:** 디지털 플래그 LED 애니메이션(Yellow, Blue, Green, Red, Checkered, Meatball).
+- **텔레메트리 변수:** `SessionFlags` (Bitfield 네이티브 플래그).
+
+### 기능 16: 테마별 RPM 시프트 라이트 LED 바 (Theme-Adaptive RPM Shift Light LED Bar)
+- **설명:** 단일 스타일에 고정되지 않고 **사용자가 선택한 테마에 맞춰 외형과 점멸 스타일이 동적으로 적응**하는 고반응성 타코미터 & 변속 인디케이터 (F1 수평 아치형 LED, WEC/GT3 시퀀셜 듀얼 LED, IndyCar 스타일 등). 차종별 최적 변속 RPM 도달 시 고휘도 점멸.
+- **아이콘:** 테마별 변속 LED 바, RPM 게이지, 기어 인디케이터.
+- **텔레메트리 변수:** `RPM`, `EngineWarnings`, YAML `DriverInfo.DriverCarSLFirstRPM`, `DriverInfo.DriverCarSLShiftRPM`, `DriverInfo.DriverCarSLLastRPM`, `DriverInfo.DriverCarSLBlinkRPM`.
 
 ---
 
@@ -273,4 +298,40 @@ free-iracing-overlay/
    - 코드만 작성하고 빌드·실행으로 확인하지 않았다면 **`IMPLEMENTED (미검증)`** 으로 표기합니다.
    - 특히 Rust(`src-tauri/`) 변경은 `cargo check` 통과 여부를 근거로 남깁니다. 컴파일하지 않은 코드는 PASS가 아닙니다.
 
+---
 
+## 9. 로컬 개발 서버 및 실행 명령어 (Development Commands)
+
+> **⚠️ 실행 원칙:** AI 모델은 개발 서버(`dev`)를 백그라운드로 임의 자동 실행하지 않으며, **사용자가 직접 터미널에서 필요에 따라 실행**합니다.
+
+### 9.1 프론트엔드 웹 개발 서버 (브라우저 & Mock 텔레메트리 모드)
+macOS/Linux/Windows 환경에서 iRacing 게임 없이 브라우저를 통해 60Hz 가상 텔레메트리와 오버레이 UI, `Alt + J` 편집 기능을 즉시 확인 및 디버깅할 때 사용합니다.
+
+```bash
+npm run dev
+```
+- **로컬 접속 주소:** `http://localhost:1420`
+- **시뮬레이션 엔진:** iRacing 게임이 켜져 있지 않아도 `MockTelemetryEngine`이 60Hz 가상 주행 텔레메트리를 자동 방출하여 순위표, 델타, 트랙 맵 등의 실시간 반응을 확인할 수 있습니다.
+
+### 9.2 데스크톱 네이티브 오버레이 실행 (Tauri v2 윈도우 모드)
+실제 데스크톱 투명 윈도우, 클릭스루(Click-through), 항상 위에 표시(Always-on-Top) 등 네이티브 OS 윈도우 런타임 환경에서 실행할 때 사용합니다.
+
+```bash
+npm run tauri dev
+```
+
+### 9.3 타입 체크 및 프로덕션 번들 빌드
+TypeScript 컴파일 무결점 검증 및 Vite 프로덕션 번들 생성을 검증할 때 사용합니다.
+
+```bash
+npm run build
+```
+- `tsc --noEmit && vite build` 파이프라인이 동작하여 타입 에러 0건 여부와 초경량 번들 크기(< 250KB)를 확인합니다.
+
+### 9.4 공식 에셋(실물 브랜드 로고 & F1 폰트) 셋업
+초기 설치나 새로운 클론 환경에서 실물 공식 브랜드 이미지 28종 및 F1 웹폰트를 일괄 셋업할 때 사용합니다.
+
+```bash
+npm run setup-brands   # 공식 car-logos-dataset 기반 제조사 실물 고해상도 로고(PNG) 다운로드
+npm run setup-fonts    # 공식 Formula1 WOFF2 폰트 다운로드 및 로컬 캐싱
+```

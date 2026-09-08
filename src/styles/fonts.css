@@ -1,36 +1,15 @@
 /* =========================================================
-   FORMULA 1 & MOTORSPORT TYPOGRAPHY ENGINE
-   1. Official Formula 1 typeface support (local / public/fonts)
-   2. High-performance Google WebFont fallbacks:
-      - Titillium Web (Primary high-density timing)
-      - Chakra Petch (High-contrast digital telemetry numbers)
-      - Barlow Condensed (Broadcasting lower-thirds)
+   OVERLAY TYPOGRAPHY ENGINE
+   Local woff2 (public/fonts, offline-safe for Tauri) -> CDN -> Roboto.
+   Run `npm run setup-fonts` once to populate public/fonts/.
+   Applied globally: tailwind.config.js maps font-sans/font-mono
+   to var(--theme-font) / var(--theme-font-mono).
    ========================================================= */
 
 @font-face {
   font-family: "Formula1";
-  src: local("Formula1 Display Bold"),
-       local("Formula1-Display-Bold"),
-       local("Formula1 Bold"),
-       local("Formula1-Bold"),
-       local("Formula1"),
-       url("/fonts/Formula1-Bold.woff2") format("woff2"),
-       url("/fonts/Formula1-Bold.woff") format("woff"),
-       url("/fonts/Formula1-Bold.ttf") format("truetype");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: "Formula1";
-  src: local("Formula1 Display Regular"),
-       local("Formula1-Display-Regular"),
-       local("Formula1 Regular"),
-       local("Formula1-Regular"),
-       url("/fonts/Formula1-Regular.woff2") format("woff2"),
-       url("/fonts/Formula1-Regular.woff") format("woff"),
-       url("/fonts/Formula1-Regular.ttf") format("truetype");
+  src: url("/fonts/Formula1-Regular.woff2") format("woff2"),
+       url("https://raw.githubusercontent.com/Thomson-19/F1-Fonts/main/F1-Display-Regular.woff2") format("woff2");
   font-weight: 400;
   font-style: normal;
   font-display: swap;
@@ -38,44 +17,35 @@
 
 @font-face {
   font-family: "Formula1";
-  src: local("Formula1 Display Wide"),
-       local("Formula1-Display-Wide"),
-       local("Formula1 Wide"),
-       local("Formula1-Wide"),
-       url("/fonts/Formula1-Wide.woff2") format("woff2"),
-       url("/fonts/Formula1-Wide.woff") format("woff"),
-       url("/fonts/Formula1-Wide.ttf") format("truetype");
-  font-weight: 900;
+  src: url("/fonts/Formula1-Bold.woff2") format("woff2"),
+       url("https://raw.githubusercontent.com/Thomson-19/F1-Fonts/main/F1-Display-Bold.woff2") format("woff2");
+  font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
 
-/* F1 Typography Utility Classes with Native macOS High-Contrast Motorsport Fallbacks */
-.font-f1 {
-  font-family: "Formula1", "DIN Alternate", "Titillium Web", "Futura", "Chakra Petch", "Barlow Condensed", -apple-system, sans-serif;
-  letter-spacing: -0.01em;
+/* "Wide" is the broadcast title face (F1 RACE / QUALIFYING headers) */
+@font-face {
+  font-family: "Formula1 Wide";
+  src: url("/fonts/Formula1-Wide.woff2") format("woff2"),
+       url("https://raw.githubusercontent.com/Thomson-19/F1-Fonts/main/F1-Display-Wide.woff2") format("woff2");
+  font-weight: 400 900;
+  font-style: normal;
+  font-display: swap;
 }
 
-.font-f1-bold {
-  font-family: "Formula1", "DIN Alternate", "Titillium Web", "Futura", "Chakra Petch", -apple-system, sans-serif;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+:root {
+  font-family: var(--theme-font);
 }
 
+/* Broadcast title lockup: F1 RACE, QUALIFYING, LAP x/y */
 .font-f1-wide {
-  font-family: "Formula1", "DIN Alternate", "Chakra Petch", "Barlow Condensed", "Futura", -apple-system, sans-serif;
-  font-weight: 800;
-  letter-spacing: 0.05em;
+  font-family: "Formula1 Wide", var(--theme-font);
+  letter-spacing: 0.02em;
   text-transform: uppercase;
 }
 
-.font-f1-num {
-  font-family: "Formula1", "DIN Alternate", "Chakra Petch", "Titillium Web", monospace;
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" on;
-}
-
-/* Strict Tabular Numbers rule to eliminate horizontal live jitter */
+/* Strict tabular numbers: kills horizontal jitter on live-updating digits */
 .tnum {
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum" on;

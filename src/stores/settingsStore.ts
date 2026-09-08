@@ -44,6 +44,8 @@ export interface SettingsState {
   language: SupportedLanguage; // "ko" | "en" | "zh" | "ja" | "fr" | "de" | "it"
   isEditMode: boolean; // Alt + J toggle
   showControlPanel: boolean; // true = program settings dashboard visible
+  showThemeLogo: boolean; // true = display current theme series logo at top of HUD
+  sessionType: "PRACTICE" | "QUALIFY" | "RACE"; // Session mode (Practice, Qualify, Race)
   tripleMonitorMode: TripleMonitorMode;
   storageTarget: "disk-file" | "local-storage";
   userProfile: UserProfile;
@@ -59,6 +61,8 @@ const defaultSettings: SettingsState = {
   language: "ko",
   isEditMode: false,
   showControlPanel: false,
+  showThemeLogo: true,
+  sessionType: "RACE",
   tripleMonitorMode: "center-clamp",
   storageTarget: "local-storage",
   userProfile: {
@@ -68,8 +72,8 @@ const defaultSettings: SettingsState = {
     carBrand: "Porsche",
   },
   widgets: {
-    leaderboard: { x: 0, y: 0, scale: 1.0, width: 460, maxRows: 10, visible: true },
-    relative: { x: 0, y: 0, scale: 1.0, visible: true },
+    leaderboard: { x: 0, y: 0, scale: 1.0, width: 520, maxRows: 10, visible: true },
+    relative: { x: 0, y: 0, scale: 1.0, width: 320, maxRows: 3, visible: true },
     lapDelta: { x: 0, y: 0, scale: 1.0, visible: true },
     revengeTracker: { x: 0, y: 0, scale: 1.0, visible: true },
     spotterLeft: { x: 0, y: 0, scale: 1.0, visible: true },
@@ -93,6 +97,8 @@ function loadInitialSettings(): SettingsState {
         ...defaultSettings,
         ...parsed,
         language: parsed.language || "ko",
+        showThemeLogo: parsed.showThemeLogo !== undefined ? parsed.showThemeLogo : true,
+        sessionType: parsed.sessionType || "RACE",
         userProfile: {
           ...defaultSettings.userProfile,
           ...(parsed.userProfile || {}),
@@ -126,6 +132,8 @@ export async function hydrateFromDiskConfig() {
         ...defaultSettings,
         ...parsed,
         language: parsed.language || "ko",
+        showThemeLogo: parsed.showThemeLogo !== undefined ? parsed.showThemeLogo : true,
+        sessionType: parsed.sessionType || "RACE",
         storageTarget: "disk-file",
         theme: "f1",
         widgets: {
@@ -142,16 +150,62 @@ export async function hydrateFromDiskConfig() {
   }
 }
 
+// ponytail: transient UI state — never belongs in the saved config. Persisting
+// isEditMode meant a restart could drop you straight into edit mode.
+const TRANSIENT: (keyof SettingsState)[] = ["isEditMode", "showControlPanel", "setupStep"];
+
+function persistableSnapshot(): SettingsState {
+  const snap = JSON.parse(JSON.stringify(settings)) as SettingsState;
+  for (const k of TRANSIENT) Reflect.deleteProperty(snap, k);
+  return snap;
+}
+
+async function writeConfig(snapshot: SettingsState) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+  } catch (e) {
+    console.error("Failed to save to localStorage:", e);
+  }
+  if (isTauri()) {
+    try {
+      await invoke("save_config", { configJson: JSON.stringify(snapshot, null, 2) });
+      setSettings("storageTarget", "disk-file");
+    } catch (e) {
+      console.error("Failed to write native config.json:", e);
+    }
+  }
+}
+
+// Every setting change persists on its own — no "don't forget to save" step.
+// Debounced so a widget drag writes once at the end, not 60x/second.
+// ponytail: 400ms flat debounce; add a max-wait only if a long drag ever loses data.
+let persistTimer: ReturnType<typeof setTimeout> | undefined;
+function schedulePersist() {
+  // Before the wizard finishes, saveSettingsAsDefault() owns the first write.
+  if (!settings.hasCompletedSetup) return;
+  clearTimeout(persistTimer);
+  persistTimer = setTimeout(() => void writeConfig(persistableSnapshot()), 400);
+}
+
+/** Force any pending debounced write out now (window close, wizard finish). */
+export async function flushSettings() {
+  clearTimeout(persistTimer);
+  await writeConfig(persistableSnapshot());
+}
+
 export function updateSettings<K extends keyof SettingsState>(key: K, value: SettingsState[K]) {
   setSettings(key, value);
+  schedulePersist();
 }
 
 export function updateWidgetTransform(widgetKey: keyof SettingsState["widgets"], transform: Partial<WidgetTransform>) {
   setSettings("widgets", widgetKey, (prev) => ({ ...prev, ...transform }));
+  schedulePersist();
 }
 
 export function toggleWidgetVisibility(widgetKey: WidgetKey) {
   setSettings("widgets", widgetKey, "visible", (v) => !v);
+  schedulePersist();
 }
 
 export function toggleControlPanel() {
@@ -172,30 +226,14 @@ export function toggleEditMode() {
 
 export function updateUserProfile(profile: Partial<UserProfile>) {
   setSettings("userProfile", (prev) => ({ ...prev, ...profile }));
+  schedulePersist();
 }
 
+/** Finishes the setup wizard. Ongoing changes persist by themselves after this. */
 export async function saveSettingsAsDefault() {
   setSettings("hasCompletedSetup", true);
   setSettings("isEditMode", false);
-
-  const snapshot = JSON.parse(JSON.stringify(settings));
-
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
-    console.log("Saved overlay layout to localStorage");
-  } catch (e) {
-    console.error("Failed to save to localStorage:", e);
-  }
-
-  if (isTauri()) {
-    try {
-      await invoke("save_config", { configJson: JSON.stringify(snapshot, null, 2) });
-      setSettings("storageTarget", "disk-file");
-      console.log("Saved default configuration to OS native disk file (config.json)");
-    } catch (e) {
-      console.error("Failed to write native config.json:", e);
-    }
-  }
+  await flushSettings();
 }
 
 export { settings };

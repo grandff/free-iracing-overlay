@@ -12,6 +12,7 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "iRacing Overlay",
         "width": 1920,
         "height": 1080,
@@ -21,7 +22,24 @@
         "decorations": false,
         "alwaysOnTop": true,
         "shadow": false,
-        "skipTaskbar": false
+        "skipTaskbar": true,
+        "visible": false
+      },
+      {
+        "label": "control",
+        "title": "Free iRacing Overlay",
+        "width": 1180,
+        "height": 800,
+        "minWidth": 900,
+        "minHeight": 620,
+        "resizable": true,
+        "fullscreen": false,
+        "transparent": false,
+        "decorations": true,
+        "alwaysOnTop": false,
+        "center": true,
+        "skipTaskbar": false,
+        "visible": true
       }
     ],
     "security": {

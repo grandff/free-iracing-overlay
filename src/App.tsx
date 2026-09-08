@@ -7,8 +7,9 @@ import {
   updateWidgetTransform,
   WidgetKey,
 } from "./stores/settingsStore.ts";
-import { invoke, isTauri } from "@tauri-apps/api/core";
+import { isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
+import { windowRole, openControlWindow, setClickthrough } from "./services/shell.ts";
 import { telemetry, initializeTelemetryPipeline } from "./stores/telemetryStore.ts";
 import { SetupWizard } from "./components/setup/SetupWizard.tsx";
 import { ControlApp } from "./components/control/ControlApp.tsx";
@@ -56,6 +57,10 @@ export const App: Component = () => {
     setDraggingWidget(null);
   };
 
+  // Under Tauri the settings UI is a separate OS window, so this focuses it.
+  // In the browser preview there is only one window, so fall back to the in-page panel.
+  const openSettings = () => (windowRole === "browser" ? toggleControlPanel() : void openControlWindow());
+
   onMount(() => {
     hydrateFromDiskConfig();
     initializeTelemetryPipeline();
@@ -93,9 +98,8 @@ export const App: Component = () => {
   // Driving mode must let clicks reach the game. CSS pointer-events cannot do this —
   // only the OS window can, so mirror edit mode onto the native click-through flag.
   createEffect(() => {
-    if (!isTauri()) return;
-    const interactive = settings.isEditMode || !settings.hasCompletedSetup || settings.showControlPanel;
-    invoke("set_clickthrough", { ignore: !interactive }).catch(() => {});
+    const interactive = settings.isEditMode || !settings.hasCompletedSetup;
+    void setClickthrough(!interactive);
   });
 
   // Performance Tiering (AGENTS.md Section 5):
@@ -118,18 +122,22 @@ export const App: Component = () => {
       const teamColors = ["#3671C6", "#E8002D", "#FF8000", "#27F4D2", "#E8002D", "#FF8000", "#27F4D2", "#229971"];
       const tireList: ("S" | "M" | "H")[] = ["M", "S", "M", "H", "S", "M", "H", "H"];
       const sorted = [...frame.cars].sort((a, b) => a.gapToPlayerSeconds - b.gapToPlayerSeconds);
-      const pIdx = sorted.findIndex((c) => c.carIdx === 1);
-      const slice = sorted.slice(Math.max(0, pIdx - 2), Math.min(sorted.length, pIdx + 3));
+      const playerIdx = frame.player?.carIdx || 1;
+      const pIdx = sorted.findIndex((c) => c.carIdx === playerIdx);
+      const aheadBehind = Math.max(2, Math.min(5, settings.widgets.relative?.maxRows || 3));
+      const slice = sorted.slice(Math.max(0, pIdx - aheadBehind), Math.min(sorted.length, pIdx + aheadBehind + 1));
       const mappedRel = slice.map((c) => {
         const code = c.driverName.split(" ").pop()?.substring(0, 3).toUpperCase() || `P${c.overallPosition}`;
         return {
+          position: c.overallPosition || c.classPosition || 1,
           carNumber: c.carNumber,
           code,
           name: c.driverName,
-          teamColor: teamColors[c.carIdx % teamColors.length],
+          country: c.country,
+          teamColor: c.carClassColor || teamColors[c.carIdx % teamColors.length],
           tireCompound: tireList[c.carIdx % tireList.length],
           gapSeconds: c.gapToPlayerSeconds,
-          isPlayer: c.carIdx === 1,
+          isPlayer: c.carIdx === playerIdx,
         };
       });
       setRelativeEntries(mappedRel);
@@ -180,7 +188,7 @@ export const App: Component = () => {
           {/* Floating Minimal Control Capsule (Always Accessible) */}
           <div class="fixed top-3 right-6 z-50 flex items-center gap-2 pointer-events-auto">
             <button
-              onClick={toggleControlPanel}
+              onClick={openSettings}
               class="px-3 py-1.5 rounded-full bg-[#18181c]/90 hover:bg-[#25252b] text-white/90 border border-white/15 text-xs font-semibold shadow-lg flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
               title={t().programSettings}
             >
@@ -203,7 +211,7 @@ export const App: Component = () => {
           </div>
 
           {/* Program Settings Window (프로그램 영역) */}
-          <Show when={settings.showControlPanel}>
+          <Show when={windowRole === "browser" && settings.showControlPanel}>
             <ControlApp />
           </Show>
 
@@ -241,12 +249,19 @@ export const App: Component = () => {
                 <Leaderboard
                   cars={telemetry.frame?.cars}
                   lapCurrent={telemetry.frame?.cars[0]?.lap}
+                  lapTotal={telemetry.frame?.sessionLapsTotal}
                   playerCarIdx={telemetry.frame?.player?.carIdx || 1}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.leaderboard.scale}
-                  width={settings.widgets.leaderboard.width || 460}
+                  width={settings.widgets.leaderboard.width || 520}
+                  maxRows={settings.widgets.leaderboard.maxRows || 10}
+                  showThemeLogo={settings.showThemeLogo}
+                  theme={settings.theme}
+                  sessionType={telemetry.frame?.sessionType}
+                  sessionTimeRemain={telemetry.frame?.sessionTimeRemainingSec}
                   onScaleChange={(scale) => updateWidgetTransform("leaderboard", { scale })}
                   onWidthChange={(width) => updateWidgetTransform("leaderboard", { width })}
+                  onMaxRowsChange={(maxRows) => updateWidgetTransform("leaderboard", { maxRows })}
                 />
               </div>
             </Show>
@@ -269,7 +284,11 @@ export const App: Component = () => {
                   entries={relativeEntries().length > 0 ? relativeEntries() : undefined}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.relative.scale}
+                  width={settings.widgets.relative.width || 320}
+                  maxRows={settings.widgets.relative.maxRows || 3}
                   onScaleChange={(scale) => updateWidgetTransform("relative", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("relative", { width })}
+                  onMaxRowsChange={(maxRows) => updateWidgetTransform("relative", { maxRows })}
                 />
               </div>
             </Show>

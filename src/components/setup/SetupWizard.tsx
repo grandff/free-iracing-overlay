@@ -614,7 +614,11 @@ export const SetupWizard: Component = () => {
                 <Relative
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.relative.scale}
+                  width={settings.widgets.relative.width || 320}
+                  maxRows={settings.widgets.relative.maxRows || 3}
                   onScaleChange={(scale) => updateWidgetTransform("relative", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("relative", { width })}
+                  onMaxRowsChange={(maxRows) => updateWidgetTransform("relative", { maxRows })}
                 />
               </div>
             </Show>

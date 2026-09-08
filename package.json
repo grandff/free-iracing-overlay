@@ -9,7 +9,9 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "setup-fonts": "node scripts/setup-fonts.js",
-    "tauri": "tauri"
+    "setup-brands": "node scripts/download-brand-logos.js",
+    "tauri": "tauri",
+    "verify-brands": "node scripts/verify-brands.mjs"
   },
   "dependencies": {
     "lucide-solid": "^1.41.0",

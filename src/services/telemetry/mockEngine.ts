@@ -1,3 +1,4 @@
+import { settings } from "../../stores/settingsStore.ts";
 import { TelemetryFrame, CarTelemetry } from "./types.ts";
 
 // ponytail: lightweight 60Hz simulated telemetry generator for macOS/Linux dev without iRacing running
@@ -10,18 +11,29 @@ export class MockTelemetryEngine {
   private trackLength = 4500; // 4.5km circuit
 
   private simulatedCars: CarTelemetry[] = [
-    { carIdx: 1, carNumber: "7", driverName: "K. Jeongmin", country: "KR", carBrand: "Porsche", irating: 6840, safetyRating: { license: "A", value: 4.62 }, classPosition: 1, overallPosition: 1, positionDelta: 0, lap: 3, lapDistPct: 0.15, lastLapTime: 84.12, bestLapTime: 83.89, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 245, gapToPlayerSeconds: 0, trackSurface: 3 },
+    { carIdx: 1, carNumber: "7", driverName: "K. Jeongmin", country: "KR", carBrand: "Porsche", irating: 6840, safetyRating: { license: "S", value: 4.98 }, classPosition: 1, overallPosition: 1, positionDelta: 0, lap: 3, lapDistPct: 0.15, lastLapTime: 84.12, bestLapTime: 83.89, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 245, gapToPlayerSeconds: 0, trackSurface: 3 },
     { carIdx: 2, carNumber: "1", driverName: "M. Verstappen", country: "NL", carBrand: "Red Bull", irating: 7850, safetyRating: { license: "P", value: 4.99 }, classPosition: 2, overallPosition: 2, positionDelta: 1, lap: 3, lapDistPct: 0.145, lastLapTime: 84.34, bestLapTime: 84.05, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 242, gapToPlayerSeconds: -0.42, trackSurface: 3 },
     { carIdx: 3, carNumber: "6", driverName: "K. Estre", country: "FR", carBrand: "Porsche", irating: 7120, safetyRating: { license: "A", value: 4.88 }, classPosition: 3, overallPosition: 3, positionDelta: -1, lap: 3, lapDistPct: 0.138, lastLapTime: 84.62, bestLapTime: 84.11, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 240, gapToPlayerSeconds: -1.02, trackSurface: 3 },
-    { carIdx: 4, carNumber: "51", driverName: "A. Pier Guidi", country: "IT", carBrand: "Ferrari", irating: 6920, safetyRating: { license: "A", value: 4.75 }, classPosition: 4, overallPosition: 4, positionDelta: 2, lap: 3, lapDistPct: 0.165, lastLapTime: 84.25, bestLapTime: 84.15, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 248, gapToPlayerSeconds: +1.28, trackSurface: 3 },
-    { carIdx: 5, carNumber: "24", driverName: "J. Gordon", country: "US", carBrand: "Corvette", irating: 6350, safetyRating: { license: "A", value: 4.41 }, classPosition: 5, overallPosition: 5, positionDelta: -2, lap: 3, lapDistPct: 0.115, lastLapTime: 87.80, bestLapTime: 87.35, inPit: true, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 65, gapToPlayerSeconds: -2.95, trackSurface: 1 },
-    { carIdx: 6, carNumber: "911", driverName: "L. Vanthoor", country: "BE", carBrand: "Porsche", irating: 6890, safetyRating: { license: "A", value: 4.75 }, classPosition: 1, overallPosition: 6, positionDelta: 1, lap: 2, lapDistPct: 0.12, lastLapTime: 94.55, bestLapTime: 94.20, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 235, gapToPlayerSeconds: -2.55, trackSurface: 3 },
-    { carIdx: 7, carNumber: "63", driverName: "M. Bortolotti", country: "IT", carBrand: "Lamborghini", irating: 6480, safetyRating: { license: "A", value: 4.52 }, classPosition: 2, overallPosition: 7, positionDelta: 0, lap: 2, lapDistPct: 0.10, lastLapTime: 94.85, bestLapTime: 94.30, inPit: true, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 0, gapToPlayerSeconds: -4.10, trackSurface: 2 },
-    { carIdx: 8, carNumber: "3", driverName: "A. Garcia", country: "ES", carBrand: "Corvette", irating: 6120, safetyRating: { license: "A", value: 4.30 }, classPosition: 3, overallPosition: 8, positionDelta: -1, lap: 2, lapDistPct: 0.08, lastLapTime: 95.10, bestLapTime: 94.60, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 233, gapToPlayerSeconds: -5.60, trackSurface: 3 },
-    { carIdx: 9, carNumber: "77", driverName: "M. Goetz", country: "DE", carBrand: "Mercedes", irating: 6210, safetyRating: { license: "A", value: 4.25 }, classPosition: 4, overallPosition: 9, positionDelta: 0, lap: 2, lapDistPct: 0.07, lastLapTime: 95.25, bestLapTime: 94.75, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 234, gapToPlayerSeconds: -6.20, trackSurface: 3 },
-    { carIdx: 10, carNumber: "23", driverName: "T. Matsuda", country: "JP", carBrand: "Nissan", irating: 5950, safetyRating: { license: "A", value: 4.15 }, classPosition: 5, overallPosition: 10, positionDelta: 1, lap: 2, lapDistPct: 0.06, lastLapTime: 95.40, bestLapTime: 94.90, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 232, gapToPlayerSeconds: -7.10, trackSurface: 3 },
-    { carIdx: 11, carNumber: "44", driverName: "L. Hamilton", country: "GB", carBrand: "Mercedes", irating: 7120, safetyRating: { license: "A", value: 4.88 }, classPosition: 6, overallPosition: 11, positionDelta: -2, lap: 2, lapDistPct: 0.05, lastLapTime: 95.70, bestLapTime: 95.10, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 230, gapToPlayerSeconds: -8.00, trackSurface: 3 },
-    { carIdx: 12, carNumber: "888", driverName: "R. Marciello", country: "CH", carBrand: "Audi", irating: 6720, safetyRating: { license: "A", value: 4.60 }, classPosition: 7, overallPosition: 12, positionDelta: 0, lap: 2, lapDistPct: 0.04, lastLapTime: 95.90, bestLapTime: 95.20, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 228, gapToPlayerSeconds: -8.90, trackSurface: 3 },
+    { carIdx: 4, carNumber: "51", driverName: "A. Pier Guidi", country: "IT", carBrand: "Ferrari", irating: 6920, safetyRating: { license: "A", value: 3.95 }, classPosition: 4, overallPosition: 4, positionDelta: 2, lap: 3, lapDistPct: 0.165, lastLapTime: 84.25, bestLapTime: 84.15, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 248, gapToPlayerSeconds: +1.28, trackSurface: 3 },
+    { carIdx: 5, carNumber: "24", driverName: "J. Gordon", country: "US", carBrand: "Corvette", irating: 6350, safetyRating: { license: "B", value: 3.82 }, classPosition: 5, overallPosition: 5, positionDelta: -2, lap: 3, lapDistPct: 0.115, lastLapTime: 87.80, bestLapTime: 87.35, inPit: true, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 65, gapToPlayerSeconds: -2.95, trackSurface: 1 },
+    { carIdx: 6, carNumber: "911", driverName: "L. Vanthoor", country: "BE", carBrand: "Porsche", irating: 6890, safetyRating: { license: "B", value: 3.45 }, classPosition: 1, overallPosition: 6, positionDelta: 1, lap: 2, lapDistPct: 0.12, lastLapTime: 94.55, bestLapTime: 94.20, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 235, gapToPlayerSeconds: -2.55, trackSurface: 3 },
+    { carIdx: 7, carNumber: "63", driverName: "M. Bortolotti", country: "IT", carBrand: "Lamborghini", irating: 6480, safetyRating: { license: "C", value: 3.75 }, classPosition: 2, overallPosition: 7, positionDelta: 0, lap: 2, lapDistPct: 0.10, lastLapTime: 94.85, bestLapTime: 94.30, inPit: true, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 0, gapToPlayerSeconds: -4.10, trackSurface: 2 },
+    { carIdx: 8, carNumber: "3", driverName: "A. Garcia", country: "ES", carBrand: "Corvette", irating: 6120, safetyRating: { license: "C", value: 2.85 }, classPosition: 3, overallPosition: 8, positionDelta: -1, lap: 2, lapDistPct: 0.08, lastLapTime: 95.10, bestLapTime: 94.60, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 233, gapToPlayerSeconds: -5.60, trackSurface: 3 },
+    { carIdx: 9, carNumber: "77", driverName: "M. Goetz", country: "DE", carBrand: "Mercedes", irating: 6210, safetyRating: { license: "D", value: 3.20 }, classPosition: 4, overallPosition: 9, positionDelta: 0, lap: 2, lapDistPct: 0.07, lastLapTime: 95.25, bestLapTime: 94.75, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 234, gapToPlayerSeconds: -6.20, trackSurface: 3 },
+    { carIdx: 10, carNumber: "23", driverName: "T. Matsuda", country: "JP", carBrand: "Nissan", irating: 5950, safetyRating: { license: "D", value: 2.65 }, classPosition: 5, overallPosition: 10, positionDelta: 1, lap: 2, lapDistPct: 0.06, lastLapTime: 95.40, bestLapTime: 94.90, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 232, gapToPlayerSeconds: -7.10, trackSurface: 3 },
+    { carIdx: 11, carNumber: "44", driverName: "L. Hamilton", country: "GB", carBrand: "Mercedes", irating: 7120, safetyRating: { license: "Rookie", value: 2.90 }, classPosition: 6, overallPosition: 11, positionDelta: -2, lap: 2, lapDistPct: 0.05, lastLapTime: 95.70, bestLapTime: 95.10, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 230, gapToPlayerSeconds: -8.00, trackSurface: 3 },
+    { carIdx: 12, carNumber: "888", driverName: "R. Marciello", country: "CH", carBrand: "Audi", irating: 6720, safetyRating: { license: "Rookie", value: 2.45 }, classPosition: 7, overallPosition: 12, positionDelta: 0, lap: 2, lapDistPct: 0.04, lastLapTime: 95.90, bestLapTime: 95.20, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 228, gapToPlayerSeconds: -8.90, trackSurface: 3 },
+    { carIdx: 13, carNumber: "16", driverName: "C. Leclerc", country: "MC", carBrand: "Ferrari", irating: 7420, safetyRating: { license: "P", value: 4.80 }, classPosition: 8, overallPosition: 13, positionDelta: 2, lap: 2, lapDistPct: 0.038, lastLapTime: 95.30, bestLapTime: 94.40, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 236, gapToPlayerSeconds: -9.50, trackSurface: 3 },
+    { carIdx: 14, carNumber: "14", driverName: "F. Alonso", country: "ES", carBrand: "Aston Martin", irating: 7250, safetyRating: { license: "S", value: 4.60 }, classPosition: 9, overallPosition: 14, positionDelta: 1, lap: 2, lapDistPct: 0.035, lastLapTime: 95.45, bestLapTime: 94.70, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 234, gapToPlayerSeconds: -10.10, trackSurface: 3 },
+    { carIdx: 15, carNumber: "4", driverName: "L. Norris", country: "GB", carBrand: "McLaren", irating: 7310, safetyRating: { license: "A", value: 4.50 }, classPosition: 10, overallPosition: 15, positionDelta: 0, lap: 2, lapDistPct: 0.032, lastLapTime: 95.50, bestLapTime: 94.80, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 235, gapToPlayerSeconds: -10.70, trackSurface: 3 },
+    { carIdx: 16, carNumber: "11", driverName: "M. Wittmann", country: "DE", carBrand: "BMW", irating: 6150, safetyRating: { license: "B", value: 3.60 }, classPosition: 11, overallPosition: 16, positionDelta: -1, lap: 2, lapDistPct: 0.028, lastLapTime: 95.80, bestLapTime: 95.10, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 232, gapToPlayerSeconds: -11.30, trackSurface: 3 },
+    { carIdx: 17, carNumber: "55", driverName: "C. Sainz", country: "ES", carBrand: "Ferrari", irating: 6980, safetyRating: { license: "A", value: 4.15 }, classPosition: 12, overallPosition: 17, positionDelta: 0, lap: 2, lapDistPct: 0.025, lastLapTime: 95.90, bestLapTime: 95.20, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 233, gapToPlayerSeconds: -11.90, trackSurface: 3 },
+    { carIdx: 18, carNumber: "81", driverName: "O. Piastri", country: "AU", carBrand: "McLaren", irating: 6820, safetyRating: { license: "B", value: 3.90 }, classPosition: 13, overallPosition: 18, positionDelta: 2, lap: 2, lapDistPct: 0.022, lastLapTime: 96.00, bestLapTime: 95.30, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 234, gapToPlayerSeconds: -12.50, trackSurface: 3 },
+    { carIdx: 19, carNumber: "70", driverName: "K. Kobayashi", country: "JP", carBrand: "Toyota", irating: 6650, safetyRating: { license: "A", value: 4.40 }, classPosition: 14, overallPosition: 19, positionDelta: -1, lap: 2, lapDistPct: 0.018, lastLapTime: 96.10, bestLapTime: 95.40, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 231, gapToPlayerSeconds: -13.10, trackSurface: 3 },
+    { carIdx: 20, carNumber: "97", driverName: "S. van Gisbergen", country: "NZ", carBrand: "Ford", irating: 6540, safetyRating: { license: "A", value: 3.85 }, classPosition: 15, overallPosition: 20, positionDelta: 1, lap: 2, lapDistPct: 0.015, lastLapTime: 96.25, bestLapTime: 95.50, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 232, gapToPlayerSeconds: -13.80, trackSurface: 3 },
+    { carIdx: 21, carNumber: "5", driverName: "D. Cameron", country: "US", carBrand: "Porsche", irating: 6380, safetyRating: { license: "B", value: 3.55 }, classPosition: 16, overallPosition: 21, positionDelta: 0, lap: 2, lapDistPct: 0.012, lastLapTime: 96.40, bestLapTime: 95.60, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 230, gapToPlayerSeconds: -14.50, trackSurface: 3 },
+    { carIdx: 22, carNumber: "56", driverName: "H. Tincknell", country: "GB", carBrand: "Ford", irating: 6020, safetyRating: { license: "C", value: 3.10 }, classPosition: 17, overallPosition: 22, positionDelta: -2, lap: 2, lapDistPct: 0.009, lastLapTime: 96.70, bestLapTime: 95.80, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 228, gapToPlayerSeconds: -15.20, trackSurface: 3 },
+    { carIdx: 23, carNumber: "98", driverName: "N. Yelloly", country: "GB", carBrand: "BMW", irating: 5890, safetyRating: { license: "D", value: 2.80 }, classPosition: 18, overallPosition: 23, positionDelta: 0, lap: 2, lapDistPct: 0.005, lastLapTime: 96.90, bestLapTime: 96.00, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 227, gapToPlayerSeconds: -16.00, trackSurface: 3 },
   ];
 
   public start(onTick: (frame: TelemetryFrame) => void) {
@@ -39,7 +51,32 @@ export class MockTelemetryEngine {
     }
   }
 
+  /**
+   * Derive running order from track progress (real pipeline reads CarIdxPosition /
+   * CarIdxClassPosition straight from shared memory). positionDelta is measured
+   * against the grid so the ▲/▼ indicator stays steady instead of flickering.
+   */
+  private recomputePositions() {
+    const byProgress = [...this.simulatedCars].sort(
+      (a, b) => b.lap + b.lapDistPct - (a.lap + a.lapDistPct)
+    );
+    const classSeen = new Map<string, number>();
+    byProgress.forEach((c, i) => {
+      c.overallPosition = i + 1;
+      const inClass = (classSeen.get(c.carClass) ?? 0) + 1;
+      classSeen.set(c.carClass, inClass);
+      c.classPosition = inClass;
+      const grid = this.gridPositions.get(c.carIdx);
+      if (grid !== undefined) c.positionDelta = grid - c.overallPosition;
+    });
+  }
+
+  private readonly gridPositions = new Map<number, number>(
+    this.simulatedCars.map((c) => [c.carIdx, c.overallPosition])
+  );
+
   private tick() {
+    const now = Date.now();
     // Progress cars around track at ~240 km/h (66.6 m/s -> ~1.11 m per tick)
     const deltaMeters = 66.6 * 0.0166;
     const deltaPct = deltaMeters / this.trackLength;
@@ -56,10 +93,22 @@ export class MockTelemetryEngine {
         c.lapDistPct = this.lapDist;
         c.lap = this.currentLap;
       } else if (!c.inPit && c.speedKmh > 50) {
-        c.lapDistPct = (c.lapDistPct + (deltaPct * (c.speedKmh / 245))) % 1.0;
+        // Mock only: the seeded speed spread is ~1%, so neighbours would take ~45s
+        // to swap and the preview would look frozen. Amplitude is sized against the
+        // seeded grid spacing (~0.005 lapDistPct) so the running order actually
+        // trades places every few seconds and exercises the reorder animation.
+        // ponytail: speedKmh stays at its seeded value, so the displayed speed does
+        // not track this pace wobble. Fine for a preview; the shmem reader replaces
+        // this whole block with real CarIdx* arrays.
+        const pace = c.speedKmh / 245 + Math.sin(now / 9000 + c.carIdx) * 0.35;
+        const advanced = c.lapDistPct + deltaPct * pace;
+        if (advanced >= 1.0) c.lap += 1; // was missing: only the player's lap ever counted up
+        c.lapDistPct = advanced % 1.0;
         c.gapToPlayerSeconds = (c.lapDistPct - this.lapDist) * (84.0);
       }
     });
+
+    this.recomputePositions();
 
     // Proximity spotter simulation (Car #16 is 2.8m to our left)
     const spotterLeftDist = 2.8;
@@ -74,6 +123,10 @@ export class MockTelemetryEngine {
       tickRateHz: 60,
       trackLengthMeters: this.trackLength,
       trackName: "Spa-Francorchamps GP",
+      // Real pipeline reads Sessions[SessionNum].SessionType. Until the shmem
+      // reader lands, the control panel's simulator picker stands in for it.
+      sessionType: settings.sessionType,
+      sessionLapsTotal: 57,
       sessionLapsRemaining: 18,
       sessionTimeRemainingSec: 1512,
       player: {
@@ -83,7 +136,7 @@ export class MockTelemetryEngine {
         country: "KR",
         carBrand: "Porsche",
         irating: 6840,
-        safetyRating: { license: "A", value: 4.62 },
+        safetyRating: { license: "S", value: 4.98 },
         speedKmh: Math.round(238 + Math.sin(Date.now() / 800) * 12),
         rpm: Math.round(11200 + Math.sin(Date.now() / 400) * 800),
         gear: 6,

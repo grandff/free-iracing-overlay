@@ -1,6 +1,13 @@
 // ponytail: strongly-typed, minimal memory footprint telemetry data structures
 
-export type LicenseClass = "R" | "D" | "C" | "B" | "A" | "P";
+export type LicenseClass = "S" | "A" | "B" | "C" | "D" | "Rookie" | "R" | "P";
+
+/**
+ * Session kind. Read from the session YAML, never chosen by the user:
+ *   SessionInfo.Sessions[SessionNum].SessionType -> "Practice" | "Open Qualify"
+ *   | "Lone Qualify" | "Race" | "Warmup"
+ */
+export type SessionType = "PRACTICE" | "QUALIFY" | "RACE";
 
 export interface SafetyRating {
   license: LicenseClass;
@@ -98,6 +105,8 @@ export interface TelemetryFrame {
   tickRateHz: number;
   trackLengthMeters: number;
   trackName: string;
+  sessionType: SessionType; // Session YAML: Sessions[SessionNum].SessionType
+  sessionLapsTotal: number; // Session YAML: SessionLaps ("unlimited" -> 0)
   sessionLapsRemaining: number;
   sessionTimeRemainingSec: number;
   player: PlayerTelemetry;
