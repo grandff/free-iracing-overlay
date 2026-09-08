@@ -1,5 +1,5 @@
 import { settings } from "../../stores/settingsStore.ts";
-import { TelemetryFrame, CarTelemetry, SystemEventKind } from "./types.ts";
+import { TelemetryFrame, CarTelemetry, SystemEventKind, SectorColor, LapDeltaTelemetry } from "./types.ts";
 
 // ponytail: lightweight 60Hz simulated telemetry generator for macOS/Linux dev without iRacing running
 export class MockTelemetryEngine {
@@ -110,6 +110,33 @@ export class MockTelemetryEngine {
 
     this.recomputePositions();
 
+    // Mock-only preview. The real reader must derive these boundaries from
+    // session YAML SplitTimeInfo.Sectors[].SectorStartPct, never fixed thirds.
+    const currentSector: 1 | 2 | 3 = this.lapDist < 0.33 ? 1 : this.lapDist < 0.67 ? 2 : 3;
+    const dynamicDelta = -0.24 + Math.sin(now / 3500) * 0.15;
+
+    const s1Status: SectorColor = "purple";
+    const s2Status: SectorColor = this.lapDist >= 0.33 ? "green" : "none";
+    const s3Status: SectorColor = this.lapDist >= 0.67 ? "yellow" : "none";
+
+    const lapDeltaData: LapDeltaTelemetry = {
+      deltaToBest: dynamicDelta,
+      deltaToBestValid: true,
+      deltaToLast: dynamicDelta + 0.18,
+      deltaToLastValid: true,
+      deltaToSessionBest: dynamicDelta + 0.35,
+      deltaToSessionBestValid: true,
+      lastLapTime: 84.12,
+      bestLapTime: 83.89,
+      currentSector,
+      sectors: [
+        { sectorNumber: 1, status: s1Status, deltaSeconds: -0.185, isCurrent: currentSector === 1 },
+        { sectorNumber: 2, status: s2Status, deltaSeconds: -0.062, isCurrent: currentSector === 2 },
+        { sectorNumber: 3, status: s3Status, deltaSeconds: 0.104, isCurrent: currentSector === 3 },
+      ],
+      targetMode: "best",
+    };
+
     // Proximity spotter simulation (Car #16 is 2.8m to our left)
     const spotterLeftDist = 2.8;
     const spotterRightDist = 99.0;
@@ -176,7 +203,7 @@ export class MockTelemetryEngine {
         fuelNeededToFinish: Number((18 * 2.35 - this.fuelRemaining + 1.5).toFixed(1)),
         lastLapTime: 84.12,
         bestLapTime: 83.89,
-        lastLapDelta: -0.23, // -0.23s green
+        lastLapDelta: dynamicDelta,
         incidents: 4,
         tirePressurePsi: [28.5, 28.6, 28.2, 28.3],
         tireWearPct: [94, 91, 96, 93],
@@ -234,6 +261,7 @@ export class MockTelemetryEngine {
         distanceMeters: sysDist,
         timestamp: performance.now(),
       },
+      lapDelta: lapDeltaData,
     };
 
     if (this.onTickCallback) {

@@ -123,3 +123,22 @@ free-iracing-overlay/
 ## 📚 추가 참고 문서
 
 - 상세 텔레메트리 변수 매핑, 로직 수식 및 개발 원칙: [AGENTS.md](./AGENTS.md)
+
+
+---
+
+## 📜 라이선스 및 고지 (License & Notices)
+
+소스 코드는 **MIT 라이선스**입니다 — [`LICENSE`](LICENSE).
+
+> **비공식 프로젝트입니다.** 본 소프트웨어는 iRacing.com Motorsport Simulations, LLC,
+> Formula One World Championship Limited(F1®), FIA, 그리고 화면에 표시되는 어떤 자동차
+> 제조사와도 **제휴·후원·승인 관계가 없습니다.** 모든 상표는 각 소유자의 재산입니다.
+
+- **`Formula1` 글꼴은 이 저장소에 포함되어 있지 않습니다.** Formula One World Championship
+  Limited의 독점 폰트이므로 재배포하지 않으며, `npm run setup-fonts`로 각자 내려받습니다.
+  받지 않으면 자동으로 Roboto로 폴백되어 정상 동작합니다. 이 폰트를 **임베드한 빌드를 배포하려면
+  본인이 해당 권리를 보유하는지 직접 확인해야 합니다.**
+- 제조사 엠블럼은 [Simple Icons](https://simpleicons.org)(CC0-1.0) 기반이며, 아이콘 파일만
+  CC0이고 **브랜드 자체는 각 사의 등록상표**입니다.
+- 전체 목록과 상세 고지는 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)를 참고하세요.

@@ -8,7 +8,17 @@ dist
 .env
 .env.local
 
+# Local release helper (builds and publishes with the current gh login)
+/.github-release.sh
+
 # IDE
 .vscode
 .idea
 .DS_Store
+
+# Proprietary Formula One typeface - fetched by `npm run setup-fonts`, never committed.
+# See THIRD-PARTY-NOTICES.md before redistributing a build that embeds it.
+/public/fonts/*.woff2
+/public/fonts/*.woff
+/public/fonts/*.ttf
+/public/fonts/*.otf

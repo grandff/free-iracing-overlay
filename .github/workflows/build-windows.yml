@@ -43,6 +43,20 @@ jobs:
       - name: Build Web Application
         run: npm run build
 
+      # vite copies public/ into dist/, and tauri bundles dist/ into the installer.
+      # A stray public/fonts/*.woff2 would publish the proprietary Formula One
+      # typeface. Nothing here runs `npm run setup-fonts`, so this should never
+      # trip - it exists so that adding such a step fails loudly instead of
+      # silently shipping the font. See THIRD-PARTY-NOTICES.md.
+      - name: Verify no proprietary fonts in build output
+        shell: bash
+        run: |
+          if compgen -G "dist/fonts/*.woff2" > /dev/null || compgen -G "public/fonts/*.woff2" > /dev/null; then
+            echo "::error::Proprietary Formula1 font files present - refusing to build a redistributable installer."
+            exit 1
+          fi
+          echo "No proprietary fonts present; Roboto fallback will be used."
+
       - name: Build Tauri Windows Installer
         run: npx @tauri-apps/cli build
 

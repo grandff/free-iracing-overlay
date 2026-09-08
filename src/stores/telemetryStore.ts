@@ -1,6 +1,5 @@
 import { createStore } from "solid-js/store";
 import { TelemetryFrame } from "../services/telemetry/types.ts";
-import { mockEngine } from "../services/telemetry/mockEngine.ts";
 import { lerpEngine } from "../services/telemetry/lerpEngine.ts";
 import { isBrowserPreview, watchConnection } from "../services/shell.ts";
 
@@ -20,10 +19,12 @@ const [telemetry, setTelemetry] = createStore<TelemetryState>({
   // Starts false under Tauri: the Rust watcher decides. Browser preview flips it
   // true immediately via watchConnection so macOS/Linux dev still shows the HUD.
   isConnected: false,
-  source: isBrowserPreview ? "mock" : "iracing-shmem",
+  source: import.meta.env.DEV && isBrowserPreview ? "mock" : "iracing-shmem",
 });
 
 let unwatch: (() => void) | undefined;
+let stopTelemetrySource: (() => void) | undefined;
+let pipelineGeneration = 0;
 
 /**
  * Connection flag only — no telemetry engine.
@@ -43,22 +44,36 @@ export function initializeConnectionWatch() {
 export function initializeTelemetryPipeline() {
   initializeConnectionWatch();
 
-  // 1. Connect mock generator to LERP engine (60Hz -> 144Hz+)
-  mockEngine.start((incomingFrame) => {
-    setTelemetry("telemetryTickRate", incomingFrame.tickRateHz);
-    lerpEngine.feed(incomingFrame);
-  });
+  // Mock telemetry is a browser-only development aid. Never feed simulated
+  // racing data to a packaged Tauri app or a production web build.
+  if (!import.meta.env.DEV || !isBrowserPreview) return;
 
-  // 2. Connect LERP engine output to Solid.js store (runs at display refresh rate)
-  lerpEngine.start((interpolatedFrame, currentFps) => {
-    setTelemetry("frame", interpolatedFrame);
-    setTelemetry("displayFps", currentFps);
+  const generation = ++pipelineGeneration;
+  void import("../services/telemetry/mockEngine.ts").then(({ mockEngine }) => {
+    if (generation !== pipelineGeneration) return;
+
+    // 1. Connect mock generator to LERP engine (60Hz -> 144Hz+)
+    mockEngine.start((incomingFrame) => {
+      setTelemetry("telemetryTickRate", incomingFrame.tickRateHz);
+      lerpEngine.feed(incomingFrame);
+    });
+    stopTelemetrySource = () => mockEngine.stop();
+
+    // 2. Connect LERP engine output to Solid.js store (runs at display refresh rate)
+    lerpEngine.start((interpolatedFrame, currentFps) => {
+      setTelemetry("frame", interpolatedFrame);
+      setTelemetry("displayFps", currentFps);
+    });
   });
 }
 
 export function disposeTelemetryPipeline() {
+  pipelineGeneration += 1;
   unwatch?.();
   unwatch = undefined;
+  stopTelemetrySource?.();
+  stopTelemetrySource = undefined;
+  lerpEngine.stop();
 }
 
 export { telemetry };

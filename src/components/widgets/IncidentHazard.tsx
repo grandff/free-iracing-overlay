@@ -23,7 +23,19 @@ export const IncidentHazard: Component<Props> = (props) => {
   const dist = () => (props.aheadHazardMeters !== undefined ? props.aheadHazardMeters : props.distanceMeters !== undefined ? props.distanceMeters : 180);
   const editPresence = createPresence(() => !!props.isEditMode, 160);
 
+  // Safety widget: never invent a hazard. The defaults above exist only so the
+  // panel can be positioned in edit mode; without a real incident from telemetry
+  // this renders nothing at all, because a phantom "car stopped ahead" while
+  // driving is worse than no warning.
+  const hasRealIncident = () =>
+    props.hasIncident === true ||
+    props.yellowFlagActive === true ||
+    props.aheadHazardMeters !== undefined ||
+    props.distanceMeters !== undefined;
+  const shouldRender = () => hasRealIncident() || !!props.isEditMode;
+
   return (
+    <Show when={shouldRender()}>
     <div class="relative flex flex-col w-[320px] font-sans select-none shadow-2xl">
       <Show when={editPresence.mounted()}>
         <div
@@ -65,5 +77,6 @@ export const IncidentHazard: Component<Props> = (props) => {
         </div>
       </div>
     </div>
+    </Show>
   );
 };

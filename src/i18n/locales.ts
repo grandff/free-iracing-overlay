@@ -129,6 +129,13 @@ export interface Translations {
   sysPitComplete: string;
   sysHazardAhead: string;
   sysRadioTransmitting: string;
+  lapDeltaTitle: string;
+  vsBest: string;
+  vsLast: string;
+  sector1: string;
+  sector2: string;
+  sector3: string;
+  deltaModeBtn: string;
 }
 
 export const translations: Record<SupportedLanguage, Translations> = {
@@ -244,6 +251,13 @@ export const translations: Record<SupportedLanguage, Translations> = {
     sysPitComplete: "피트 작업 완료",
     sysHazardAhead: "전방 사고 경보",
     sysRadioTransmitting: "무전 송신 중",
+    lapDeltaTitle: "랩 델타",
+    vsBest: "VS BEST",
+    vsLast: "VS LAST",
+    sector1: "S1",
+    sector2: "S2",
+    sector3: "S3",
+    deltaModeBtn: "델타 모드",
   },
   en: {
     appName: "Free iRacing Overlay",
@@ -357,6 +371,13 @@ export const translations: Record<SupportedLanguage, Translations> = {
     sysPitComplete: "PIT STOP COMPLETE",
     sysHazardAhead: "HAZARD AHEAD",
     sysRadioTransmitting: "TRANSMITTING...",
+    lapDeltaTitle: "LAP DELTA",
+    vsBest: "VS BEST",
+    vsLast: "VS LAST",
+    sector1: "S1",
+    sector2: "S2",
+    sector3: "S3",
+    deltaModeBtn: "Delta Mode",
   },
   zh: {
     appName: "Free iRacing Overlay",
@@ -470,6 +491,13 @@ export const translations: Record<SupportedLanguage, Translations> = {
     sysPitComplete: "停站作业完成",
     sysHazardAhead: "前方赛道险情",
     sysRadioTransmitting: "无线电发送中...",
+    lapDeltaTitle: "圈速差",
+    vsBest: "VS 最佳",
+    vsLast: "VS 上圈",
+    sector1: "S1",
+    sector2: "S2",
+    sector3: "S3",
+    deltaModeBtn: "对比模式",
   },
   ja: {
     appName: "Free iRacing Overlay",
@@ -583,6 +611,13 @@ export const translations: Record<SupportedLanguage, Translations> = {
     sysPitComplete: "ピット作業完了",
     sysHazardAhead: "前方アクシデント警告",
     sysRadioTransmitting: "無線送信中...",
+    lapDeltaTitle: "ラップデルタ",
+    vsBest: "VS ベスト",
+    vsLast: "VS 前周",
+    sector1: "S1",
+    sector2: "S2",
+    sector3: "S3",
+    deltaModeBtn: "デルタモード",
   },
   fr: {
     appName: "Free iRacing Overlay",
@@ -696,6 +731,13 @@ export const translations: Record<SupportedLanguage, Translations> = {
     sysPitComplete: "ARRÊT AUX STANDS TERMINÉ",
     sysHazardAhead: "DANGER EN PISTE",
     sysRadioTransmitting: "EN ÉMISSION...",
+    lapDeltaTitle: "DELTA TOUR",
+    vsBest: "VS MEILLEUR",
+    vsLast: "VS DERNIER",
+    sector1: "S1",
+    sector2: "S2",
+    sector3: "S3",
+    deltaModeBtn: "Mode Delta",
   },
   de: {
     appName: "Free iRacing Overlay",
@@ -809,6 +851,13 @@ export const translations: Record<SupportedLanguage, Translations> = {
     sysPitComplete: "BOXENSTOPP ABGESCHLOSSEN",
     sysHazardAhead: "GEFAHR VORAUS",
     sysRadioTransmitting: "FUNKÜBERTRAGUNG...",
+    lapDeltaTitle: "RUNDENDELTA",
+    vsBest: "VS BESTE",
+    vsLast: "VS LETZTE",
+    sector1: "S1",
+    sector2: "S2",
+    sector3: "S3",
+    deltaModeBtn: "Delta-Modus",
   },
   it: {
     appName: "Free iRacing Overlay",
@@ -922,5 +971,12 @@ export const translations: Record<SupportedLanguage, Translations> = {
     sysPitComplete: "PIT STOP COMPLETATO",
     sysHazardAhead: "PERICOLO DAVANTI",
     sysRadioTransmitting: "TRASMISSIONE IN CORSO...",
+    lapDeltaTitle: "DELTA GIRO",
+    vsBest: "VS MIGLIORE",
+    vsLast: "VS ULTIMO",
+    sector1: "S1",
+    sector2: "S2",
+    sector3: "S3",
+    deltaModeBtn: "Modalità Delta",
   },
 };

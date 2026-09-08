@@ -1,6 +1,7 @@
 import { Component, For, Show, createSignal, createMemo, onCleanup } from "solid-js";
 import { createReorderFlip } from "../../utils/reorderFlip.ts";
 import { CountryFlag } from "../../assets/icons/CountryFlags.tsx";
+import { SectorColor } from "../../services/telemetry/types.ts";
 
 export interface RelativeEntry {
   position?: number;
@@ -12,20 +13,23 @@ export interface RelativeEntry {
   tireCompound: "S" | "M" | "H" | "I" | "W";
   gapSeconds: number;
   isPlayer?: boolean;
+  sectors?: [SectorColor, SectorColor, SectorColor];
+  currentSector?: 1 | 2 | 3;
 }
 
 export interface RelativeProps {
   entries?: RelativeEntry[];
   isEditMode?: boolean;
   scale?: number;
-  width?: number; // custom width in px (default: 320)
+  width?: number; // custom width in px (default: 340)
   maxRows?: number; // cars ahead & behind (2 to 5, default: 3)
   onScaleChange?: (newScale: number) => void;
   onWidthChange?: (newWidth: number) => void;
   onMaxRowsChange?: (newRows: number) => void;
 }
 
-// 11 authentic preview cars (5 ahead, Player at index 5, 5 behind)
+// 11-car preview. IRSDK does not expose opponent split deltas, so only the
+// player's row carries sector colors; opponent rows intentionally show "—".
 const defaultRelativeEntries: RelativeEntry[] = [
   { position: 1, carNumber: "1", code: "VER", name: "M. Verstappen", country: "NL", teamColor: "#3671C6", tireCompound: "S", gapSeconds: -4.821 },
   { position: 2, carNumber: "4", code: "NOR", name: "L. Norris", country: "GB", teamColor: "#FF8000", tireCompound: "M", gapSeconds: -3.120 },
@@ -33,7 +37,7 @@ const defaultRelativeEntries: RelativeEntry[] = [
   { position: 4, carNumber: "55", code: "SAI", name: "C. Sainz", country: "ES", teamColor: "#E8002D", tireCompound: "H", gapSeconds: -0.985 },
   { position: 5, carNumber: "16", code: "LEC", name: "C. Leclerc", country: "MC", teamColor: "#E8002D", tireCompound: "S", gapSeconds: -0.421 },
   // Player (Index 5)
-  { position: 6, carNumber: "7", code: "YOU", name: "K. Jeongmin", country: "KR", teamColor: "#00d26a", tireCompound: "M", gapSeconds: 0.000, isPlayer: true },
+  { position: 6, carNumber: "7", code: "YOU", name: "K. Jeongmin", country: "KR", teamColor: "#00d26a", tireCompound: "M", gapSeconds: 0.000, isPlayer: true, sectors: ["purple", "green", "none"], currentSector: 3 },
   // Behind
   { position: 7, carNumber: "44", code: "HAM", name: "L. Hamilton", country: "GB", teamColor: "#27F4D2", tireCompound: "H", gapSeconds: 0.842 },
   { position: 8, carNumber: "63", code: "RUS", name: "G. Russell", country: "GB", teamColor: "#27F4D2", tireCompound: "H", gapSeconds: 1.635 },
@@ -89,6 +93,57 @@ const TireBadge: Component<{ compound: "S" | "M" | "H" | "I" | "W"; class?: stri
   );
 };
 
+/**
+ * 3-Sector Segment Badge Group (S1 | S2 | S3)
+ * - Highlights Purple (fastest), Green (personal best), Yellow (slower), Dim (unreached)
+ * - Thin white outline marks the current live sector without replacing its color
+ */
+const SectorPillGroup: Component<{
+  sectors?: [SectorColor, SectorColor, SectorColor];
+  currentSector?: 1 | 2 | 3;
+}> = (props) => {
+  const getStyle = (col: SectorColor, isCurr: boolean) => {
+    const current = isCurr ? " ring-1 ring-inset ring-white/90" : "";
+    switch (col) {
+      case "purple":
+        return `bg-[#B055F5] border-[#B055F5] text-black${current}`;
+      case "green":
+        return `bg-[#00D26A] border-[#00D26A] text-black${current}`;
+      case "yellow":
+        return `bg-[#FFD100] border-[#FFD100] text-black${current}`;
+      default:
+        return `bg-white/[0.04] border-white/10 text-white/30${current}`;
+    }
+  };
+
+  return (
+    <Show
+      when={props.sectors}
+      fallback={<span class="text-[10px] font-mono text-white/25" title="Opponent sector splits are not exposed by IRSDK">—</span>}
+    >
+      {(sectors) => <div class="flex items-center gap-[2px] justify-center">
+      <For each={sectors()}>
+        {(col, idx) => {
+          const secNum = (idx() + 1) as 1 | 2 | 3;
+          const isCurr = props.currentSector === secNum;
+          return (
+            <div
+              class={`w-[13px] h-[13px] rounded-[1px] border flex items-center justify-center text-[8px] font-mono font-black ${getStyle(
+                col,
+                isCurr
+              )}`}
+              title={`S${secNum}: ${col.toUpperCase()}${isCurr ? " (CURRENT)" : ""}`}
+            >
+              {secNum}
+            </div>
+          );
+        }}
+      </For>
+    </div>}
+    </Show>
+  );
+};
+
 export const Relative: Component<RelativeProps> = (props) => {
   // Width control: default 340px, min 280px, max 520px
   const currentWidth = () => Math.max(280, Math.min(520, props.width ?? 340));
@@ -120,6 +175,7 @@ export const Relative: Component<RelativeProps> = (props) => {
   let startY = 0;
   let startW = 0;
   let startRows = 0;
+  let stopResizeListeners = () => {};
 
   // 1. 가로 너비 드래그 핸들러
   const handleResizeMouseDown = (e: MouseEvent) => {
@@ -128,21 +184,26 @@ export const Relative: Component<RelativeProps> = (props) => {
     setIsResizingWidth(true);
     startX = e.clientX;
     startW = currentWidth();
+    stopResizeListeners();
 
     const handleMouseMove = (ev: MouseEvent) => {
-      const deltaX = ev.clientX - startX;
+      // Widget is anchored bottom-right, so the visible width edge is on the left.
+      const deltaX = (startX - ev.clientX) / (props.scale || 1);
       const newWidth = Math.max(280, Math.min(500, startW + deltaX));
       props.onWidthChange?.(Math.round(newWidth));
     };
 
     const handleMouseUp = () => {
       setIsResizingWidth(false);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      stopResizeListeners();
     };
 
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+    stopResizeListeners = () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
   };
 
   // 2. 세로 높이 / 앞뒤 표시 대수 조절 핸들러
@@ -152,9 +213,10 @@ export const Relative: Component<RelativeProps> = (props) => {
     setIsResizingHeight(true);
     startY = e.clientY;
     startRows = carsAheadBehind();
+    stopResizeListeners();
 
     const handleMouseMove = (ev: MouseEvent) => {
-      const deltaY = ev.clientY - startY;
+      const deltaY = (startY - ev.clientY) / (props.scale || 1);
       const stepDelta = Math.round(deltaY / 40);
       const newAheadBehind = Math.max(2, Math.min(5, startRows + stepDelta));
       props.onMaxRowsChange?.(newAheadBehind);
@@ -162,12 +224,15 @@ export const Relative: Component<RelativeProps> = (props) => {
 
     const handleMouseUp = () => {
       setIsResizingHeight(false);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      stopResizeListeners();
     };
 
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+    stopResizeListeners = () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
   };
 
   // 3. 우하단 코너 동시 크기 조절 핸들러
@@ -179,10 +244,11 @@ export const Relative: Component<RelativeProps> = (props) => {
     startW = currentWidth();
     startY = e.clientY;
     startRows = carsAheadBehind();
+    stopResizeListeners();
 
     const handleMouseMove = (ev: MouseEvent) => {
-      const deltaX = ev.clientX - startX;
-      const deltaY = ev.clientY - startY;
+      const deltaX = (startX - ev.clientX) / (props.scale || 1);
+      const deltaY = (startY - ev.clientY) / (props.scale || 1);
       const newWidth = Math.max(280, Math.min(500, startW + deltaX));
       const stepDelta = Math.round(deltaY / 40);
       const newAheadBehind = Math.max(2, Math.min(5, startRows + stepDelta));
@@ -192,15 +258,19 @@ export const Relative: Component<RelativeProps> = (props) => {
 
     const handleMouseUp = () => {
       setIsResizingCorner(false);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseup", handleMouseUp);
+      stopResizeListeners();
     };
 
     window.addEventListener("mousemove", handleMouseMove);
     window.addEventListener("mouseup", handleMouseUp);
+    stopResizeListeners = () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
   };
 
   onCleanup(() => {
+    stopResizeListeners();
     setIsResizingWidth(false);
     setIsResizingHeight(false);
     setIsResizingCorner(false);
@@ -249,7 +319,7 @@ export const Relative: Component<RelativeProps> = (props) => {
 
       {/* Header: Non-circle motorsport timing delta icon */}
       <div
-        class={`flex items-center justify-between bg-[#15151e] border-b-2 border-white/20 px-3 py-1.5 ${
+        class={`flex items-center justify-between bg-[#15151e] border-t-[3px] border-t-[#E10600] border-b border-b-white/15 px-3 py-1.5 ${
           props.isEditMode ? "border-x border-white/20" : "rounded-t border border-white/10"
         } shadow-sm`}
       >
@@ -257,7 +327,7 @@ export const Relative: Component<RelativeProps> = (props) => {
           {/* F1 High-Tech Opposing Chevrons (Ahead / My Car / Behind) - Zero Circles */}
           <svg
             viewBox="0 0 16 16"
-            class="w-3.5 h-3.5 text-amber-400 shrink-0"
+            class="w-3.5 h-3.5 text-[#E10600] shrink-0"
             fill="none"
             stroke="currentColor"
             stroke-width="2"
@@ -272,17 +342,18 @@ export const Relative: Component<RelativeProps> = (props) => {
             RELATIVE INTERVAL
           </span>
         </div>
-        <span class="text-[9px] font-mono font-bold text-amber-400/90 tracking-wide">
+        <span class="text-[9px] font-mono font-bold text-white/45 tracking-wide">
           ±{carsAheadBehind()} CARS
         </span>
       </div>
 
-      {/* Subheader: POS, #, DRIVER, TYRE, GAP */}
+      {/* Subheader: POS, #, DRIVER, SEC, TYRE, GAP */}
       {/* ponytail: unified grid layout and synchronized border-box padding ensure 100% mathematical text alignment between header and body rows */}
-      <div class="grid grid-cols-[40px_42px_1fr_36px_74px] items-center px-2 py-1 bg-black/85 text-[9px] font-mono text-white/45 tracking-wider border-b border-white/[0.08] border-l-[3.5px] border-l-transparent">
+      <div class="grid grid-cols-[38px_40px_1fr_52px_32px_70px] items-center px-2 py-1 bg-black/85 text-[9px] font-mono text-white/45 tracking-wider border-b border-white/[0.08] border-l-[3.5px] border-l-transparent">
         <span class="text-center font-bold">POS</span>
         <span class="text-center font-bold">#</span>
         <span class="pl-2 font-bold text-left">DRIVER</span>
+        <span class="text-center font-bold">SEC</span>
         <span class="text-center font-bold">TYRE</span>
         <span class="text-right pr-2 font-bold">GAP</span>
       </div>
@@ -299,9 +370,9 @@ export const Relative: Component<RelativeProps> = (props) => {
             return (
               <div
                 ref={flip.row(d.carNumber)}
-                class={`grid grid-cols-[40px_42px_1fr_36px_74px] items-center h-[28px] px-2 transition-colors duration-150 border-l-[3.5px] ${
+                class={`grid grid-cols-[38px_40px_1fr_52px_32px_70px] items-center h-[28px] px-2 transition-colors duration-150 border-l-[3.5px] ${
                   d.isPlayer
-                    ? "bg-[#00d26a]/15 ring-1 ring-inset ring-[#00d26a]/80 shadow-[0_0_16px_rgba(0,210,106,0.25)] border-l-[#00d26a]"
+                    ? "bg-[#00d26a]/10 ring-1 ring-inset ring-[#00d26a]/45 border-l-[#00d26a]"
                     : "bg-[#13141c]/95 hover:bg-[#181a24]/95 border-l-transparent"
                 }`}
               >
@@ -320,7 +391,7 @@ export const Relative: Component<RelativeProps> = (props) => {
                 <div class="flex items-center justify-center h-full">
                   <span
                     class={`text-[10px] font-mono font-bold tabular-nums ${
-                      d.isPlayer ? "text-[#00d26a]" : "text-amber-400/90"
+                      d.isPlayer ? "text-[#00d26a]" : "text-white/75"
                     }`}
                   >
                     #{d.carNumber}
@@ -331,7 +402,7 @@ export const Relative: Component<RelativeProps> = (props) => {
                 <div class="flex items-center h-full pl-2 pr-1 relative overflow-hidden min-w-0 gap-1.5">
                   <Show when={!d.isPlayer}>
                     <div
-                      class="w-[3px] h-3.5 shrink-0 rounded-full"
+                      class="w-[3px] h-3.5 shrink-0"
                       style={{ "background-color": d.teamColor }}
                     />
                   </Show>
@@ -347,7 +418,7 @@ export const Relative: Component<RelativeProps> = (props) => {
                   <span
                     class={`text-[12px] truncate tracking-tight ${
                       d.isPlayer
-                        ? "text-white font-black drop-shadow-[0_0_6px_rgba(0,210,106,0.4)]"
+                        ? "text-white font-black"
                         : isAhead
                         ? "text-[#f5f5f7] font-medium"
                         : "text-white/80"
@@ -357,19 +428,22 @@ export const Relative: Component<RelativeProps> = (props) => {
                   </span>
                 </div>
 
-                {/* 4. Tyre badge: 100% Vector SVG */}
+                {/* 4. Sector Pills: [ S1 | S2 | S3 ] */}
+                <div class="flex items-center justify-center shrink-0">
+                  <SectorPillGroup sectors={d.sectors} currentSector={d.currentSector} />
+                </div>
+
+                {/* 5. Tyre badge: 100% Vector SVG */}
                 <div class="flex items-center justify-center shrink-0">
                   <TireBadge compound={d.tireCompound} />
                 </div>
 
-                {/* 5. Gap: Tabular monospace delta */}
+                {/* 6. Gap: Tabular monospace delta */}
                 <div class="text-right pr-2 shrink-0">
                   <span
                     class={`font-mono text-xs font-bold tabular-nums tracking-wider ${
                       d.isPlayer
-                        ? "text-[#00d26a] font-black drop-shadow-[0_0_8px_rgba(0,210,106,0.5)]"
-                        : isAhead
-                        ? "text-[#ff9f0a]"
+                        ? "text-[#00d26a] font-black"
                         : "text-white/90"
                     }`}
                   >
@@ -385,31 +459,31 @@ export const Relative: Component<RelativeProps> = (props) => {
       {/* Bottom Border Accent */}
       <div class="h-1 bg-[#15151e] rounded-b border-t border-white/[0.08]" />
 
-      {/* 1. Horizontal Drag Resize Handle (Right Edge: Width) */}
+      {/* 1. Horizontal Drag Resize Handle (Left Edge: bottom-right anchored widget) */}
       <Show when={props.isEditMode}>
         <div
           onMouseDown={handleResizeMouseDown}
-          class="absolute -right-2.5 top-6 bottom-6 w-4 flex items-center justify-center cursor-ew-resize group z-50 pointer-events-auto select-none"
+          class="absolute -left-2.5 top-6 bottom-6 w-4 flex items-center justify-center cursor-ew-resize group z-50 pointer-events-auto select-none"
           title={`가로 너비 조절 (현재 ${currentWidth()}px)`}
         >
           <div
             class={`w-1.5 h-12 rounded-full shadow-lg border border-black/40 transition-all ${
-              isResizingWidth() ? "bg-amber-300 h-16 scale-110" : "bg-amber-400 group-hover:bg-amber-300"
+              isResizingWidth() ? "bg-[#E10600] h-16 scale-110" : "bg-white/70 group-hover:bg-white"
             }`}
           />
         </div>
       </Show>
 
-      {/* 2. Vertical Drag Resize Handle (Bottom Edge: Ahead/Behind Count) */}
+      {/* 2. Vertical Drag Resize Handle (Top Edge: bottom-right anchored widget) */}
       <Show when={props.isEditMode}>
         <div
           onMouseDown={handleHeightResizeMouseDown}
-          class="absolute -bottom-3 left-6 right-6 h-5 flex items-center justify-center cursor-ns-resize group z-50 pointer-events-auto select-none"
+          class="absolute -top-3 left-6 right-6 h-5 flex items-center justify-center cursor-ns-resize group z-50 pointer-events-auto select-none"
           title={`앞뒤 표시 차량 수 조절 (현재 ±${carsAheadBehind()}대 표시)`}
         >
           <div
             class={`h-1.5 w-16 rounded-full shadow-lg border border-black/40 transition-all flex items-center justify-center ${
-              isResizingHeight() ? "bg-amber-300 w-24 scale-110" : "bg-amber-400 group-hover:bg-amber-300"
+              isResizingHeight() ? "bg-[#E10600] w-24 scale-110" : "bg-white/70 group-hover:bg-white"
             }`}
           >
             <Show when={isResizingHeight()}>
@@ -421,18 +495,18 @@ export const Relative: Component<RelativeProps> = (props) => {
         </div>
       </Show>
 
-      {/* 3. Corner Drag Resize Handle (Bottom-Right) */}
+      {/* 3. Corner Drag Resize Handle (Top-Left) */}
       <Show when={props.isEditMode}>
         <div
           onMouseDown={handleCornerResizeMouseDown}
-          class="absolute -right-2.5 -bottom-2.5 w-5 h-5 flex items-center justify-center cursor-nwse-resize group z-50 pointer-events-auto select-none"
+          class="absolute -left-2.5 -top-2.5 w-5 h-5 flex items-center justify-center cursor-nwse-resize group z-50 pointer-events-auto select-none"
           title={`대각선 크기 조절 (가로 ${currentWidth()}px × 앞뒤 ±${carsAheadBehind()}대)`}
         >
           <div
             class={`w-3.5 h-3.5 rounded-full shadow-xl border-2 border-black/60 transition-all ${
               isResizingCorner()
-                ? "bg-amber-300 scale-125 ring-2 ring-amber-400/50"
-                : "bg-amber-400 group-hover:bg-amber-300 group-hover:scale-110"
+                ? "bg-[#E10600] scale-125 ring-2 ring-[#E10600]/30"
+                : "bg-white/70 group-hover:bg-white group-hover:scale-110"
             }`}
           />
         </div>
@@ -440,4 +514,3 @@ export const Relative: Component<RelativeProps> = (props) => {
     </div>
   );
 };
-

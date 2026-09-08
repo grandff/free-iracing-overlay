@@ -133,6 +133,29 @@ export interface SystemMessageTelemetry {
   timestamp: number;
 }
 
+export type SectorColor = "none" | "yellow" | "green" | "purple";
+
+export interface SectorStatus {
+  sectorNumber: 1 | 2 | 3;
+  status: SectorColor;
+  deltaSeconds?: number;
+  isCurrent?: boolean;
+}
+
+export interface LapDeltaTelemetry {
+  deltaToBest: number; // LapDeltaToBestLap (s)
+  deltaToBestValid: boolean; // LapDeltaToBestLap_OK
+  deltaToLast: number; // LapDeltaToSessionLastlLap (s)
+  deltaToLastValid: boolean; // LapDeltaToSessionLastlLap_OK
+  deltaToSessionBest?: number; // LapDeltaToSessionBestLap (s)
+  deltaToSessionBestValid?: boolean; // LapDeltaToSessionBestLap_OK
+  lastLapTime: number; // LapLastLapTime
+  bestLapTime: number; // LapBestLapTime
+  currentSector: 1 | 2 | 3;
+  sectors: [SectorStatus, SectorStatus, SectorStatus];
+  targetMode: "best" | "last";
+}
+
 export interface TelemetryFrame {
   timestamp: number;
   tickRateHz: number;
@@ -151,4 +174,5 @@ export interface TelemetryFrame {
   multiclass: MulticlassTelemetry;
   radio: RadioTelemetry;
   systemMessage: SystemMessageTelemetry;
+  lapDelta: LapDeltaTelemetry;
 }

@@ -91,12 +91,13 @@
 
 ### 기능 2: 렐러티브 (Relative - 내 기준 위/아래 2~5대)
 - **설명:** 현재 트랙 위치 기준으로 내 앞뒤 근접 차량과의 실시간 시간/거리 간격 표시.
-- **아이콘:** 타이어 컴파운드 아이콘(S/M/H), 클래스 컬러 태그, 동일 랩/백마커 인디케이터.
-- **옵션 설정:** 위/아래 표시 차량 수(2대 ~ 5대) 조절 슬라이더.
+- **아이콘 및 인디케이터:** 3분할 섹터(`S1/S2/S3`) 컬러 인디케이터(Yellow/Green/Purple), 타이어 컴파운드 아이콘(S/M/H/I/W), 클래스 컬러 태그, 동일 랩/백마커 인디케이터.
+- **옵션 설정:** 가로 너비(280~520px) 및 위/아래 표시 차량 수(2대 ~ 5대) 마우스 드래그 조절.
 
 ### 기능 3: 직전 랩타임 비교 (Last Lap Delta)
-- **설명:** 내가 기록한 직전 랩타임과 타깃 차량과의 델타 초 단위 비교 ($\Delta = \text{MyLastLap} - \text{TargetLastLap}$).
-- **아이콘:** 타임 게이지 아이콘, 빠름(녹색 음수) / 느림(적색 양수) 셰브론 화살표.
+- **설명:** 가로형 3분할 섹터(`S1 / S2 / S3`) HUD를 통해 옐로우(지연), 그린(개인 최고), 퍼플(세션 최고) 실시간 색상 표시 및 실시간 델타 초 단위 비교 게이지 (`VS BEST` / `VS LAST`).
+- **아이콘 및 게이지:** 3분할 섹터 박스, 스톱워치(`IconStopwatch`), 실시간 센터 0 좌우 델타 게이지 바, 빠름(녹색/보라색 음수) / 느림(적색/황색 양수).
+- **텔레메트리 변수:** `LapDeltaToSessionLastlLap`, `LapDeltaToBestLap`, `LapLastLapTime`, `LapBestLapTime`, YAML `SplitTimeInfo`.
 
 ### 기능 4: 리벤지 트래커 (사고 유발 드라이버 추적 & 간격)
 - **설명:** 나에게 +4x/접촉 사고를 유발한 드라이버 자동 감지 및 HUD 전용 박스에 "Revenge Target" 고정 추적.
@@ -335,3 +336,68 @@ npm run build
 npm run setup-brands   # 공식 car-logos-dataset 기반 제조사 실물 고해상도 로고(PNG) 다운로드
 npm run setup-fonts    # 공식 Formula1 WOFF2 폰트 다운로드 및 로컬 캐싱
 ```
+
+---
+
+## 10. 보안 및 라이선스 검증 규칙 (Security & License Gate — 커밋 전 필수)
+
+> 본 저장소는 **공개(Public) 오픈소스**입니다. 커밋·PR·릴리스는 아래 게이트를 **반드시** 통과해야 합니다.
+> 한 항목이라도 실패하면 커밋하지 않고 먼저 수정합니다.
+
+### 10.1 커밋 전 필수 확인 (Pre-commit Security Gate)
+
+1. **민감정보 0건:** API 키, 토큰, 비밀번호, 개인 이메일, 사설 URL, 실계정 자격증명이 스테이징 diff에 없을 것.
+   ```bash
+   git diff --cached | grep -nE "(api[_-]?key|secret|password|token|ghp_|github_pat_|sk-[A-Za-z0-9]{20,}|AKIA[0-9A-Z]{16}|BEGIN [A-Z ]*PRIVATE KEY)"
+   ```
+   출력이 있으면 **커밋 금지**. 이미 푸시된 경우 해당 크리덴셜을 즉시 폐기(rotate)합니다.
+
+2. **런타임 원격 출처 금지:** 앱 실행 중 서드파티 호스트에서 코드·폰트·이미지를 가져오지 않을 것.
+   우리가 통제하지 않는 계정(예: 임의 GitHub 저장소의 raw URL)은 언제든 파일을 바꿔치기할 수 있으므로
+   **공급망 공격 경로**입니다. 에셋은 셋업 스크립트로 **빌드 전에 1회** 받아 로컬에 둡니다.
+
+3. **CSP 유지:** `src-tauri/tauri.conf.json`의 `app.security.csp`는 **절대 `null`로 되돌리지 않습니다.**
+   새 출처가 필요하면 해당 지시문에만 정확히 추가하고, 이유를 커밋 메시지에 적습니다.
+
+4. **개발 서버 노출 금지:** `vite.config.ts`의 `server.host`는 루프백(`127.0.0.1`)만 허용.
+   `0.0.0.0` / `allowedHosts: true`는 개발 중인 소스 전체를 같은 네트워크의 모든 기기에 공개하므로 금지합니다.
+
+5. **Tauri IPC 최소 권한:** `src-tauri/capabilities/*.json`에 필요한 권한만 추가합니다.
+   새 `#[tauri::command]`는 프론트엔드가 넘긴 인자를 **신뢰하지 않고** 검증합니다
+   (특히 경로·파일 I/O는 앱 전용 디렉터리 밖으로 나가지 못하게 할 것).
+
+6. **가짜 데이터 표시 금지:** 목업 텔레메트리는 **브라우저 개발 모드 전용**입니다
+   (`import.meta.env.DEV && isBrowserPreview`). 패키징된 Tauri 빌드는 실제 프레임이 없으면
+   위젯을 비워 둡니다. 스포터·사고 경보 위젯이 없는 데이터를 지어내면 **주행 중 안전 오정보**가 됩니다.
+
+### 10.2 라이선스 및 상표 규칙 (License & Trademark)
+
+7. **저장소 라이선스:** 소스 코드는 [`LICENSE`](LICENSE)(MIT). README의 "무료·오픈소스" 문구와 반드시 일치시킵니다.
+
+8. **독점 에셋 커밋 금지:** `Formula1-*.woff2` 등 상용/독점 폰트는 **저장소에 커밋하지 않습니다**
+   (`.gitignore` 적용됨). 셋업 스크립트로 각자 내려받습니다. 없으면 Roboto로 폴백되어 정상 동작합니다.
+
+9. **상표 고지 유지:** 새 브랜드·시리즈 로고를 추가하면 [`THIRD-PARTY-NOTICES.md`](THIRD-PARTY-NOTICES.md)에
+   출처와 라이선스를 함께 기재합니다. 본 프로젝트는 iRacing·F1·FIA·제조사와 **무관한 비공식 도구**임을
+   README와 고지 파일에 계속 명시합니다.
+
+10. **의존성 추가 시:** 라이선스를 확인하고 `THIRD-PARTY-NOTICES.md` 표에 추가합니다.
+    포니테일 원칙상 몇 줄로 되는 일에 새 의존성을 추가하지 않습니다.
+
+### 10.3 릴리스 전 확인 (Pre-release Gate)
+
+11. **독점 폰트 임베드 금지:** `vite build`는 `public/` 전체를 `dist/`로 복사하고
+    `tauri build`는 그 `dist/`를 설치 파일에 넣습니다. 즉 `public/fonts/*.woff2`가 남아 있으면
+    **공개 릴리스 설치 파일에 독점 F1 폰트가 그대로 배포됩니다.** git 추적 해제만으로는 막히지 않습니다.
+    ```bash
+    rm public/fonts/*.woff2   # 릴리스 빌드 전
+    npm run setup-fonts       # 로컬 개발 재개 시 다시 받기
+    ```
+    릴리스 스크립트에 이 검사가 하드 게이트로 들어가 있어야 합니다(사람이 기억하는 방식 금지).
+
+12. **릴리스 아티팩트 점검:** 업로드 직전 번들에 목업 데이터·독점 에셋·개발 서버 설정이
+    포함되지 않았는지 확인합니다.
+    ```bash
+    grep -c "Spa-Francorchamps GP\|MockTelemetryEngine" dist/assets/*.js   # 0 이어야 함
+    ls dist/fonts/*.woff2 2>/dev/null && echo "STOP: 독점 폰트 포함됨"
+    ```

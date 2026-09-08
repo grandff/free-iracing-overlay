@@ -548,7 +548,7 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
         >
           <div
             class={`w-1.5 h-14 rounded-full shadow-lg border border-black/40 transition-all ${
-              isResizingWidth() ? "bg-amber-300 h-20 scale-110" : "bg-amber-400 group-hover:bg-amber-300"
+              isResizingWidth() ? "bg-[#E10600] h-20 scale-110" : "bg-white/70 group-hover:bg-white"
             }`}
           />
         </div>
@@ -563,7 +563,7 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
         >
           <div
             class={`h-1.5 w-16 rounded-full shadow-lg border border-black/40 transition-all flex items-center justify-center ${
-              isResizingHeight() ? "bg-amber-300 w-24 scale-110" : "bg-amber-400 group-hover:bg-amber-300"
+              isResizingHeight() ? "bg-[#E10600] w-24 scale-110" : "bg-white/70 group-hover:bg-white"
             }`}
           >
             <Show when={isResizingHeight()}>
@@ -584,7 +584,7 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
         >
           <div
             class={`w-3.5 h-3.5 rounded-full shadow-xl border-2 border-black/60 transition-all ${
-              isResizingCorner() ? "bg-amber-300 scale-125 ring-2 ring-amber-400/50" : "bg-amber-400 group-hover:bg-amber-300 group-hover:scale-110"
+              isResizingCorner() ? "bg-[#E10600] scale-125 ring-2 ring-[#E10600]/30" : "bg-white/70 group-hover:bg-white group-hover:scale-110"
             }`}
           />
         </div>

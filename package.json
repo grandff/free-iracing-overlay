@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Ultra-lightweight, 100% free iRacing broadcast HUD overlay",
   "private": true,
+  "license": "MIT",
   "type": "module",
   "scripts": {
     "dev": "vite",

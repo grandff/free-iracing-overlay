@@ -10,7 +10,7 @@ import {
 import { isTauri } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { windowRole, openControlWindow, setClickthrough } from "./services/shell.ts";
-import { telemetry, initializeTelemetryPipeline } from "./stores/telemetryStore.ts";
+import { telemetry, initializeTelemetryPipeline, disposeTelemetryPipeline } from "./stores/telemetryStore.ts";
 import { SetupWizard } from "./components/setup/SetupWizard.tsx";
 import { ControlApp } from "./components/control/ControlApp.tsx";
 import { Leaderboard } from "./components/widgets/Leaderboard.tsx";
@@ -35,6 +35,12 @@ export const App: Component = () => {
   const [dragOffset, setDragOffset] = createSignal<{ x: number; y: number }>({ x: 0, y: 0 });
 
   const setupPresence = createPresence(() => !settings.hasCompletedSetup, 250);
+  // The HUD shows as soon as setup is done. Gating it on a telemetry frame made the
+  // packaged app a permanently blank window, because the Rust side only probes for
+  // iRacing's presence today and streams no frames yet (see iracing/memory.rs, M5).
+  // The OS window itself is already shown only while iRacing is connected, and each
+  // safety widget refuses to render without real data — that is where "do not show
+  // fabricated telemetry" belongs, not in a blanket gate that hides everything.
   const hudPresence = createPresence(() => settings.hasCompletedSetup, 250);
   const drivingBannerPresence = createPresence(() => !settings.isEditMode && settings.hasCompletedSetup, 200);
 
@@ -74,7 +80,10 @@ export const App: Component = () => {
     };
 
     window.addEventListener("keydown", handleKeyDown);
-    onCleanup(() => window.removeEventListener("keydown", handleKeyDown));
+    onCleanup(() => {
+      window.removeEventListener("keydown", handleKeyDown);
+      disposeTelemetryPipeline();
+    });
 
     // In game, iRacing owns keyboard focus and the listener above never fires.
     // Rust registers Alt+J as an OS-level hotkey and emits this instead.
@@ -123,12 +132,14 @@ export const App: Component = () => {
       const teamColors = ["#3671C6", "#E8002D", "#FF8000", "#27F4D2", "#E8002D", "#FF8000", "#27F4D2", "#229971"];
       const tireList: ("S" | "M" | "H")[] = ["M", "S", "M", "H", "S", "M", "H", "H"];
       const sorted = [...frame.cars].sort((a, b) => a.gapToPlayerSeconds - b.gapToPlayerSeconds);
-      const playerIdx = frame.player?.carIdx || 1;
+      const playerIdx = frame.player?.carIdx ?? 1;
       const pIdx = sorted.findIndex((c) => c.carIdx === playerIdx);
       const aheadBehind = Math.max(2, Math.min(5, settings.widgets.relative?.maxRows || 3));
       const slice = sorted.slice(Math.max(0, pIdx - aheadBehind), Math.min(sorted.length, pIdx + aheadBehind + 1));
+      const playerSectorData = frame.lapDelta?.sectors;
       const mappedRel = slice.map((c) => {
         const code = c.driverName.split(" ").pop()?.substring(0, 3).toUpperCase() || `P${c.overallPosition}`;
+        const isPlayer = c.carIdx === playerIdx;
         return {
           position: c.overallPosition || c.classPosition || 1,
           carNumber: c.carNumber,
@@ -138,7 +149,13 @@ export const App: Component = () => {
           teamColor: c.carClassColor || teamColors[c.carIdx % teamColors.length],
           tireCompound: tireList[c.carIdx % tireList.length],
           gapSeconds: c.gapToPlayerSeconds,
-          isPlayer: c.carIdx === playerIdx,
+          isPlayer,
+          // IRSDK exposes live lap deltas only for the player. Opponent split
+          // colors are deliberately omitted instead of being fabricated.
+          sectors: isPlayer && playerSectorData
+            ? [playerSectorData[0].status, playerSectorData[1].status, playerSectorData[2].status] as const
+            : undefined,
+          currentSector: isPlayer ? frame.lapDelta?.currentSector : undefined,
         };
       });
       setRelativeEntries(mappedRel);
@@ -335,10 +352,13 @@ export const App: Component = () => {
                 }`}
               >
                 <LapDelta
-                  deltaSeconds={telemetry.frame?.player?.lastLapDelta ?? -0.142}
+                  lapDelta={telemetry.frame?.lapDelta}
+                  deltaSeconds={telemetry.frame?.player?.lastLapDelta}
                   isEditMode={settings.isEditMode}
-                  scale={settings.widgets.lapDelta.scale}
+                  scale={settings.widgets.lapDelta?.scale ?? 1.0}
+                  width={settings.widgets.lapDelta?.width ?? 440}
                   onScaleChange={(scale) => updateWidgetTransform("lapDelta", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("lapDelta", { width })}
                 />
               </div>
             </Show>

@@ -63,20 +63,26 @@
   - **피트인 네이티브 연동:** iRacing SDK 공식 변수 `CarIdxOnPitRoad`, `CarIdxTrackSurface` 100% 매핑.
 - [x] **M2.2: 위젯 2 - 렐러티브 (`Relative.tsx`)**
   - 내 위치 기준 앞/뒤 근접 차량 간격 (±2대 ~ ±5대 실시간 마우스 드래그 조절 지원).
+  - **플레이어 전용 3분할 섹터(`S1/S2/S3`) 컬러 인디케이터:** 플레이어의 확정된 섹터 상태만 랩 델타와 공유. IRSDK가 상대 스플릿/델타를 제공하지 않으므로 상대 행은 `—`로 표시하며 색을 추측하지 않음.
   - iRacing SDK 타이어 컴파운드 공식 변수(`CarIdxTireCompound`, `PlayerTireCompound`) 기반 완벽한 수직 중앙 정렬 SVG 배지(S/M/H/I/W).
   - 내 차량(YOU) 고휘도 네온 그린 하이라이트 및 두꺼운 악센트 보더.
   - 순위표와 100% 통일된 상단 음영 바("상대 간격", 배율 조절 `[-] 100% [+]`).
-  - SDK 변수: `CarIdxEstTime`, `CarIdxLapDistPct`, `CarIdxLap`, `PlayerCarIdx`, `CarIdxTireCompound`.
+  - SDK 변수: `CarIdxEstTime`, `CarIdxLapDistPct`, `CarIdxLap`, `PlayerCarIdx`, `CarIdxTireCompound` (플레이어 섹터 경계는 Lap Delta의 YAML `SplitTimeInfo` 공유).
 - [x] **M2.3: 위젯 17 - 팀 라디오 & 레이스 통신 HUD (`TeamRadio.tsx`)**
   - 실시간 보이스 무전 송신자 식별 (`RadioTransmitCarIdx`, `RadioTransmitRadioIdx`, `RadioTransmitFrequencyIdx`).
   - F1 공식 방송 그래픽 카드 레이아웃 (드라이버 성 + `RADIO`, 대형 볼드 차량 번호, 팀 공식 벡터 SVG 로고, 5밴드 네온 오디오 이퀄라이저 파형).
   - 아이레이싱 시스템 메시지 및 레이스 컨트롤 이벤트 원문 그대로 표기 (`YELLOW FLAG`, `PIT LANE ENTRY`, `BLUE FLAG` 등).
   - 다국어 번역 토글 옵션 (`translateSystemMessages`): 원문 영문 표기 기본값 + 7개 국어(`ko`, `en`, `zh`, `ja`, `de`, `fr`, `it`) 모국어 번역 지원.
-  - 이벤트 발생 시 매끄러운 슬라이드 팝업 후 3.5초 자동 숨김(Auto-hide) 생명주기.
+  - 깜빡임 없는 매끄러운 순수 페이드인/페이드아웃(Pure Fade-In/Out) 생명주기.
   - `Alt + J` 편집 모드 상시 미리보기, 드래그 위치 이동, 배율 조절 지원.
-- [ ] **M2.4: 위젯 3 - 직전 랩타임 델타 (`LapDelta.tsx`)**
-  - 초 단위 델타 비교 (-0.23s 녹색 음수, +0.42s 적색 양수, 보라색 세션 베스트).
-  - SDK 변수: `LapDeltaToSessionLastlLap`, `LapDeltaToBestLap`.
+- [x] **M2.4: 위젯 3 - 직전 랩타임 델타 (`LapDelta.tsx`)**
+  - **가로형 3분할 섹터 HUD (Horizontal 3-Sector HUD):**
+    - 세로는 얇고 슬림하게(38~44px), 가로는 길게(340px~560px 마우스 드래그 조절).
+    - 3분할 섹터(`S1 / S2 / S3`) 박스: 플레이어 델타 기준 퍼플/그린/옐로 파생 상태와 현재 통과 섹터 아웃라인. 고정 1/3 분할은 목업 전용이며 실연동 시 YAML `SplitTimeInfo`가 정확히 3구간인 경우만 1:1 매핑. 그 외 split 개수는 별도 집계 정책 없이는 3구간으로 위조하지 않음.
+    - 실시간 초 단위 델타 비교 (-0.234s 녹색/보라색, +0.421s 적색/노란색) 및 센터 0 기준 좌우 델타 게이지 바.
+    - 타깃 비교 모드 (`VS BEST` / `VS LAST`).
+    - `Alt + J` 편집 모드: 가로 너비 드래그 핸들, 배율 조절 `[-] 100% [+]`, `[델타 모드]` 시뮬레이션 테스트 버튼.
+  - SDK 변수: `LapDeltaToSessionLastlLap`(+`_OK`), `LapDeltaToBestLap`(+`_OK`), `LapDeltaToSessionBestLap`(+`_OK`), `LapLastLapTime`, `LapBestLapTime`, YAML `SplitTimeInfo`.
 - [ ] **M2.5: 위젯 11 - 실시간 2D 트랙 맵 (`TrackMap.tsx`)**
   - 2D SVG 서킷 레이아웃 위 실시간 차량 위치(내 차량 네온 화살표, 상대 차량 클래스별 컬러 점).
   - 피트 레인 진입 차량 반투명화 및 사고 섹터 옐로우 발광.

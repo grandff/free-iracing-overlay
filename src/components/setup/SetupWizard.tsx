@@ -666,9 +666,13 @@ export const SetupWizard: Component = () => {
                 }`}
               >
                 <LapDelta
+                  lapDelta={telemetry.frame?.lapDelta}
+                  deltaSeconds={telemetry.frame?.player?.lastLapDelta}
                   isEditMode={settings.isEditMode}
-                  scale={settings.widgets.lapDelta.scale}
+                  scale={settings.widgets.lapDelta?.scale ?? 1.0}
+                  width={settings.widgets.lapDelta?.width ?? 440}
                   onScaleChange={(scale) => updateWidgetTransform("lapDelta", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("lapDelta", { width })}
                 />
               </div>
             </Show>

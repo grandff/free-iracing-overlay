@@ -549,8 +549,8 @@ M2~M4 구현 시 이 표의 변수명을 그대로 `src/services/telemetry/types
 | # | 위젯 | 핵심 변수 | 비고 |
 | :-: | :--- | :--- | :--- |
 | 1 | **순위표 (Leaderboard)** | `CarIdxPosition`, `CarIdxClassPosition`, `CarIdxClass`, `CarIdxLap`, `CarIdxLapCompleted`, `CarIdxLastLapTime`, `CarIdxBestLapTime`, `CarIdxOnPitRoad`, `CarIdxTrackSurface`, `CarIdxTireCompound` | 드라이버 이름·국가·iRating·SR은 텔레메트리가 아니라 **세션 YAML(`DriverInfo`)** 에서 읽어야 함 |
-| 2 | **렐러티브 (Relative)** | `CarIdxEstTime`, `CarIdxLapDistPct`, `CarIdxLap`, `PlayerCarIdx`, `CarIdxClass` | 갭 = 내 `EstTime` − 상대 `EstTime`. 같은 랩/백마커 판정은 `CarIdxLap` 차이로 |
-| 3 | **랩 델타 (Lap Delta)** | `LapDeltaToSessionLastlLap`(+`_OK`), `LapDeltaToBestLap`(+`_OK`), `LapLastLapTime`, `LapBestLapTime` | **iRacing이 델타를 직접 계산해서 줍니다.** 직접 구할 필요 없음. `_OK`가 false면 표시 억제 |
+| 2 | **렐러티브 (Relative)** | `CarIdxEstTime`, `CarIdxLapDistPct`, `CarIdxLap`, `PlayerCarIdx`, `CarIdxClass` | 갭 = 내 `EstTime` − 상대 `EstTime`. **IRSDK는 상대 차량의 섹터 스플릿/델타를 제공하지 않으므로 상대 행의 S1/S2/S3 색은 표시하지 않음.** 플레이어 행만 아래 Lap Delta의 확정 상태를 공유 |
+| 3 | **랩 델타 (Lap Delta)** | `LapDeltaToSessionLastlLap`(+`_OK`), `LapDeltaToBestLap`(+`_OK`), `LapDeltaToSessionBestLap`(+`_OK`), `LapLastLapTime`, `LapBestLapTime`, YAML `SplitTimeInfo` | iRacing이 **플레이어의 연속 랩 델타**를 직접 계산. split 경계와 개수는 `SplitTimeInfo.Sectors[].SectorStartPct`로 판정하고 `_OK=false`면 표시 억제. 섹터별 색은 경계 통과 시 플레이어 델타를 샘플링해 비교한 파생값이며, 상대/세션 전체의 공식 섹터 기록은 아님 |
 | 4 | **리벤지 트래커** | `PlayerCarMyIncidentCount`, `CarLeftRight`, `CarIdxLapDistPct`, `CarIdxEstTime` | 인시던트 카운트 **증가 순간**에 좌우/근접 차량을 범인으로 락온 |
 | 5 | **근접 스포터 (좌/우)** | `CarLeftRight` (bitfield) | iRacing 내장 스포터. 직접 거리 계산할 필요 없음. 값 해석은 아래 `irsdk_CarLeftRight` 표 |
 | 6 | **연료 시뮬레이터** | `FuelLevel`, `FuelLevelPct`, `FuelUsePerHour`, `LapCompleted`, `SessionLapsRemainEx`, `SessionTimeRemain` | 랩당 소비량은 랩 완료 시점의 `FuelLevel` 차이를 직접 누적 (3~5랩 이동평균) |
@@ -560,6 +560,8 @@ M2~M4 구현 시 이 표의 변수명을 그대로 `src/services/telemetry/types
 | 10 | **멀티클래스 접근 경고** | `CarIdxClass`, `PlayerCarClass`, `CarIdxEstTime`, `SessionFlags`(`irsdk_blue`) | 상위 클래스 판정 후 `EstTime` 차 < 3초면 경보 |
 | 11 | **2D 트랙 맵** | `CarIdxLapDistPct`, `CarIdxTrackSurface`, `CarIdxOnPitRoad`, `CarIdxClass`, `PlayerCarIdx` | 서킷 SVG 경로는 별도 자산. `LapDistPct`(0.0~1.0)를 path 길이에 매핑 |
 | — | **콕핏 허브** | `Gear`, `RPM`, `Speed`, `Throttle`, `Brake`, `Clutch`, `SteeringWheelAngle`, `PushToPass` | `Speed`는 **m/s** → km/h는 ×3.6 |
+
+> **섹터 정확도 경계:** `SplitTimeInfo`를 사용하면 트랙이 정의한 split 경계는 정확히 구분할 수 있지만, split 개수는 트랙에 따라 달라 F1식 3구간을 보장하지 않습니다. 정확히 3구간인 세션만 S1/S2/S3에 1:1 매핑하고, 그 외에는 별도 집계 정책 없이는 3섹터로 재해석하지 않습니다. 또한 공유 메모리에는 상대 차량별 섹터 스플릿/델타가 없고 클라이언트 델타 변수도 플레이어 전용이므로, 렐러티브 상대 행의 Purple/Green/Yellow 및 F1의 전체 드라이버 기준 Purple은 네이티브 데이터만으로 확정할 수 없습니다. 현재 M2.4는 목업 프리뷰이며 실제 `SplitTimeInfo` 파서는 M5에서 연결합니다.
 
 ### 구현 시 자주 틀리는 것
 
