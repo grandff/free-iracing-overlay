@@ -331,6 +331,24 @@ npm run build
 ```
 - `tsc --noEmit && vite build` 파이프라인이 동작하여 타입 에러 0건 여부와 초경량 번들 크기(< 250KB)를 확인합니다.
 
+### 9.3-R 릴리스 태그 푸시 (GitHub Actions 빌드 트리거)
+
+버전을 직접 입력하고 태그를 밀어 `.github/workflows/build-windows.yml`을 실행시킵니다.
+태그(`v*`) 푸시가 Windows 인스톨러 빌드와 **공개 GitHub Release 발행**을 시작하므로 푸시 전 확인을 받습니다.
+
+```bash
+npm run release              # 버전을 물어봄
+npm run release 0.2.0        # 인자로 전달 (앞의 v는 있어도 됨)
+npm run release 0.2.0 -- -y  # 확인 프롬프트 생략
+```
+
+동작 순서: 버전 형식 검증 → 작업 트리 청결·업스트림·태그 중복(로컬/원격) 확인 →
+`package.json`·`package-lock.json`·`tauri.conf.json`·`Cargo.toml` 버전 동기화 계획 표시 →
+**확인 후에만** 파일 수정·커밋·푸시 → 어노테이트 태그 생성·푸시 → Actions/Release URL 출력.
+
+> 취소하면 아무것도 바뀌지 않습니다(계획/적용을 분리해 둠).
+> 로컬에서 빌드해 직접 업로드하려면 `.github-release.sh`를 쓰세요.
+
 ### 9.4 공식 에셋(실물 브랜드 로고 & F1 폰트) 셋업
 초기 설치나 새로운 클론 환경에서 실물 공식 브랜드 이미지 28종 및 F1 웹폰트를 일괄 셋업할 때 사용합니다.
 

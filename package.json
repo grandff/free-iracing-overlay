@@ -12,7 +12,8 @@
     "setup-fonts": "node scripts/setup-fonts.js",
     "setup-brands": "node scripts/download-brand-logos.js",
     "tauri": "tauri",
-    "verify-brands": "node scripts/verify-brands.mjs"
+    "verify-brands": "node scripts/verify-brands.mjs",
+    "release": "bash scripts/release-tag.sh"
   },
   "dependencies": {
     "lucide-solid": "^1.41.0",
