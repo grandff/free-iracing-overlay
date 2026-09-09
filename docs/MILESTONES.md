@@ -127,15 +127,32 @@
   - **F1 브로드캐스트 + Apple Design:** 각진 슬래브, 좌측 세로 악센트 탭(3.5px), oblique(이탤릭) 타이포그래피, tabular-nums 고정폭 숫자(지터 방지), 주행 중 사고 미발생 시 완전 투명화(화면 가림 0).
   - **`Alt + J` 편집 모드:** 가로 너비(280~480px) 마우스 드래그 리사이즈, 배율 조절 `[-] 100% [+]`, 5단계 인터랙티브 테스트 스위처(`LIVE` ➔ `SPIN (140m)` ➔ `CRASH (65m)` ➔ `STOPPED (280m)` ➔ `CLEAR`).
   - SDK 변수: `SessionFlags` (`irsdk_yellow`, `irsdk_yellowWaving`, `irsdk_caution`, `irsdk_debris`), `CarIdxTrackSurface` (`irsdk_OffTrack`), `CarIdxLapDistPct`, 속도(Speed m/s $\times$ 3.6).
-- [ ] **M3.4: 위젯 9 - 날씨 & Tempest 정보 (`WeatherWidget.tsx`)**
-  - 대기/노면 온도, 풍향 나침반, 우천 강수량 게이지.
-  - SDK 변수: `AirTemp`, `TrackTempCrew`, `WindVel`, `WindDir`, `RelativeHumidity`.
-- [ ] **M3.5: 위젯 15 - 디지플래그 / 세션 플래그 경보 (`Digiflag.tsx`)**
-  - 황기(Yellow), 청기(Blue - 추월 접근 차량 번호 함께 표기), 흑백 반반기(Meatball 수리 지시), 백기, 체커기 고휘도 전광판 발광 경보.
-  - SDK 변수: `SessionFlags` (Bitfield).
-- [ ] **M3.6: 위젯 14 - 피트박스 카운트다운 & 리미터 헬퍼 (`PitBoxHelper.tsx`)**
-  - 피트 레인 진입 시 속도 초과 경고 + 내 피트 스톨(Pit Stall) 잔여 거리(50m ➔ 30m ➔ 10m ➔ STOP!) 정밀 카운트다운.
-  - SDK 변수: `CarIdxTrackSurface`, `Speed`, `PitSvFlags`, `CarIdxLapDistPct`.
+- [x] **M3.4: 위젯 9 - 날씨 & Tempest 정보 (`WeatherWidget.tsx`)**
+  - **Tempest 날씨 시스템 & iRacing SDK 12개 변수 완벽 연동:**
+    - 대기 온도(`AirTemp`), 노면 크루 측정 온도(`TrackTempCrew`) 및 대기 대비 델타($\pm\Delta^\circ\text{C}$).
+    - 풍속(`WindVel` m/s $\to$ km/h), 풍향 나침반(`WindDir` radian $\to$ degree 각도 회전 표기 + 16방위 표기).
+    - 상대 습도(`RelativeHumidity` % 단위), 안개 밀도(`FogLevel` %), 대기압(`AirPressure` inHg), 공기 밀도(`AirDensity` $\text{kg/m}^3$).
+    - Tempest 트랙 노면 젖음 상태(`TrackWetness` 8단계 Enum: DRY, MOSTLY DRY, VERY LIGHT WET, LIGHT WET, MODERATELY WET, VERY WET, EXTREMELY WET).
+    - iRacing 권장 타이어 컴파운드 배지 동적 연동 (`SLICK`, `SLICK/INTER`, `INTER/WET`, `WET`, `EXTREME WET`).
+    - 실시간 강수량(`Precipitation` % 단위 게이지 및 프로그레스 바) 및 하늘 상태(`Skies` 맑음/구름조금/구름많음/흐림).
+  - **F1 브로드캐스트 HUD & Apple Design:** 각진 슬래브, 다크 카본 슬레이트 배경, microcaps 레이블, tabular-nums 고정폭 폰트, 상태별 동적 발광 컬러 코딩.
+  - **`Alt + J` 편집 모드:** 가로 너비(300px~520px) 실시간 마우스 드래그 리사이즈, 배율 조절 `[-] 100% [+]`, 5단계 인터랙티브 Tempest 테스트 스위처(`LIVE` ➔ `DRY` ➔ `DAMP` ➔ `TEMPEST WET` ➔ `FLOOD`).
+  - **7개 전 언어 100% 현지화:** 한국어, 영어, 중국어, 일본어, 프랑스어, 독일어, 이탈리아어 완벽 지원.
+  - SDK 변수: `AirTemp`, `TrackTempCrew`, `WindVel`, `WindDir`, `RelativeHumidity`, `FogLevel`, `Skies`, `WeatherType`, `WeatherVersion`, `TrackWetness`, `Precipitation`, `AirPressure`, `AirDensity`.
+- [x] **M3.5: 위젯 15 - 디지플래그 / 세션 플래그 경보 (`Digiflag.tsx`)**
+  - **iRacing `SessionFlags` 비트필드 완벽 연동:** 황기, 청기(추월 접근 차량 번호 태그 표시), 흑백 반반기(Meatball/강제 수리 지시), 흑기(페널티), 백기(파이널 랩), 녹기(트랙 클리어), 적기(세션 중단), 체커기(완주).
+  - **리얼 크루 깃발 스윙 모션 (Checkered Flag):** 실제 피트 월 마샬이 깃대를 잡고 8자 궤적으로 역동적으로 휘두르는 3D 펄럭임(Pole Swing Oscillation + Cloth Wave Ripple + Wind Shimmer) 애니메이션 구현.
+  - **F1 디지털 마샬링 라이트 패널 스타일:** FIA 고휘도 LED 스트로브 발광, 주행 중 플래그 미발생 시 100% 완전 투명화.
+  - **`Alt + J` 편집 모드:** 가로 너비(180~420px) 실시간 마우스 드래그 리사이즈, 배율 조절 `[-] 100% [+]`, 10단계 인터랙티브 플래그 테스트 스위처 (`LIVE` ➔ `CHECKERED (리얼 스윙)` ➔ `YELLOW` ➔ `BLUE` ➔ `MEATBALL` ➔ `BLACK` ➔ `WHITE` ➔ `GREEN` ➔ `RED` ➔ `OFF`).
+  - **7개 전 언어 현지화:** 한국어, 영어, 중국어, 일본어, 프랑스어, 독일어, 이탈리아어 완벽 지원.
+  - SDK 변수: `SessionFlags` (Bitfield `irsdk_Flags`).
+- [x] **M3.6: 위젯 14 - 피트박스 카운트다운 & 리미터 헬퍼 (`PitBoxHelper.tsx`)**
+  - **정밀 피트박스 카운트다운:** 내 피트 스톨까지 잔여 거리 `50m` (Cyan) ➔ `30m` (Amber) ➔ `10m` (Orange) ➔ `0m STOP!` (Blinking Red) 정밀 유도 및 4단계 동적 프로그레스 바.
+  - **피트 리미터 속도계 & 오버스피드 경보:** 피트 제한 속도(60/80 km/h) 대비 실시간 주행 속도 모니터링, 제한 속도 초과 시 고휘도 점멸 `⚠️ OVERSPEED! SLOW DOWN!` 페널티 위험 경보.
+  - **F1 핏레인 타이밍 카드 & Apple Design:** 상시 주행 시 100% 투명화, 피트 레인 진입(`OnPitRoad`) 시 자동 팝업.
+  - **`Alt + J` 편집 모드:** 가로 너비(260~480px) 실시간 마우스 드래그 리사이즈, 배율 조절 `[-] 100% [+]`, 7단계 인터랙티브 테스트 스위처 (`LIVE` ➔ `APPROACH (45m)` ➔ `DECEL (22m)` ➔ `BOX (6m)` ➔ `STOP (0m)` ➔ `OVERSPEED` ➔ `OFF`).
+  - **7개 전 언어 현지화:** 한국어, 영어, 중국어, 일본어, 프랑스어, 독일어, 이탈리아어 완벽 지원.
+  - SDK 변수: `OnPitRoad`, `CarIdxTrackSurface` (`irsdk_InPitStall`, `irsdk_AproachingPits`), `Speed` (m/s $\times 3.6 \to$ km/h), `PitSvFlags`, `PitRepairLeft`.
 
 ---
 

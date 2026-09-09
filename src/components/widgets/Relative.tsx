@@ -2,6 +2,7 @@ import { Component, For, Show, createSignal, createMemo, onCleanup } from "solid
 import { createReorderFlip } from "../../utils/reorderFlip.ts";
 import { CountryFlag } from "../../assets/icons/CountryFlags.tsx";
 import { SectorColor } from "../../services/telemetry/types.ts";
+import { calculateSOF } from "../../services/telemetry/iratingCalculator.ts";
 
 export interface RelativeEntry {
   position?: number;
@@ -15,6 +16,8 @@ export interface RelativeEntry {
   isPlayer?: boolean;
   sectors?: [SectorColor, SectorColor, SectorColor];
   currentSector?: 1 | 2 | 3;
+  irating?: number;
+  projectedIratingGain?: number;
 }
 
 export interface RelativeProps {
@@ -23,6 +26,8 @@ export interface RelativeProps {
   scale?: number;
   width?: number; // custom width in px (default: 340)
   maxRows?: number; // cars ahead & behind (2 to 5, default: 3)
+  sof?: number;
+  projectedIratingGain?: number;
   onScaleChange?: (newScale: number) => void;
   onWidthChange?: (newWidth: number) => void;
   onMaxRowsChange?: (newRows: number) => void;
@@ -31,19 +36,19 @@ export interface RelativeProps {
 // 11-car preview. IRSDK does not expose opponent split deltas, so only the
 // player's row carries sector colors; opponent rows intentionally show "—".
 const defaultRelativeEntries: RelativeEntry[] = [
-  { position: 1, carNumber: "1", code: "VER", name: "M. Verstappen", country: "NL", teamColor: "#3671C6", tireCompound: "S", gapSeconds: -4.821 },
-  { position: 2, carNumber: "4", code: "NOR", name: "L. Norris", country: "GB", teamColor: "#FF8000", tireCompound: "M", gapSeconds: -3.120 },
-  { position: 3, carNumber: "81", code: "PIA", name: "O. Piastri", country: "AU", teamColor: "#FF8000", tireCompound: "M", gapSeconds: -1.954 },
-  { position: 4, carNumber: "55", code: "SAI", name: "C. Sainz", country: "ES", teamColor: "#E8002D", tireCompound: "H", gapSeconds: -0.985 },
-  { position: 5, carNumber: "16", code: "LEC", name: "C. Leclerc", country: "MC", teamColor: "#E8002D", tireCompound: "S", gapSeconds: -0.421 },
+  { position: 1, carNumber: "1", code: "VER", name: "M. Verstappen", country: "NL", teamColor: "#3671C6", tireCompound: "S", gapSeconds: -4.821, irating: 5200, projectedIratingGain: 18 },
+  { position: 2, carNumber: "4", code: "NOR", name: "L. Norris", country: "GB", teamColor: "#FF8000", tireCompound: "M", gapSeconds: -3.120, irating: 4850, projectedIratingGain: 12 },
+  { position: 3, carNumber: "81", code: "PIA", name: "O. Piastri", country: "AU", teamColor: "#FF8000", tireCompound: "M", gapSeconds: -1.954, irating: 4100, projectedIratingGain: 6 },
+  { position: 4, carNumber: "55", code: "SAI", name: "C. Sainz", country: "ES", teamColor: "#E8002D", tireCompound: "H", gapSeconds: -0.985, irating: 3950, projectedIratingGain: 2 },
+  { position: 5, carNumber: "16", code: "LEC", name: "C. Leclerc", country: "MC", teamColor: "#E8002D", tireCompound: "S", gapSeconds: -0.421, irating: 4400, projectedIratingGain: -4 },
   // Player (Index 5)
-  { position: 6, carNumber: "7", code: "YOU", name: "K. Jeongmin", country: "KR", teamColor: "#00d26a", tireCompound: "M", gapSeconds: 0.000, isPlayer: true, sectors: ["purple", "green", "none"], currentSector: 3 },
+  { position: 6, carNumber: "7", code: "YOU", name: "K. Jeongmin", country: "KR", teamColor: "#00d26a", tireCompound: "M", gapSeconds: 0.000, isPlayer: true, sectors: ["purple", "green", "none"], currentSector: 3, irating: 2850, projectedIratingGain: 38 },
   // Behind
-  { position: 7, carNumber: "44", code: "HAM", name: "L. Hamilton", country: "GB", teamColor: "#27F4D2", tireCompound: "H", gapSeconds: 0.842 },
-  { position: 8, carNumber: "63", code: "RUS", name: "G. Russell", country: "GB", teamColor: "#27F4D2", tireCompound: "H", gapSeconds: 1.635 },
-  { position: 9, carNumber: "14", code: "ALO", name: "F. Alonso", country: "ES", teamColor: "#229971", tireCompound: "M", gapSeconds: 2.780 },
-  { position: 10, carNumber: "10", code: "GAS", name: "P. Gasly", country: "FR", teamColor: "#0090FF", tireCompound: "H", gapSeconds: 3.910 },
-  { position: 11, carNumber: "23", code: "ALB", name: "A. Albon", country: "TH", teamColor: "#005AFF", tireCompound: "M", gapSeconds: 5.120 },
+  { position: 7, carNumber: "44", code: "HAM", name: "L. Hamilton", country: "GB", teamColor: "#27F4D2", tireCompound: "H", gapSeconds: 0.842, irating: 4600, projectedIratingGain: -12 },
+  { position: 8, carNumber: "63", code: "RUS", name: "G. Russell", country: "GB", teamColor: "#27F4D2", tireCompound: "H", gapSeconds: 1.635, irating: 3800, projectedIratingGain: -16 },
+  { position: 9, carNumber: "14", code: "ALO", name: "F. Alonso", country: "ES", teamColor: "#229971", tireCompound: "M", gapSeconds: 2.780, irating: 3600, projectedIratingGain: -22 },
+  { position: 10, carNumber: "10", code: "GAS", name: "P. Gasly", country: "FR", teamColor: "#0090FF", tireCompound: "H", gapSeconds: 3.910, irating: 2900, projectedIratingGain: -28 },
+  { position: 11, carNumber: "23", code: "ALB", name: "A. Albon", country: "TH", teamColor: "#005AFF", tireCompound: "M", gapSeconds: 5.120, irating: 3100, projectedIratingGain: -34 },
 ];
 
 /**
@@ -149,6 +154,28 @@ export const Relative: Component<RelativeProps> = (props) => {
   const currentWidth = () => Math.max(280, Math.min(520, props.width ?? 340));
   // Ahead/Behind control: 2 to 5 cars (default: 3)
   const carsAheadBehind = () => Math.max(2, Math.min(5, props.maxRows ?? 3));
+
+  // Column responsive hierarchy: show iR column when container >= 400px
+  const showIRColumn = () => currentWidth() >= 400;
+  const gridColsClass = () =>
+    showIRColumn()
+      ? "grid-cols-[34px_36px_1fr_48px_48px_28px_66px]"
+      : "grid-cols-[38px_40px_1fr_52px_32px_70px]";
+
+  // Real-time Strength of Field (SOF) and projected player iRating gain
+  const computedSof = createMemo(() => {
+    if (props.sof !== undefined && props.sof > 0) return props.sof;
+    const entries = props.entries && props.entries.length > 0 ? props.entries : defaultRelativeEntries;
+    const ratings = entries.map((e) => e.irating).filter((r): r is number => typeof r === "number" && r > 0);
+    return calculateSOF(ratings);
+  });
+
+  const computedPlayerGain = createMemo(() => {
+    if (props.projectedIratingGain !== undefined) return props.projectedIratingGain;
+    const entries = props.entries && props.entries.length > 0 ? props.entries : defaultRelativeEntries;
+    const player = entries.find((e) => e.isPlayer);
+    return player?.projectedIratingGain;
+  });
 
   // Dynamic Slicing around Player
   const visibleList = createMemo(() => {
@@ -342,17 +369,42 @@ export const Relative: Component<RelativeProps> = (props) => {
             RELATIVE INTERVAL
           </span>
         </div>
-        <span class="text-[9px] font-mono font-bold text-white/45 tracking-wide">
-          ±{carsAheadBehind()} CARS
-        </span>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <Show when={computedSof() > 0}>
+            <div class="flex items-center gap-1 px-1.5 py-0.5 rounded-[2px] bg-white/[0.08] border border-white/10 text-[9px] font-mono font-bold text-white/80">
+              <span class="text-white/40 text-[7.5px] uppercase">SOF</span>
+              <span>{Math.round(computedSof()).toLocaleString()}</span>
+            </div>
+          </Show>
+          <Show when={computedPlayerGain() !== undefined}>
+            <div
+              class={`px-1.5 py-0.5 rounded-[2px] border text-[9px] font-mono font-black ${
+                (computedPlayerGain() ?? 0) > 0
+                  ? "bg-[#00D2BE]/15 border-[#00D2BE]/30 text-[#00D2BE]"
+                  : (computedPlayerGain() ?? 0) < 0
+                  ? "bg-[#FF3B30]/15 border-[#FF3B30]/30 text-[#FF3B30]"
+                  : "bg-white/10 border-white/20 text-white/70"
+              }`}
+              title="완주 시 예상 iRating 변동"
+            >
+              {(computedPlayerGain() ?? 0) > 0 ? `+${computedPlayerGain()}` : `${computedPlayerGain()}`} iR
+            </div>
+          </Show>
+          <span class="text-[9px] font-mono font-bold text-white/45 tracking-wide">
+            ±{carsAheadBehind()} CARS
+          </span>
+        </div>
       </div>
 
-      {/* Subheader: POS, #, DRIVER, SEC, TYRE, GAP */}
+      {/* Subheader: POS, #, DRIVER, [iR], SEC, TYRE, GAP */}
       {/* ponytail: unified grid layout and synchronized border-box padding ensure 100% mathematical text alignment between header and body rows */}
-      <div class="grid grid-cols-[38px_40px_1fr_52px_32px_70px] items-center px-2 py-1 hud-surface-deep text-[9px] font-mono text-white/45 tracking-wider border-b border-white/[0.08] border-l-[3.5px] border-l-transparent">
+      <div class={`grid ${gridColsClass()} items-center px-2 py-1 hud-surface-deep text-[9px] font-mono text-white/45 tracking-wider border-b border-white/[0.08] border-l-[3.5px] border-l-transparent`}>
         <span class="text-center font-bold">POS</span>
         <span class="text-center font-bold">#</span>
         <span class="pl-2 font-bold text-left">DRIVER</span>
+        <Show when={showIRColumn()}>
+          <span class="text-right pr-1 font-bold">iR</span>
+        </Show>
         <span class="text-center font-bold">SEC</span>
         <span class="text-center font-bold">TYRE</span>
         <span class="text-right pr-2 font-bold">GAP</span>
@@ -370,7 +422,7 @@ export const Relative: Component<RelativeProps> = (props) => {
             return (
               <div
                 ref={flip.row(d.carNumber)}
-                class={`grid grid-cols-[38px_40px_1fr_52px_32px_70px] items-center h-[28px] px-2 transition-colors duration-150 border-l-[3.5px] ${
+                class={`grid ${gridColsClass()} items-center h-[28px] px-2 transition-colors duration-150 border-l-[3.5px] ${
                   d.isPlayer
                     ? "bg-[#00d26a]/10 ring-1 ring-inset ring-[#00d26a]/45 border-l-[#00d26a]"
                     : "bg-[#13141c]/95 hover:bg-[#181a24]/95 border-l-transparent"
@@ -426,7 +478,23 @@ export const Relative: Component<RelativeProps> = (props) => {
                   >
                     {d.name}
                   </span>
+                  <Show when={!showIRColumn() && d.irating}>
+                    <span class="ml-auto text-[8.5px] font-mono text-white/40 shrink-0 tnum">
+                      {(d.irating! / 1000).toFixed(1)}k
+                    </span>
+                  </Show>
                 </div>
+
+                {/* Optional iR Column (>= 400px) */}
+                <Show when={showIRColumn()}>
+                  <div class="text-right pr-1 shrink-0">
+                    <span class={`font-mono text-[10px] tabular-nums ${
+                      d.isPlayer ? "text-[#00d26a] font-bold" : "text-white/70"
+                    }`}>
+                      {d.irating ? d.irating.toLocaleString() : "—"}
+                    </span>
+                  </div>
+                </Show>
 
                 {/* 4. Sector Pills: [ S1 | S2 | S3 ] */}
                 <div class="flex items-center justify-center shrink-0">

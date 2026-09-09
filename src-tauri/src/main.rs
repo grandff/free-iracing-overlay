@@ -48,6 +48,77 @@ fn load_config(app: AppHandle) -> Result<Option<String>, String> {
     Ok(Some(content))
 }
 
+/// Where debug logs go. An empty `dir` means the app's own log directory, which is
+/// the only location we can guarantee is writable without asking the user.
+///
+/// `create` is false when we are only resolving a path to show it: the settings
+/// field re-resolves on every keystroke, and creating as we go would litter the
+/// disk with `C:`, `C:\\U`, `C:\\Us`... on the way to the path the user meant.
+fn resolve_log_dir(app: &AppHandle, dir: &str, create: bool) -> Result<PathBuf, String> {
+    let base = if dir.trim().is_empty() {
+        app.path().app_log_dir().map_err(|e| e.to_string())?
+    } else {
+        PathBuf::from(dir.trim())
+    };
+    if create && !base.exists() {
+        fs::create_dir_all(&base).map_err(|e| e.to_string())?;
+    }
+    Ok(base)
+}
+
+/// The absolute path a given setting resolves to, so the UI can show the user
+/// exactly where to look instead of making them guess.
+#[tauri::command]
+fn debug_log_path(app: AppHandle, dir: String, file_name: String) -> Result<String, String> {
+    let mut path = resolve_log_dir(&app, &dir, false)?;
+    path.push(sanitize_file_name(&file_name));
+    Ok(path.to_string_lossy().into_owned())
+}
+
+/// A log file name may not escape the chosen directory. The renderer supplies it,
+/// so it is untrusted input even though the user is the one typing.
+fn sanitize_file_name(name: &str) -> String {
+    let cleaned: String = name
+        .chars()
+        .filter(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.'))
+        .collect();
+    if cleaned.is_empty() || cleaned.starts_with('.') {
+        "telemetry-debug.csv".to_string()
+    } else {
+        cleaned
+    }
+}
+
+/// Appends already-formatted lines to the debug log.
+///
+/// Batched on purpose: the renderer samples telemetry many times a second and one
+/// IPC round trip per row would cost more than the thing being measured.
+#[tauri::command]
+fn append_debug_log(
+    app: AppHandle,
+    dir: String,
+    file_name: String,
+    header: String,
+    lines: String,
+) -> Result<String, String> {
+    use std::io::Write;
+
+    let mut path = resolve_log_dir(&app, &dir, true)?;
+    path.push(sanitize_file_name(&file_name));
+
+    let is_new = !path.exists();
+    let mut f = fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&path)
+        .map_err(|e| e.to_string())?;
+    if is_new && !header.is_empty() {
+        writeln!(f, "{header}").map_err(|e| e.to_string())?;
+    }
+    f.write_all(lines.as_bytes()).map_err(|e| e.to_string())?;
+    Ok(path.to_string_lossy().into_owned())
+}
+
 #[tauri::command]
 fn set_clickthrough(app: AppHandle, ignore: bool) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(OVERLAY) {
@@ -176,7 +247,9 @@ fn main() {
             set_overlay_visible,
             show_control_window,
             get_connection_status,
-            fetch_theme_font
+            fetch_theme_font,
+            debug_log_path,
+            append_debug_log
         ])
         .on_window_event(|window, event| {
             // Closing the control window quits the app; closing the HUD just hides it.

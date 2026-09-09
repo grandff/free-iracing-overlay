@@ -124,7 +124,7 @@
 
 /* =========================================================
    F1 BROADCAST GRAPHICS PRIMITIVES
-   World-feed 패키지 실물 관찰 기반 (2022~2024 온보드/트랙컨디션/스타트분석):
+   World-feed 패키지 실물 관찰 기반 (공식 온보드/트랙컨디션/스타트분석):
    oblique 볼드 대문자, 각진 모서리, 값-위/라벨-아래 스택,
    타이틀 아래 레드 룰, 영상 위에 그대로 떠 있는 그래픽.
    ========================================================= */
@@ -217,3 +217,119 @@
 .hud-surface-band {
   background-color: rgb(21 21 30 / min(1, calc(var(--hud-bg-alpha) + 0.06)));
 }
+
+/* =========================================================
+   CHECKERED FLAG MARSHAL WAVING ANIMATION
+   Simulates actual race crews/marshals vigorously waving the
+   checkered flag across the finish line with pole oscillation,
+   figure-8 sweep, and 3D aerodynamic fabric ripple.
+   ========================================================= */
+
+@keyframes flag-marshal-swing {
+  0% {
+    transform: rotate(-24deg) translateY(-8px) scale(0.96);
+  }
+  24% {
+    transform: rotate(4deg) translateY(6px) scale(1.02);
+  }
+  48% {
+    transform: rotate(26deg) translateY(-4px) scale(1.05);
+  }
+  74% {
+    transform: rotate(-2deg) translateY(8px) scale(0.98);
+  }
+  100% {
+    transform: rotate(-24deg) translateY(-8px) scale(0.96);
+  }
+}
+
+@keyframes flag-cloth-wave {
+  0% {
+    transform: perspective(450px) rotateY(-18deg) skewY(-8deg) scaleY(0.92);
+  }
+  25% {
+    transform: perspective(450px) rotateY(12deg) skewY(6deg) scaleY(1.04);
+  }
+  50% {
+    transform: perspective(450px) rotateY(-14deg) skewY(-7deg) scaleY(0.95);
+  }
+  75% {
+    transform: perspective(450px) rotateY(20deg) skewY(9deg) scaleY(1.06);
+  }
+  100% {
+    transform: perspective(450px) rotateY(-18deg) skewY(-8deg) scaleY(0.92);
+  }
+}
+
+@keyframes flag-wind-shimmer {
+  0%, 100% {
+    filter: brightness(0.95) drop-shadow(0 4px 10px rgba(0, 0, 0, 0.6));
+  }
+  50% {
+    filter: brightness(1.2) drop-shadow(0 8px 20px rgba(255, 255, 255, 0.3));
+  }
+}
+
+.animate-flag-swing {
+  transform-origin: 15% 90%;
+  animation: flag-marshal-swing 1.35s cubic-bezier(0.45, 0.05, 0.55, 0.95) infinite;
+}
+
+.animate-flag-cloth {
+  transform-origin: left center;
+  animation: flag-cloth-wave 0.85s ease-in-out infinite, flag-wind-shimmer 1.35s ease-in-out infinite;
+}
+
+/* Authentic F1 Aerodynamic Flag Flutter */
+@keyframes f1-flag-flutter {
+  0% {
+    transform: perspective(450px) rotateY(-8deg) skewY(-2deg) scaleY(0.96);
+  }
+  28% {
+    transform: perspective(450px) rotateY(10deg) skewY(3deg) scaleY(1.03);
+  }
+  56% {
+    transform: perspective(450px) rotateY(-10deg) skewY(-3deg) scaleY(0.97);
+  }
+  80% {
+    transform: perspective(450px) rotateY(6deg) skewY(2deg) scaleY(1.02);
+  }
+  100% {
+    transform: perspective(450px) rotateY(-8deg) skewY(-2deg) scaleY(0.96);
+  }
+}
+
+@keyframes f1-pole-flex {
+  0%, 100% {
+    transform: rotate(-10deg) translateY(0);
+  }
+  50% {
+    transform: rotate(-7deg) translateY(-1px);
+  }
+}
+
+.animate-f1-flag-flutter {
+  transform-origin: left center;
+  animation: f1-flag-flutter 1.05s cubic-bezier(0.42, 0, 0.58, 1) infinite, flag-wind-shimmer 1.6s ease-in-out infinite;
+}
+
+.animate-f1-pole {
+  transform-origin: bottom center;
+  animation: f1-pole-flex 1.8s ease-in-out infinite;
+}
+
+@keyframes digiflag-led-strobe {
+  0%, 49% {
+    opacity: 1;
+    filter: brightness(1.25) drop-shadow(0 0 16px currentColor);
+  }
+  50%, 100% {
+    opacity: 0.2;
+    filter: brightness(0.6);
+  }
+}
+
+.animate-digiflag-led {
+  animation: digiflag-led-strobe 0.5s steps(1, end) infinite;
+}
+

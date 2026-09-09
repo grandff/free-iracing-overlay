@@ -5,6 +5,7 @@ import {
   toggleControlPanel,
   hydrateFromDiskConfig,
   updateWidgetTransform,
+  updateSettings,
   WidgetKey,
   widgetBgAlpha,
 } from "./stores/settingsStore.ts";
@@ -19,8 +20,7 @@ import { Relative } from "./components/widgets/Relative.tsx";
 import { TeamRadio } from "./components/widgets/TeamRadio.tsx";
 import { LapDelta } from "./components/widgets/LapDelta.tsx";
 import { RevengeTracker } from "./components/widgets/RevengeTracker.tsx";
-import { SpotterLeft } from "./components/widgets/SpotterLeft.tsx";
-import { SpotterRight } from "./components/widgets/SpotterRight.tsx";
+import { Spotter, SPOTTER_DEFAULT_HEIGHT, SPOTTER_DEFAULT_WIDTH } from "./components/widgets/Spotter.tsx";
 import { FuelSimulator } from "./components/widgets/FuelSimulator.tsx";
 import { TireAnalysis } from "./components/widgets/TireAnalysis.tsx";
 import { IncidentHazard } from "./components/widgets/IncidentHazard.tsx";
@@ -29,10 +29,13 @@ import { MulticlassRadar } from "./components/widgets/MulticlassRadar.tsx";
 import { TrackMap } from "./components/widgets/TrackMap.tsx";
 import { ShiftLight } from "./components/widgets/ShiftLight.tsx";
 import { TelemetryHub } from "./components/widgets/TelemetryHub.tsx";
+import { Digiflag } from "./components/widgets/Digiflag.tsx";
+import { PitBoxHelper } from "./components/widgets/PitBoxHelper.tsx";
 import { createPresence } from "./utils/presence.ts";
 import { t } from "./i18n/index.ts";
 import { OpacityChip } from "./components/common/OpacityChip.tsx";
 import { restoreCachedFonts } from "./services/fonts.ts";
+import { startDebugLog, stopDebugLog } from "./services/debugLog.ts";
 
 export const App: Component = () => {
   const [draggingWidget, setDraggingWidget] = createSignal<WidgetKey | null>(null);
@@ -112,6 +115,14 @@ export const App: Component = () => {
     document.documentElement.setAttribute("data-theme", settings.theme);
   });
 
+  // Telemetry recording follows the setting. Only this window runs the pipeline,
+  // so only this window writes the log — the control window would duplicate rows.
+  createEffect(() => {
+    if (settings.debugLogging) startDebugLog();
+    else stopDebugLog();
+  });
+  onCleanup(() => stopDebugLog());
+
   // Driving mode must let clicks reach the game. CSS pointer-events cannot do this —
   // only the OS window can, so mirror edit mode onto the native click-through flag.
   createEffect(() => {
@@ -163,6 +174,8 @@ export const App: Component = () => {
             ? [playerSectorData[0].status, playerSectorData[1].status, playerSectorData[2].status] as const
             : undefined,
           currentSector: isPlayer ? frame.lapDelta?.currentSector : undefined,
+          irating: c.irating,
+          projectedIratingGain: c.projectedIratingGain,
         };
       });
       setRelativeEntries(mappedRel);
@@ -310,6 +323,8 @@ export const App: Component = () => {
                   theme={settings.theme}
                   sessionType={telemetry.frame?.sessionType}
                   sessionTimeRemain={telemetry.frame?.sessionTimeRemainingSec}
+                  sof={telemetry.frame?.sof}
+                  projectedIratingGain={telemetry.frame?.projectedIratingGain}
                   onScaleChange={(scale) => updateWidgetTransform("leaderboard", { scale })}
                   onWidthChange={(width) => updateWidgetTransform("leaderboard", { width })}
                   onMaxRowsChange={(maxRows) => updateWidgetTransform("leaderboard", { maxRows })}
@@ -341,6 +356,8 @@ export const App: Component = () => {
                   scale={settings.widgets.relative.scale}
                   width={settings.widgets.relative.width || 340}
                   maxRows={settings.widgets.relative.maxRows || 3}
+                  sof={telemetry.frame?.sof}
+                  projectedIratingGain={telemetry.frame?.projectedIratingGain}
                   onScaleChange={(scale) => updateWidgetTransform("relative", { scale })}
                   onWidthChange={(width) => updateWidgetTransform("relative", { width })}
                   onMaxRowsChange={(maxRows) => updateWidgetTransform("relative", { maxRows })}
@@ -412,7 +429,14 @@ export const App: Component = () => {
             </Show>
 
             {/* 기능 4: 리벤지 트래커 (Bottom-Right-Center) */}
-            <Show when={settings.widgets.revengeTracker?.visible !== false}>
+            <Show
+              when={
+                settings.widgets.revengeTracker?.visible !== false &&
+                (settings.isEditMode ||
+                  (telemetry.frame?.sessionType !== "QUALIFY" &&
+                    (telemetry.frame?.revenge?.hasTarget ?? false)))
+              }
+            >
               <div
                 onMouseDown={(e) => handleMouseDown("revengeTracker", e)}
                 style={{
@@ -427,13 +451,16 @@ export const App: Component = () => {
                 }`}
               >
                 <RevengeTracker
-                  hasTarget={telemetry.frame?.revenge?.hasTarget}
-                  targetCarNumber={telemetry.frame?.revenge?.carNumber}
-                  targetDriverName={telemetry.frame?.revenge?.driverName}
-                  gapSeconds={telemetry.frame?.revenge?.gapSeconds}
+                  revenge={telemetry.frame?.revenge}
+                  sessionType={telemetry.frame?.sessionType}
+                  playerLastLapTime={telemetry.frame?.player?.lastLapTime}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.revengeTracker.scale}
+                  width={settings.widgets.revengeTracker.width}
+                  persistenceMode={settings.revengePersistence}
                   onScaleChange={(scale) => updateWidgetTransform("revengeTracker", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("revengeTracker", { width })}
+                  onPersistenceModeChange={(mode) => updateSettings("revengePersistence", mode)}
                 />
                 <Show when={settings.isEditMode}>
                   <OpacityChip widgetKey="revengeTracker" />
@@ -451,22 +478,24 @@ export const App: Component = () => {
                   "transform-origin": "left center",
                   left:
                     settings.tripleMonitorMode === "center-clamp" && settings.spotterBezelAnchor === "center-bezel"
-                      ? `calc(50% - ${settings.centerClampWidth / 2}px + 8px)`
+                      // max() so a window narrower than the clamp cannot push the
+                      // rail off-screen — that is how both spotters went missing.
+                      ? `max(8px, calc(50% - ${settings.centerClampWidth / 2}px + 8px))`
                       : "8px",
                 }}
                 class={`fixed top-1/2 z-40 select-none transition-[left] duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-lg rounded-r-xl"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-lg"
                     : "pointer-events-none"
                 }`}
               >
-                <SpotterLeft
-                  distance={telemetry.frame?.spotter?.leftDistanceMeters}
+                <Spotter
+                  side="left"
                   state={telemetry.frame?.spotter?.leftState}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.spotterLeft.scale}
-                  width={settings.widgets.spotterLeft.width ?? 200}
-                  height={settings.widgets.spotterLeft.height ?? 56}
+                  width={settings.widgets.spotterLeft.width ?? SPOTTER_DEFAULT_WIDTH}
+                  height={settings.widgets.spotterLeft.height ?? SPOTTER_DEFAULT_HEIGHT}
                   onScaleChange={(scale) => updateWidgetTransform("spotterLeft", { scale })}
                   onWidthChange={(width) => updateWidgetTransform("spotterLeft", { width })}
                   onHeightChange={(height) => updateWidgetTransform("spotterLeft", { height })}
@@ -487,22 +516,24 @@ export const App: Component = () => {
                   "transform-origin": "right center",
                   right:
                     settings.tripleMonitorMode === "center-clamp" && settings.spotterBezelAnchor === "center-bezel"
-                      ? `calc(50% - ${settings.centerClampWidth / 2}px + 8px)`
+                      // max() so a window narrower than the clamp cannot push the
+                      // rail off-screen — that is how both spotters went missing.
+                      ? `max(8px, calc(50% - ${settings.centerClampWidth / 2}px + 8px))`
                       : "8px",
                 }}
                 class={`fixed top-1/2 z-40 select-none transition-[right] duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-lg rounded-l-xl"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-lg"
                     : "pointer-events-none"
                 }`}
               >
-                <SpotterRight
-                  distance={telemetry.frame?.spotter?.rightDistanceMeters}
+                <Spotter
+                  side="right"
                   state={telemetry.frame?.spotter?.rightState}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.spotterRight.scale}
-                  width={settings.widgets.spotterRight.width ?? 200}
-                  height={settings.widgets.spotterRight.height ?? 56}
+                  width={settings.widgets.spotterRight.width ?? SPOTTER_DEFAULT_WIDTH}
+                  height={settings.widgets.spotterRight.height ?? SPOTTER_DEFAULT_HEIGHT}
                   onScaleChange={(scale) => updateWidgetTransform("spotterRight", { scale })}
                   onWidthChange={(width) => updateWidgetTransform("spotterRight", { width })}
                   onHeightChange={(height) => updateWidgetTransform("spotterRight", { height })}
@@ -529,22 +560,7 @@ export const App: Component = () => {
                 }`}
               >
                 <FuelSimulator
-                  fuelLevelLiters={telemetry.frame?.player?.fuelLevelLiters}
-                  fuelMaxLiters={telemetry.frame?.player?.fuelMaxLiters}
-                  fuelAvgPerLap={telemetry.frame?.player?.fuelAvgPerLap}
-                  fuelLastLap={telemetry.frame?.player?.fuelLastLap}
-                  fuelLapsRemaining={telemetry.frame?.player?.fuelLapsRemaining}
-                  fuelNeededToFinish={telemetry.frame?.player?.fuelNeededToFinish}
-                  fuelPitAddLiters={telemetry.frame?.player?.fuelPitAddLiters}
-                  fuelSaveTargetPerLap={telemetry.frame?.player?.fuelSaveTargetPerLap}
-                  fuelSaveDelta={telemetry.frame?.player?.fuelSaveDelta}
-                  pitWindowOpenLap={telemetry.frame?.player?.pitWindowOpenLap}
-                  pitWindowCloseLap={telemetry.frame?.player?.pitWindowCloseLap}
-                  pitLossSeconds={telemetry.frame?.player?.pitLossSeconds}
-                  inGamePitFuel={telemetry.frame?.player?.inGamePitFuel}
-                  inGameFuelFillChecked={telemetry.frame?.player?.inGameFuelFillChecked}
-                  isExtraLapConfirmed={telemetry.frame?.player?.isExtraLapConfirmed}
-                  safetyMarginLiters={telemetry.frame?.player?.safetyMarginLiters}
+                  fuel={telemetry.frame?.fuel}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.fuelCalculator.scale}
                   width={settings.widgets.fuelCalculator.width}
@@ -599,12 +615,7 @@ export const App: Component = () => {
                 }`}
               >
                 <IncidentHazard
-                  aheadHazardMeters={telemetry.frame?.hazard?.hasIncident ? telemetry.frame?.hazard?.distanceMeters : undefined}
-                  hazardCarNumber={telemetry.frame?.hazard?.incidentCarNumber}
-                  incidentSector={telemetry.frame?.hazard?.incidentSector}
-                  hazardType={telemetry.frame?.hazard?.hazardType}
-                  speedKmh={telemetry.frame?.hazard?.speedKmh}
-                  yellowFlagActive={telemetry.frame?.hazard?.hasIncident}
+                  hazard={telemetry.frame?.hazard}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.incidentHazard.scale}
                   width={settings.widgets.incidentHazard.width ?? 340}
@@ -628,14 +639,17 @@ export const App: Component = () => {
                 }}
                 class={`absolute top-[290px] right-6 z-30 select-none ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-xl rounded-lg"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-xl rounded-[2px]"
                     : "pointer-events-none"
                 }`}
               >
                 <WeatherWidget
+                  weather={telemetry.frame?.weather}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.weather.scale}
+                  width={settings.widgets.weather.width ?? 380}
                   onScaleChange={(scale) => updateWidgetTransform("weather", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("weather", { width })}
                 />
                 <Show when={settings.isEditMode}>
                   <OpacityChip widgetKey="weather" />
@@ -691,6 +705,7 @@ export const App: Component = () => {
                   currentSector={telemetry.frame?.lapDelta?.currentSector}
                   hazard={telemetry.frame?.hazard}
                   yellowFlag={telemetry.frame?.systemMessage?.activeEvent === "yellowFlag"}
+                  revenge={telemetry.frame?.revenge}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.trackMap?.scale ?? 1.0}
                   width={settings.widgets.trackMap?.width ?? 460}
@@ -763,6 +778,72 @@ export const App: Component = () => {
                 />
                 <Show when={settings.isEditMode}>
                   <OpacityChip widgetKey="telemetryHub" />
+                </Show>
+              </div>
+            </Show>
+
+            {/* 기능 15: 디지플래그 / 세션 플래그 경보 (Top-Center High Visibility) */}
+            <Show when={settings.widgets.digiflag?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("digiflag", e)}
+                style={{
+                  "--hud-bg-alpha": widgetBgAlpha("digiflag"),
+                  transform: `translate3d(calc(-50% + ${settings.widgets.digiflag?.x ?? 0}px), ${settings.widgets.digiflag?.y ?? 0}px, 0) scale(${settings.widgets.digiflag?.scale ?? 1.0})`,
+                  "transform-origin": "top center",
+                }}
+                class={`absolute top-4 left-1/2 z-40 select-none ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-xl rounded-[2px]"
+                    : "pointer-events-none"
+                }`}
+              >
+                <Digiflag
+                  sessionFlags={telemetry.frame?.sessionFlags}
+                  approachingCarNumber={
+                    // Only real when a faster car is actually closing; otherwise the
+                    // blue flag would name a car that is nowhere near us.
+                    telemetry.frame?.multiclass?.hasApproachingFastCar
+                      ? telemetry.frame?.multiclass?.carNumber
+                      : undefined
+                  }
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.digiflag?.scale ?? 1.0}
+                  width={settings.widgets.digiflag?.width ?? 240}
+                  onScaleChange={(scale) => updateWidgetTransform("digiflag", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("digiflag", { width })}
+                />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="digiflag" />
+                </Show>
+              </div>
+            </Show>
+
+            {/* 기능 14: 피트박스 카운트다운 & 리미터 헬퍼 (Center Pit View) */}
+            <Show when={settings.widgets.pitBoxHelper?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("pitBoxHelper", e)}
+                style={{
+                  "--hud-bg-alpha": widgetBgAlpha("pitBoxHelper"),
+                  transform: `translate3d(calc(-50% + ${settings.widgets.pitBoxHelper?.x ?? 0}px), ${settings.widgets.pitBoxHelper?.y ?? 0}px, 0) scale(${settings.widgets.pitBoxHelper?.scale ?? 1.0})`,
+                  "transform-origin": "center center",
+                }}
+                class={`absolute top-[40%] left-1/2 z-35 select-none ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-xl rounded-[2px]"
+                    : "pointer-events-none"
+                }`}
+              >
+                <PitBoxHelper
+                  pitLane={telemetry.frame?.pitLane}
+                  speedKmh={telemetry.frame?.player?.speedKmh}
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.pitBoxHelper?.scale ?? 1.0}
+                  width={settings.widgets.pitBoxHelper?.width ?? 340}
+                  onScaleChange={(scale) => updateWidgetTransform("pitBoxHelper", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("pitBoxHelper", { width })}
+                />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="pitBoxHelper" />
                 </Show>
               </div>
             </Show>

@@ -11,7 +11,7 @@
 | **Milestone 1** | 초기 설정 마법사 & 오버레이 배치/크기 에디터 (`Alt + J`) & 프로그램 제어판 분리 & 다국어 지원 | **PASSED (완료)** | 2026-09-07 | Antigravity AI / Claude Opus 5 |
 | **Milestone 2** | 코어 주행 HUD 위젯 6종 (2.1 순위표 완료, 2.2 렐러티브 완료, 2.3 팀라디오 완료, 2.4~2.7 대기) | **IN PROGRESS (2.1~2.3 완료)** | 2026-09-08 | Antigravity AI |
 | **Milestone 3** | 안전 및 피트 전략 위젯 6종 (스포터 / 연료 / 사고 / 날씨 / 디지플래그 / 피트박스) | PENDING (대기) | - | - |
-| **Milestone 4** | 고급 인텔리전스 & 주행 분석 위젯 5종 (리벤지 / 타이어 / 멀티클래스 / 페달인풋 / iRating계산기) | PENDING (대기) | - | - |
+| **Milestone 4** | 고급 인텔리전스 & 주행 분석 위젯 5종 (리벤지 / 타이어 / 멀티클래스 / 페달인풋 / iRating계산기) | **IN PROGRESS (4.1, 4.5 완료)** | 2026-09-09 | Antigravity AI |
 | **Milestone 5** | 다중 모터스포츠 테마(WEC/WRC/Indy/GT) 확장 & Windows Shared Memory 연동 & 패키징 | PENDING (대기) | - | - |
 | **Windows 릴리즈 검증** | v0.1.0 실기기 테스트 (창 분리 / 자동저장 / iRacing 자동감지 / Alt+J / 성능 실측) | **UNVERIFIED (대기)** | - | - |
 
@@ -343,7 +343,7 @@
 **지적:** 이전 감사(5번 항목)는 팔레트 토큰만 교체했을 뿐 실제 F1 월드피드 그래픽 언어를 적용하지 않았음. 사용자 지적에 따라 실제 방송 스틸을 조사 후 전면 재작업.
 
 **레퍼런스 조사 (웹 실물 확인):**
-- F1 월드피드 2022~2024 온보드 HUD, `TRACK CONDITIONS` 트랙맵 카드, `START ANALYSIS` 타이틀 카드, 2022 헤일로 온보드 텔레메트리 스틸 5종 실측 분석.
+- F1 월드피드 공식 온보드 HUD, `TRACK CONDITIONS` 트랙맵 카드, `START ANALYSIS` 타이틀 카드, 헤일로 온보드 텔레메트리 스틸 5종 실측 분석.
 - 도출된 F1 방송 그래픽 언어 6개 원칙:
   1. **Oblique(이탤릭) 볼드 대문자** — 가장 식별력 높은 특징. 기존 구현은 전부 정자체 모노스페이스였음.
   2. **각진 모서리** — `rounded-lg`/`rounded-xl` 카드 금지. 방송 그래픽은 0~2px.
@@ -424,18 +424,56 @@
   - **SDK 변수 매핑 근거:** `SessionFlags` (`irsdk_yellow`, `irsdk_yellowWaving`, `irsdk_caution`, `irsdk_debris`), `CarIdxTrackSurface` (`irsdk_OffTrack`), `CarIdxLapDistPct`, 차량 속도(Speed m/s $\times$ 3.6).
   - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 번들 **349.73 kB (gzip 96.68 kB)**, CSS **62.07 kB (gzip 11.07 kB)**, 클린 빌드 **3.48초** 완료.
   - **판정:** **PASS (mock verified — 실 SDK 미검증)**
-- [ ] **DoD 3.4:** 날씨 & Tempest 정보 (`WeatherWidget.tsx`) 위젯 정밀 구현 (대기)
-  - 대기/노면 온도, 풍향 나침반, 우천 강수량 게이지.
-  - SDK 변수: `AirTemp`, `TrackTempCrew`, `WindVel`, `WindDir`, `RelativeHumidity`.
-  - **판정:** **PENDING (대기)**
-- [ ] **DoD 3.5: 디지플래그 / 세션 플래그 경보 (`Digiflag.tsx`) 위젯 정밀 구현 (대기)**
-  - 황기(Yellow), 청기(Blue - 추월 접근 차량 번호 표기), 흑백 반반기(Meatball 수리 지시), 백기, 체커기 고휘도 전광판 발광 경보.
-  - SDK 변수: `SessionFlags` (Bitfield).
-  - **판정:** **PENDING (대기)**
-- [ ] **DoD 3.6: 피트박스 카운트다운 & 리미터 헬퍼 (`PitBoxHelper.tsx`) 위젯 정밀 구현 (대기)**
-  - 피트 레인 진입 시 속도 초과 경고 + 내 피트 스톨(Pit Stall) 잔여 거리(50m ➔ 30m ➔ 10m ➔ STOP!) 정밀 카운트다운.
-  - SDK 변수: `CarIdxTrackSurface`, `Speed`, `PitSvFlags`, `CarIdxLapDistPct`.
-  - **판정:** **PENDING (대기)**
+- [x] **DoD 3.4:** 날씨 & Tempest 정보 (`WeatherWidget.tsx`) 위젯 정밀 구현 (완료)
+  - **iRacing Tempest 날씨 시스템 및 12개 실측 텔레메트리 변수 연동:**
+    - 대기 온도(`AirTemp` °C) & 피트 크루 실측 노면 온도(`TrackTempCrew` °C).
+    - 트랙-대기 온도 차이 실시간 델타($\pm\Delta^\circ\text{C}$) 동적 표기 (노면이 더 뜨거우면 주황/적색, 차가우면 시안).
+    - 풍속(`WindVel` m/s $\to$ km/h) 및 풍향(`WindDir` radian $\to$ degree 각도 회전 3D 나침반 아이콘 + N/NE/E/SE/S/SW/W/NW 등 16방위 텍스트).
+    - 상대 습도(`RelativeHumidity` % 단위), 안개 밀도(`FogLevel` %), 기압(`AirPressure` inHg), 공기 밀도(`AirDensity` $\text{kg/m}^3$).
+    - Tempest 노면 젖음 레벨(`TrackWetness` 8단계 Enum: DRY, MOSTLY DRY, VERY LIGHT WET, LIGHT WET, MODERATELY WET, VERY WET, EXTREMELY WET).
+    - iRacing 기준 노면별 추천 타이어 컴파운드 배지 동적 매핑 (`SLICK` / `SLICK/INTER` / `INTER/WET` / `WET` / `EXTREME WET`).
+    - 실시간 강수량(`Precipitation` 0~100% 게이지 및 동적 블루 그라디언트 바) 및 하늘 상태(`Skies` 4단계: Clear, Partly Cloudy, Mostly Cloudy, Overcast).
+    - 날씨 유형(`WeatherType`: 0=Static, 1=Tempest Dynamic) 및 날씨 버전(`WeatherVersion`).
+  - **F1 브로드캐스트 HUD & Apple Design 스타일링:**
+    - F1 스타일의 각진 슬래브(`.f1-slab`), 좌측 시그니처 F1 레드(`#E10600`)/우천 블루(`#2563EB`) 액센트 탭, `.f1-title` 레드 언더라인 룰, `tabular-nums` 수치 위/8px microcaps 레이블 아래 스택, 8구간 각진 세그먼트 LED 강수량 게이지, 0~2px 각진 코너(`rounded-[1px]`, `rounded-[2px]`).
+  - **`Alt + J` 편집 모드 & 리사이즈:**
+    - 가로 너비(300px~520px) 실시간 마우스 드래그 리사이즈 핸들.
+    - 상단 배율 조절 `[-] 100% [+]`.
+    - 5단계 인터랙티브 Tempest 테스트 스위처 (`LIVE` ➔ `DRY` ➔ `DAMP` ➔ `TEMPEST WET` ➔ `FLOOD`).
+  - **7개 전 언어 100% 현지화:** 한국어, 영어, 중국어, 일본어, 프랑스어, 독일어, 이탈리아어 19개 날씨 키 완벽 탑재.
+  - **SDK 변수 매핑 근거:** `AirTemp`, `TrackTempCrew`, `WindVel`, `WindDir`, `RelativeHumidity`, `FogLevel`, `Skies`, `WeatherType`, `WeatherVersion`, `TrackWetness`, `Precipitation`, `AirPressure`, `AirDensity`.
+  - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 번들 정상 빌드 완료.
+  - **판정:** **PASS (F1 방송 규격 개편 완료 — mock verified — 실 SDK 미검증)**
+- [x] **DoD 3.5: 디지플래그 / 세션 플래그 경보 (`Digiflag.tsx`) 위젯 정밀 구현 (완료)**
+  - **iRacing `SessionFlags` 비트필드 1:1 완벽 연동:**
+    - 황기(`irsdk_yellow` / `irsdk_yellowWaving` / `irsdk_caution`), 청기(`irsdk_blue`), 흑백 반반기/미트볼(`irsdk_repair`), 흑기(`irsdk_black` / `irsdk_disqualify`), 백기(`irsdk_white`), 녹기(`irsdk_green` / `irsdk_startGo`), 적기(`irsdk_red`), 체커기(`irsdk_checkered`).
+    - 청기 발생 시 접근 차량 번호(`CAR #...`) 동적 배지 표시.
+  - **리얼 크루 깃발 스윙 모션 애니메이션 (Checkered Flag):**
+    - 실제 피트 월 마샬이 깃대를 잡고 8자 궤적으로 역동적으로 휘두르는 물리 모션 (Pole Swing Oscillation + Cloth Wave Ripple + Wind Shimmer) 순수 SVG & CSS GPU 가속 구현.
+  - **F1 디지털 마샬링 라이트 패널 스타일:**
+    - FIA 고휘도 크리스털 LED 스트로브 발광, 주행 중 플래그 미발생 시 100% 완전 투명화 (화면 가림 0).
+  - **`Alt + J` 편집 모드:**
+    - 가로 너비(180~420px) 실시간 마우스 드래그 리사이즈, 배율 조절 `[-] 100% [+]`.
+    - 10단계 인터랙티브 플래그 테스트 스위처 (`LIVE` ➔ `CHECKERED (리얼 스윙)` ➔ `YELLOW` ➔ `BLUE` ➔ `MEATBALL` ➔ `BLACK` ➔ `WHITE` ➔ `GREEN` ➔ `RED` ➔ `OFF`).
+  - **7개 전 언어 현지화:** 한국어, 영어, 중국어, 일본어, 프랑스어, 독일어, 이탈리아어 14개 플래그 키 완벽 탑재.
+  - **SDK 변수 매핑 근거:** `SessionFlags` (Bitfield `irsdk_Flags`).
+  - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 빌드 정상 완료.
+  - **판정:** **PASS (mock verified — 실 SDK 미검증)**
+- [x] **DoD 3.6: 피트박스 카운트다운 & 리미터 헬퍼 (`PitBoxHelper.tsx`) 위젯 정밀 구현 (완료)**
+  - **정밀 피트박스 카운트다운 & F1 16-Segment LED 바:**
+    - 내 피트 스톨까지 잔여 거리 `50m` (Cyan) ➔ `30m` (Amber) ➔ `10m` (Orange) ➔ `0m STOP!` (Blinking Red) 정밀 유도.
+    - 둥근 알약 바를 배제하고 16구간 각진 직사각형 LED 블록(`h-2.5 rounded-[1px]`) 게이지 및 F1 그랑프리 피트스탑 브래킷 `[ STOP! ]` / `[ PIT SERVICE ]` 스트로브 락업 적용.
+  - **피트 리미터 속도계 & 오버스피드 경보:**
+    - 피트 제한 속도(60/80 km/h) 및 실시간 주행 속도 2열 분할 텔레메트리 그리드(`f1-value` / `f1-label`).
+    - 제한 속도 초과 시 F1 날카로운 적색 경고 배너(`border-l-4 border-l-white bg-[#E10600]`) 및 `SLOW DOWN` 긴급 경보.
+  - **F1 월드피드 슬래브 규격:** 상시 주행 시 100% 투명화, 피트 레인 진입(`OnPitRoad`) 시 `.f1-slab rounded-none` 및 좌측 F1 레드 수직 탭(`border-l-4 border-l-[#E10600]`) 팝업.
+  - **`Alt + J` 편집 모드:**
+    - 가로 너비(260~480px) 실시간 마우스 드래그 리사이즈, 배율 조절 `[-] 100% [+]`.
+    - 7단계 인터랙티브 테스트 스위처 (`LIVE` ➔ `APPROACH (45m)` ➔ `DECEL (22m)` ➔ `BOX (6m)` ➔ `STOP (0m)` ➔ `OVERSPEED` ➔ `OFF`).
+  - **7개 전 언어 현지화:** 한국어, 영어, 중국어, 일본어, 프랑스어, 독일어, 이탈리아어 8개 피트 키 완벽 탑재.
+  - **SDK 변수 매핑 근거:** `OnPitRoad`, `CarIdxTrackSurface` (`irsdk_InPitStall`, `irsdk_AproachingPits`), `Speed` (m/s $\times 3.6 \to$ km/h), `PitSvFlags`, `PitRepairLeft`.
+  - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 빌드 정상 완료.
+  - **판정:** **PASS (F1 방송 규격 개편 완료 — mock verified — 실 SDK 미검증)**
 
 ---
 
@@ -445,10 +483,15 @@
 
 ### 4.1 완료 검증 기준 (DoD)
 
-- [ ] **DoD 4.1:** 리벤지 트래커 (`RevengeTracker.tsx`) 정밀 구현 (대기)
-  - +4x 접촉 유발 차량 자동 감지, 락온 조준선 HUD 및 실시간 간격 추적.
-  - SDK 변수: `PlayerCarMyIncidentCount`, `CarLeftRight`, `CarIdxLapDistPct`.
-  - **판정:** **PENDING (대기)**
+- [x] **DoD 4.1:** 리벤지 트래커 (`RevengeTracker.tsx`) 정밀 구현 (완료)
+  - 나에게 충돌/사고(+4x, +2x)를 유발한 상대 드라이버를 자동 감지 및 F1 RED 레이더 HUD 락온.
+  - **세션 필터:** 연습(PRACTICE) 및 레이스(RACE)에서만 활성화, 예선(QUALIFY)에서는 주행 중 자동 숨김(`sessionType !== "QUALIFY"`).
+  - **타깃 정보 및 5대 핵심 메타데이터:** 국가 국기(`CountryFlag`), 차량 제조사 로고(`CarBrandIcon`), 드라이버명 + 차량번호, 타깃의 현재 순위(P#), 나와의 실시간 간격(초), 타깃의 평균 랩타임, 내 직전 랩 대비 델타.
+  - **트랙 맵(미니맵) 연동:** 2D 트랙 맵(`TrackMap.tsx`)에 타깃 차량 위치를 추적하는 펄싱 F1 레드 조준선(`TARGET #carNumber`) 오버레이 구현.
+  - **유지 시간 사용자 설정:** 세션 종료까지 유지(`session`) vs 5분 후 자동 초기화(`5min` 실시간 카운트다운 타이머) 토글 및 영구 저장(`settingsStore.revengePersistence`).
+  - **시각 디자인:** 고대비 F1 RED (`#E10600`) 카본 슬레이트 및 조준선 애니메이션.
+  - SDK 변수: `PlayerCarMyIncidentCount`, `CarLeftRight`, `CarIdxLapDistPct`, `CarIdxClassPosition`, `CarIdxLastLapTime`.
+  - **판정:** **PASS (mock verified — 실 SDK 미검증)**
 - [ ] **DoD 4.2:** 타이어 분석기 (`TireAnalysis.tsx`) 정밀 구현 (대기)
   - 4륜 타이어 마모도, 압력(PSI), 온도 상태 시각화.
   - SDK 변수: `LFwearL/M/R`, `LFtempCL/CM/CR`, `LFcoldPressure`.
@@ -461,10 +504,13 @@
   - 스로틀(가속), 브레이크(감속), 클러치, 스티어링 휠 조향각의 실시간 수치 및 직전 3초 파형(Waveform) 그래프.
   - SDK 변수: `Throttle`, `Brake`, `Clutch`, `SteeringWheelAngle` (60Hz).
   - **판정:** **PENDING (대기)**
-- [ ] **DoD 4.5: 실시간 예상 iRating 증감 & SOF 계산기 (`IRatingGain.tsx`) 위젯 정밀 구현 (대기)**
-  - 세션 공식 SOF 표기 및 현재 순위 완주 시 획득/차감될 예상 iRating(±) 실시간 ELO 계산.
-  - SDK 변수: 세션 YAML `DriverInfo: Drivers[carIdx].IRating`, `CarIdxPosition`.
-  - **판정:** **PENDING (대기)**
+- [x] **DoD 4.5: 실시간 예상 iRating 증감 & SOF 계산기 (순위표 & 렐러티브 통합) (완료)**
+  - **사용자 지침 준수:** 별도 위젯을 생성하지 않고 포니테일 원칙(YAGNI)에 따라 순위표(`Leaderboard.tsx`)와 렐러티브(`Relative.tsx`)에 직접 통합.
+  - **공식 iRacing Elo 수학 엔진 (`iratingCalculator.ts`):** `ELO_FACTOR = 1600 / ln(2)` 기반 쌍별 승률 계산, 공식 지수 SOF 공식 $1600/\ln(2) \cdot \ln(N / \sum e^{-R_i/\dots})$, 스타터/논스타터 가중치 및 보정 계수를 반영한 무손실 제로섬 계산 엔진 구현.
+  - **순위표 반영:** 타이틀 락업에 `SOF 2,450` 배지 및 내 예상 변동(`+38 iR` / `-15 iR`) 표시, 너비 380px 이상 시 드라이버별 iRating과 예상 변동값(±) 실시간 표시.
+  - **렐러티브 반영:** 헤더에 `SOF` 배지 및 예상 변동 배지 표시, 400px 이상 시 `iR` 컬럼 반응형 노출, 400px 미만 시 드라이버명 셀 내부 컴팩트 `k` 배지 표시.
+  - SDK 변수: 세션 YAML `DriverInfo: Drivers[carIdx].IRating`, `CarIdxPosition`, `CarIdxClassPosition`.
+  - **판정:** **PASS (수학 검증 완료 & mock verified)**
 - [ ] **DoD 4.6: 16대 핵심 기능 전체 + 콕핏 허브 통합 완성 (대기)**
   - 16대 전체 위젯이 `src/components/widgets/`로 완전히 통일되고 특정 테마 접두어가 파일명에서 100% 제거됨.
   - **판정:** **PENDING (대기)**

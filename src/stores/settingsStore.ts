@@ -18,6 +18,7 @@ export interface WidgetTransform {
   width?: number;
   height?: number;
   maxRows?: number;
+  persistenceMode?: "session" | "5min";
   visible: boolean;
 }
 
@@ -36,7 +37,9 @@ export type WidgetKey =
   | "multiclassRadar"
   | "trackMap"
   | "shiftLight"
-  | "telemetryHub";
+  | "telemetryHub"
+  | "digiflag"
+  | "pitBoxHelper";
 
 export interface UserProfile {
   driverName: string;
@@ -59,6 +62,9 @@ export interface SettingsState {
   centerClampWidth: 1920 | 2560; // 1920 (FHD Triples 5760x1080) vs 2560 (QHD Triples 7680x1440)
   spotterBezelAnchor: "screen-edge" | "center-bezel"; // Spotters at outer edges vs center screen bezels
   storageTarget: "disk-file" | "local-storage";
+  debugLogging: boolean; // record raw SDK values next to what the widgets show
+  debugLogPath: string; // "" = the app's own log directory
+  revengePersistence: "session" | "5min"; // "session": keep until session end, "5min": auto-reset after 5 minutes
   userProfile: UserProfile;
   widgets: Record<WidgetKey, WidgetTransform>;
 }
@@ -79,6 +85,9 @@ const defaultSettings: SettingsState = {
   centerClampWidth: 1920,
   spotterBezelAnchor: "center-bezel",
   storageTarget: "local-storage",
+  revengePersistence: "session",
+  debugLogging: false,
+  debugLogPath: "",
   userProfile: {
     driverName: "K. Jeongmin",
     country: "KR",
@@ -91,18 +100,31 @@ const defaultSettings: SettingsState = {
     teamRadio: { x: 0, y: 0, scale: 1.0, width: 340, visible: true },
     lapDelta: { x: 0, y: 0, scale: 1.0, width: 440, visible: true },
     revengeTracker: { x: 0, y: 0, scale: 1.0, visible: true },
-    spotterLeft: { x: 0, y: 0, scale: 1.0, width: 200, height: 56, visible: true },
-    spotterRight: { x: 0, y: 0, scale: 1.0, width: 200, height: 56, visible: true },
+    spotterLeft: { x: 0, y: 0, scale: 1.0, width: 26, height: 280, visible: true },
+    spotterRight: { x: 0, y: 0, scale: 1.0, width: 26, height: 280, visible: true },
     fuelCalculator: { x: 0, y: 0, scale: 1.0, width: 280, visible: true },
     tireAnalysis: { x: 0, y: 0, scale: 1.0, visible: true },
     incidentHazard: { x: 0, y: 0, scale: 1.0, width: 340, visible: true },
-    weather: { x: 0, y: 0, scale: 1.0, visible: true },
+    weather: { x: 0, y: 0, scale: 1.0, width: 380, visible: true },
     multiclassRadar: { x: 0, y: 0, scale: 1.0, visible: true },
     trackMap: { x: 0, y: 0, scale: 1.0, width: 460, visible: true },
     shiftLight: { x: 0, y: 0, scale: 1.0, width: 440, visible: true },
     telemetryHub: { x: 0, y: 0, scale: 1.0, visible: true },
+    digiflag: { x: 0, y: 0, scale: 1.0, width: 220, visible: true },
+    pitBoxHelper: { x: 0, y: 0, scale: 1.0, width: 340, visible: true },
   },
 };
+
+/**
+ * The spotters used to be short horizontal cards; they are vertical LED rails
+ * now. A saved 200x56 would clamp to a stub, so a landscape size is treated as
+ * the old shape and reset. ponytail: one shape test instead of a version field.
+ */
+function migrateSpotter(saved: WidgetTransform | undefined, fallback: WidgetTransform): WidgetTransform {
+  if (!saved) return fallback;
+  if ((saved.width ?? 0) >= (saved.height ?? 0)) return { ...saved, width: fallback.width, height: fallback.height };
+  return saved;
+}
 
 function loadInitialSettings(): SettingsState {
   try {
@@ -118,6 +140,8 @@ function loadInitialSettings(): SettingsState {
         translateSystemMessages: parsed.translateSystemMessages !== undefined ? parsed.translateSystemMessages : false,
         centerClampWidth: parsed.centerClampWidth || 1920,
         spotterBezelAnchor: parsed.spotterBezelAnchor || "center-bezel",
+        debugLogging: parsed.debugLogging === true,
+        debugLogPath: parsed.debugLogPath || "",
         userProfile: {
           ...defaultSettings.userProfile,
           ...(parsed.userProfile || {}),
@@ -129,9 +153,12 @@ function loadInitialSettings(): SettingsState {
           lapDelta: parsed.widgets?.lapDelta || defaultSettings.widgets.lapDelta,
           trackMap: parsed.widgets?.trackMap || defaultSettings.widgets.trackMap,
           shiftLight: parsed.widgets?.shiftLight || defaultSettings.widgets.shiftLight,
-          spotterLeft: parsed.widgets?.spotterLeft || defaultSettings.widgets.spotterLeft,
-          spotterRight: parsed.widgets?.spotterRight || defaultSettings.widgets.spotterRight,
+          spotterLeft: migrateSpotter(parsed.widgets?.spotterLeft, defaultSettings.widgets.spotterLeft),
+          spotterRight: migrateSpotter(parsed.widgets?.spotterRight, defaultSettings.widgets.spotterRight),
           incidentHazard: parsed.widgets?.incidentHazard || defaultSettings.widgets.incidentHazard,
+          weather: parsed.widgets?.weather || defaultSettings.widgets.weather,
+          digiflag: parsed.widgets?.digiflag || defaultSettings.widgets.digiflag,
+          pitBoxHelper: parsed.widgets?.pitBoxHelper || defaultSettings.widgets.pitBoxHelper,
         },
         theme: "f1",
       };
@@ -160,6 +187,8 @@ export async function hydrateFromDiskConfig() {
         translateSystemMessages: parsed.translateSystemMessages !== undefined ? parsed.translateSystemMessages : false,
         centerClampWidth: parsed.centerClampWidth || 1920,
         spotterBezelAnchor: parsed.spotterBezelAnchor || "center-bezel",
+        debugLogging: parsed.debugLogging === true,
+        debugLogPath: parsed.debugLogPath || "",
         storageTarget: "disk-file",
         theme: "f1",
         widgets: {
@@ -169,8 +198,8 @@ export async function hydrateFromDiskConfig() {
           lapDelta: parsed.widgets?.lapDelta || defaultSettings.widgets.lapDelta,
           trackMap: parsed.widgets?.trackMap || defaultSettings.widgets.trackMap,
           shiftLight: parsed.widgets?.shiftLight || defaultSettings.widgets.shiftLight,
-          spotterLeft: parsed.widgets?.spotterLeft || defaultSettings.widgets.spotterLeft,
-          spotterRight: parsed.widgets?.spotterRight || defaultSettings.widgets.spotterRight,
+          spotterLeft: migrateSpotter(parsed.widgets?.spotterLeft, defaultSettings.widgets.spotterLeft),
+          spotterRight: migrateSpotter(parsed.widgets?.spotterRight, defaultSettings.widgets.spotterRight),
         },
       });
       console.log("Loaded configuration from disk file (config.json)");

@@ -22,12 +22,12 @@
  */
 import { Component, For, Show, createSignal, createMemo, onCleanup } from "solid-js";
 import { CarTelemetry, LicenseClass, SessionType } from "../../services/telemetry/types.ts";
-import { t } from "../../i18n/index.ts";
 import { CarBrandIcon } from "../../assets/icons/CarBrandIcons.tsx";
 import { CountryFlag } from "../../assets/icons/CountryFlags.tsx";
 import { IconPit, IconStopwatch, LogoF1, LogoWEC, LogoWRC, LogoIndyCar, LogoIMSA } from "../../assets/icons/Icons.tsx";
 import { settings, ThemeType } from "../../stores/settingsStore.ts";
 import { createReorderFlip } from "../../utils/reorderFlip.ts";
+import { calculateSOF, calculateEloChanges } from "../../services/telemetry/iratingCalculator.ts";
 
 export interface LeaderboardProps {
   cars?: CarTelemetry[];
@@ -36,6 +36,8 @@ export interface LeaderboardProps {
   sessionType?: SessionType; // from telemetry (Sessions[SessionNum].SessionType)
   sessionTimeRemain?: number; // seconds
   playerCarIdx?: number;
+  sof?: number; // Official Strength of Field
+  projectedIratingGain?: number; // Player's projected iRating delta
   isEditMode?: boolean;
   scale?: number;
   width?: number; // custom width in px
@@ -178,6 +180,30 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
     return [...list].sort((a, b) => a.overallPosition - b.overallPosition).slice(0, currentRows());
   });
 
+  // Real-time Strength of Field (SOF) and projected player iRating gain
+  const computedSof = createMemo(() => {
+    if (props.sof !== undefined && props.sof > 0) return props.sof;
+    const allCars = props.cars && props.cars.length > 0 ? props.cars : defaultCars;
+    const ratings = allCars.map((c) => c.irating).filter((r) => r > 0);
+    return calculateSOF(ratings);
+  });
+
+  const computedPlayerGain = createMemo(() => {
+    if (props.projectedIratingGain !== undefined) return props.projectedIratingGain;
+    const allCars = props.cars && props.cars.length > 0 ? props.cars : defaultCars;
+    const player = allCars.find(isPlayer) || allCars[0];
+    if (player?.projectedIratingGain !== undefined) return player.projectedIratingGain;
+
+    const eloInputs = allCars.map((c) => ({
+      carIdx: c.carIdx,
+      irating: c.irating,
+      finishPosition: c.classPosition || c.overallPosition || 1,
+      started: true,
+    }));
+    const eloMap = calculateEloChanges(eloInputs);
+    return eloMap.get(player?.carIdx ?? 1)?.iratingChange ?? 0;
+  });
+
   // 순위 변동 시 행이 위아래로 자리를 바꾸는 애니메이션 (전 테마 공통)
   const flip = createReorderFlip(() => sortedCars().map((c) => c.carIdx));
 
@@ -287,14 +313,7 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
     >
       {/* Edit Mode Top Shaded Bar: "순위표" + [RACE / QUAL / PRAC] + " - 100% + " */}
       <Show when={props.isEditMode}>
-        <div class="absolute bottom-full inset-x-0 flex items-center justify-between px-3 py-1.5 hud-surface-deep backdrop-blur-md border-t border-x border-white/20 rounded-t text-white select-none gap-2">
-          <div class="flex items-center gap-2">
-            <span class="text-[11px] font-bold tracking-wider text-white/95 shrink-0">
-              {t().leaderboardTitle || "순위표"}
-            </span>
-
-          </div>
-
+        <div class="absolute bottom-full inset-x-0 flex items-center justify-end px-3 py-1.5 hud-surface-deep backdrop-blur-md border-t border-x border-white/20 rounded-t text-white select-none gap-2">
           <div class="flex items-center gap-1.5 shrink-0" onMouseDown={(e) => e.stopPropagation()}>
             <button
               onClick={(e) => {
@@ -334,6 +353,24 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
           <span class="font-wide text-[15px] leading-none font-black tracking-[0.01em] text-white shrink-0">
             {sessionLabel()}
           </span>
+
+          {/* Integrated SOF & Projected iRating Gain Badges */}
+          <div class="flex items-center gap-1 shrink-0 ml-0.5">
+            <span class="px-1.5 py-[1px] rounded-[2px] bg-black/40 border border-white/10 text-[8.5px] font-mono font-bold text-white/80">
+              <span class="text-amber-400 font-black">SOF</span>{" "}
+              <span class="text-white tabular-nums">{computedSof().toLocaleString()}</span>
+            </span>
+            <span
+              class={`px-1.5 py-[1px] rounded-[2px] text-[8.5px] font-mono font-black tabular-nums border f1-oblique ${
+                computedPlayerGain() >= 0
+                  ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
+                  : "bg-red-500/20 text-red-300 border-red-500/40"
+              }`}
+              title="현재 순위 완주 시 예상 iRating 변동치"
+            >
+              {computedPlayerGain() >= 0 ? "+" : ""}{computedPlayerGain()} iR
+            </span>
+          </div>
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
@@ -379,7 +416,7 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
 
         {/* Optional iRating */}
         <Show when={showIR()}>
-          <span class="w-[48px] text-right pr-1.5">iR</span>
+          <span class="w-[52px] text-right pr-1 font-bold">iR / Δ</span>
         </Show>
 
         {/* Optional Best Lap with Stopwatch Icon */}
@@ -514,8 +551,19 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
 
                 {/* 6. Optional iRating */}
                 <Show when={showIR()}>
-                  <div class="w-[48px] text-right pr-1.5 text-[10.5px] text-white/70 shrink-0 tnum">
-                    {car.irating ? car.irating.toLocaleString() : "2,500"}
+                  <div class="w-[52px] flex flex-col items-end justify-center pr-1 text-[10px] shrink-0 tnum leading-tight">
+                    <span class="text-white/80 font-mono font-medium">{car.irating ? car.irating.toLocaleString() : "2,500"}</span>
+                    <Show when={car.projectedIratingGain !== undefined}>
+                      <span class={`text-[8.5px] font-mono font-bold leading-none ${
+                        (car.projectedIratingGain ?? 0) > 0
+                          ? "text-[#00D2BE]"
+                          : (car.projectedIratingGain ?? 0) < 0
+                          ? "text-[#FF3B30]"
+                          : "text-white/40"
+                      }`}>
+                        {(car.projectedIratingGain ?? 0) > 0 ? `+${car.projectedIratingGain}` : `${car.projectedIratingGain}`}
+                      </span>
+                    </Show>
                   </div>
                 </Show>
 

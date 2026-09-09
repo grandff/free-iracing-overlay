@@ -345,3 +345,217 @@ export const LogoIMSA: Component<{ class?: string; size?: number; fill?: string 
 );
 
 export const LogoGT: Component<{ class?: string; size?: number; fill?: string }> = (props) => LogoIMSA(props);
+
+export const IconThermometer: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class={props.class || "w-4 h-4"}
+    width={props.size}
+    height={props.size}
+    {...props}
+  >
+    <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
+  </svg>
+);
+
+export const IconCloudRain: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class={props.class || "w-4 h-4"}
+    width={props.size}
+    height={props.size}
+    {...props}
+  >
+    <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242" />
+    <path d="M16 14v6" />
+    <path d="M8 14v6" />
+    <path d="M12 16v6" />
+  </svg>
+);
+
+export const IconSun: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class={props.class || "w-4 h-4"}
+    width={props.size}
+    height={props.size}
+    {...props}
+  >
+    <circle cx="12" cy="12" r="4" />
+    <path d="M12 2v2" />
+    <path d="M12 20v2" />
+    <path d="m4.93 4.93 1.41 1.41" />
+    <path d="m17.66 17.66 1.41 1.41" />
+    <path d="M2 12h2" />
+    <path d="M20 12h2" />
+    <path d="m6.34 17.66-1.41 1.41" />
+    <path d="m19.07 4.93-1.41 1.41" />
+  </svg>
+);
+
+export const IconCloud: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class={props.class || "w-4 h-4"}
+    width={props.size}
+    height={props.size}
+    {...props}
+  >
+    <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" />
+  </svg>
+);
+
+export const IconDroplet: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class={props.class || "w-4 h-4"}
+    width={props.size}
+    height={props.size}
+    {...props}
+  >
+    <path d="M12 22a7 7 0 0 0 7-7c0-2-1-3.9-3-5.5s-3.5-4-4-6.5c-.5 2.5-2 4.9-4 6.5C6 11.1 5 13 5 15a7 7 0 0 0 7 7z" />
+  </svg>
+);
+
+export const IconWind: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    class={props.class || "w-4 h-4"}
+    width={props.size}
+    height={props.size}
+    {...props}
+  >
+    <path d="M17.7 7.7a2.5 2.5 0 1 1 1.8 4.3H2" />
+    <path d="M9.6 4.6A2 2 0 1 1 11 8H2" />
+    <path d="M12.6 19.4A2 2 0 1 0 14 16H2" />
+  </svg>
+);
+
+export const IconCheckeredFlag: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 32 32"
+    fill="currentColor"
+    class={props.class || "w-5 h-5"}
+    width={props.size}
+    height={props.size}
+    {...props}
+  >
+    {/* Flagpole */}
+    <rect x="4" y="3" width="2" height="26" rx="1" fill="#94A3B8" />
+    <circle cx="5" cy="3" r="1.5" fill="#E2E8F0" />
+    {/* Checkered Flag Surface 4x3 grid */}
+    <g transform="translate(6, 4)">
+      <rect x="0" y="0" width="5" height="4" fill="#FFFFFF" />
+      <rect x="5" y="0" width="5" height="4" fill="#000000" />
+      <rect x="10" y="0" width="5" height="4" fill="#FFFFFF" />
+      <rect x="15" y="0" width="5" height="4" fill="#000000" />
+
+      <rect x="0" y="4" width="5" height="4" fill="#000000" />
+      <rect x="5" y="4" width="5" height="4" fill="#FFFFFF" />
+      <rect x="10" y="4" width="5" height="4" fill="#000000" />
+      <rect x="15" y="4" width="5" height="4" fill="#FFFFFF" />
+
+      <rect x="0" y="8" width="5" height="4" fill="#FFFFFF" />
+      <rect x="5" y="8" width="5" height="4" fill="#000000" />
+      <rect x="10" y="8" width="5" height="4" fill="#FFFFFF" />
+      <rect x="15" y="8" width="5" height="4" fill="#000000" />
+
+      <rect x="0" y="12" width="5" height="4" fill="#000000" />
+      <rect x="5" y="12" width="5" height="4" fill="#FFFFFF" />
+      <rect x="10" y="12" width="5" height="4" fill="#000000" />
+      <rect x="15" y="12" width="5" height="4" fill="#FFFFFF" />
+    </g>
+  </svg>
+);
+
+export const IconMeatball: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    class={props.class || "w-5 h-5"}
+    width={props.size}
+    height={props.size}
+    {...props}
+  >
+    {/* Black Flag background */}
+    <rect x="2" y="2" width="20" height="20" rx="2" fill="#0F172A" stroke="#334155" stroke-width="1.5" />
+    {/* Bright Orange Meatball Circle */}
+    <circle cx="12" cy="12" r="6" fill="#FF5500" stroke="#FF8800" stroke-width="1" />
+  </svg>
+);
+
+export const IconPenaltyFlag: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    class={props.class || "w-5 h-5"}
+    width={props.size}
+    height={props.size}
+    {...props}
+  >
+    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" fill="#000000" stroke="#FFFFFF" />
+    <line x1="4" y1="22" x2="4" y2="15" stroke="#FFFFFF" />
+  </svg>
+);
+
+export const IconSpeedLimit: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    class={props.class || "w-5 h-5"}
+    width={props.size}
+    height={props.size}
+    {...props}
+  >
+    <circle cx="12" cy="12" r="10" fill="#FFFFFF" stroke="#E10600" stroke-width="3" />
+    <path d="M12 7v5l3 2" stroke="#0F172A" stroke-width="2" stroke-linecap="round" />
+  </svg>
+);
+
+export const IconPitStopSign: Component<IconProps> = (props) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    class={props.class || "w-5 h-5"}
+    width={props.size}
+    height={props.size}
+    {...props}
+  >
+    {/* Red Octagon */}
+    <polygon points="7.86 2 16.14 2 22 7.86 22 16.14 16.14 22 7.86 22 2 16.14 2 7.86 7.86 2" fill="#DC2626" stroke="#FFFFFF" stroke-width="1.5" />
+    <text x="12" y="14.5" text-anchor="middle" fill="#FFFFFF" font-family="monospace" font-weight="900" font-size="6.5" letter-spacing="0.5">STOP</text>
+  </svg>
+);
+

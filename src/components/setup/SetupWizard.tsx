@@ -40,8 +40,7 @@ import { Relative } from "../widgets/Relative.tsx";
 import { TeamRadio } from "../widgets/TeamRadio.tsx";
 import { LapDelta } from "../widgets/LapDelta.tsx";
 import { RevengeTracker } from "../widgets/RevengeTracker.tsx";
-import { SpotterLeft } from "../widgets/SpotterLeft.tsx";
-import { SpotterRight } from "../widgets/SpotterRight.tsx";
+import { Spotter, SPOTTER_DEFAULT_HEIGHT, SPOTTER_DEFAULT_WIDTH } from "../widgets/Spotter.tsx";
 import { FuelSimulator } from "../widgets/FuelSimulator.tsx";
 import { TireAnalysis } from "../widgets/TireAnalysis.tsx";
 import { IncidentHazard } from "../widgets/IncidentHazard.tsx";
@@ -50,6 +49,8 @@ import { MulticlassRadar } from "../widgets/MulticlassRadar.tsx";
 import { TrackMap } from "../widgets/TrackMap.tsx";
 import { ShiftLight } from "../widgets/ShiftLight.tsx";
 import { TelemetryHub } from "../widgets/TelemetryHub.tsx";
+import { Digiflag } from "../widgets/Digiflag.tsx";
+import { PitBoxHelper } from "../widgets/PitBoxHelper.tsx";
 import { createPresence } from "../../utils/presence.ts";
 import { t, setLanguage, SUPPORTED_LANGUAGES } from "../../i18n/index.ts";
 
@@ -790,22 +791,22 @@ export const SetupWizard: Component = () => {
                   "transform-origin": "left center",
                   left:
                     settings.tripleMonitorMode === "center-clamp" && settings.spotterBezelAnchor === "center-bezel"
-                      ? `calc(50% - ${settings.centerClampWidth / 2}px + 8px)`
+                      ? `max(8px, calc(50% - ${settings.centerClampWidth / 2}px + 8px))`
                       : "8px",
                 }}
                 class={`fixed top-1/2 z-40 select-none transition-[left] duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-r-xl"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)]"
                     : "pointer-events-none"
                 }`}
               >
-                <SpotterLeft
-                  distance={1.4}
+                <Spotter
+                  side="left"
                   state="danger"
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.spotterLeft.scale}
-                  width={settings.widgets.spotterLeft.width ?? 200}
-                  height={settings.widgets.spotterLeft.height ?? 56}
+                  width={settings.widgets.spotterLeft.width ?? SPOTTER_DEFAULT_WIDTH}
+                  height={settings.widgets.spotterLeft.height ?? SPOTTER_DEFAULT_HEIGHT}
                   onScaleChange={(scale) => updateWidgetTransform("spotterLeft", { scale })}
                   onWidthChange={(width) => updateWidgetTransform("spotterLeft", { width })}
                   onHeightChange={(height) => updateWidgetTransform("spotterLeft", { height })}
@@ -826,22 +827,22 @@ export const SetupWizard: Component = () => {
                   "transform-origin": "right center",
                   right:
                     settings.tripleMonitorMode === "center-clamp" && settings.spotterBezelAnchor === "center-bezel"
-                      ? `calc(50% - ${settings.centerClampWidth / 2}px + 8px)`
+                      ? `max(8px, calc(50% - ${settings.centerClampWidth / 2}px + 8px))`
                       : "8px",
                 }}
                 class={`fixed top-1/2 z-40 select-none transition-[right] duration-150 ${
                   settings.isEditMode
-                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-l-xl"
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)]"
                     : "pointer-events-none"
                 }`}
               >
-                <SpotterRight
-                  distance={2.8}
+                <Spotter
+                  side="right"
                   state="warning"
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.spotterRight.scale}
-                  width={settings.widgets.spotterRight.width ?? 200}
-                  height={settings.widgets.spotterRight.height ?? 56}
+                  width={settings.widgets.spotterRight.width ?? SPOTTER_DEFAULT_WIDTH}
+                  height={settings.widgets.spotterRight.height ?? SPOTTER_DEFAULT_HEIGHT}
                   onScaleChange={(scale) => updateWidgetTransform("spotterRight", { scale })}
                   onWidthChange={(width) => updateWidgetTransform("spotterRight", { width })}
                   onHeightChange={(height) => updateWidgetTransform("spotterRight", { height })}
@@ -920,6 +921,7 @@ export const SetupWizard: Component = () => {
                 }`}
               >
                 <IncidentHazard
+                  hazard={undefined}
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.incidentHazard.scale}
                   width={settings.widgets.incidentHazard.width ?? 340}
@@ -950,7 +952,9 @@ export const SetupWizard: Component = () => {
                 <WeatherWidget
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.weather.scale}
+                  width={settings.widgets.weather.width ?? 380}
                   onScaleChange={(scale) => updateWidgetTransform("weather", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("weather", { width })}
                 />
                 <Show when={settings.isEditMode}>
                   <OpacityChip widgetKey="weather" />
@@ -1071,6 +1075,62 @@ export const SetupWizard: Component = () => {
                 />
                 <Show when={settings.isEditMode}>
                   <OpacityChip widgetKey="telemetryHub" />
+                </Show>
+              </div>
+            </Show>
+
+            {/* 기능 15: 디지플래그 / 세션 플래그 경보 (Top-Center) */}
+            <Show when={settings.widgets.digiflag?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("digiflag", e)}
+                style={{
+                  "--hud-bg-alpha": widgetBgAlpha("digiflag"),
+                  transform: `translate3d(calc(-50% + ${settings.widgets.digiflag?.x ?? 0}px), ${settings.widgets.digiflag?.y ?? 0}px, 0) scale(${settings.widgets.digiflag?.scale ?? 1.0})`,
+                  "transform-origin": "top center",
+                }}
+                class={`fixed top-4 left-1/2 z-40 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    : "pointer-events-none"
+                }`}
+              >
+                <Digiflag
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.digiflag?.scale ?? 1.0}
+                  width={settings.widgets.digiflag?.width ?? 240}
+                  onScaleChange={(scale) => updateWidgetTransform("digiflag", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("digiflag", { width })}
+                />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="digiflag" />
+                </Show>
+              </div>
+            </Show>
+
+            {/* 기능 14: 피트박스 카운트다운 & 리미터 헬퍼 (Center Pit View) */}
+            <Show when={settings.widgets.pitBoxHelper?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("pitBoxHelper", e)}
+                style={{
+                  "--hud-bg-alpha": widgetBgAlpha("pitBoxHelper"),
+                  transform: `translate3d(calc(-50% + ${settings.widgets.pitBoxHelper?.x ?? 0}px), ${settings.widgets.pitBoxHelper?.y ?? 0}px, 0) scale(${settings.widgets.pitBoxHelper?.scale ?? 1.0})`,
+                  "transform-origin": "center center",
+                }}
+                class={`fixed top-[40%] left-1/2 z-35 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    : "pointer-events-none"
+                }`}
+              >
+                <PitBoxHelper
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.pitBoxHelper?.scale ?? 1.0}
+                  width={settings.widgets.pitBoxHelper?.width ?? 340}
+                  onScaleChange={(scale) => updateWidgetTransform("pitBoxHelper", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("pitBoxHelper", { width })}
+                />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="pitBoxHelper" />
                 </Show>
               </div>
             </Show>

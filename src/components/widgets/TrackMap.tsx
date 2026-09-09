@@ -1,6 +1,6 @@
 // ponytail: native SVG getPointAtLength and pathLength="100" stroke-dasharray for zero-dep track mapping
 import { Component, For, Show, createSignal, createMemo, createEffect, onCleanup } from "solid-js";
-import { SectorStatus, SectorColor, HazardTelemetry } from "../../services/telemetry/types.ts";
+import { SectorStatus, SectorColor, HazardTelemetry, RevengeTelemetry } from "../../services/telemetry/types.ts";
 import { getTrackLayout, TRACK_PRESETS, TrackLayout } from "../../services/track/trackPresets.ts";
 import { IconPit } from "../../assets/icons/Icons.tsx";
 import { Flag } from "lucide-solid";
@@ -23,6 +23,7 @@ export interface TrackMapProps {
   sectors?: SectorStatus[];
   currentSector?: 1 | 2 | 3;
   hazard?: HazardTelemetry;
+  revenge?: RevengeTelemetry;
   yellowFlag?: boolean;
   isEditMode?: boolean;
   scale?: number;
@@ -499,7 +500,54 @@ export const TrackMap: Component<TrackMapProps> = (props) => {
               })()}
             </Show>
 
-            {/* 8. Player Car High-Contrast Neon Indicator (#7 YOU) */}
+            {/* 8. Revenge Target Tactical Crosshair (리벤지 타깃 조준선) */}
+            <Show when={props.revenge?.hasTarget && props.revenge?.lapDistPct !== undefined}>
+              {(() => {
+                const rev = props.revenge!;
+                const rPos = () => getCoordinates(rev.lapDistPct ?? 0.46);
+
+                return (
+                  <g transform={`translate(${rPos().x}, ${rPos().y})`} class="z-50">
+                    {/* Pulsing Tactical Ring */}
+                    <circle r="12" fill="none" stroke="#E10600" stroke-width="1.5" opacity="0.8" class="animate-ping" />
+                    <circle r="8" fill="#E10600" fill-opacity="0.25" stroke="#E10600" stroke-width="1.2" />
+
+                    {/* Crosshair 4-way Ticks */}
+                    <line x1="-11" y1="0" x2="-4" y2="0" stroke="#ffffff" stroke-width="1.2" />
+                    <line x1="4" y1="0" x2="11" y2="0" stroke="#ffffff" stroke-width="1.2" />
+                    <line x1="0" y1="-11" x2="0" y2="-4" stroke="#ffffff" stroke-width="1.2" />
+                    <line x1="0" y1="4" x2="0" y2="11" stroke="#ffffff" stroke-width="1.2" />
+
+                    {/* Revenge Reticle Label */}
+                    <g transform="translate(0, -13)">
+                      <rect
+                        x="-18"
+                        y="-6"
+                        width="36"
+                        height="10"
+                        fill="#E10600"
+                        stroke="#0a0c11"
+                        stroke-width="0.8"
+                      />
+                      <text
+                        x="0"
+                        y="1.5"
+                        text-anchor="middle"
+                        fill="#ffffff"
+                        font-size="6.5"
+                        font-weight="900"
+                        font-style="italic"
+                        class="select-none"
+                      >
+                        TARGET #{rev.carNumber}
+                      </text>
+                    </g>
+                  </g>
+                );
+              })()}
+            </Show>
+
+            {/* 9. Player Car High-Contrast Neon Indicator (#7 YOU) */}
             {(() => {
               const playerCar = () => cars().find((c) => c.isPlayer) || cars()[0];
               const pPos = () => getCoordinates(playerCar().lapDistPct);

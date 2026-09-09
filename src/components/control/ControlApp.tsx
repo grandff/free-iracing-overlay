@@ -26,11 +26,13 @@ import {
   EyeOff,
   Globe,
   User,
+  FileText,
 } from "lucide-solid";
 import { t, setLanguage, SUPPORTED_LANGUAGES } from "../../i18n/index.ts";
 import { CountryFlag, getCountryInfo } from "../../assets/icons/CountryFlags.tsx";
 import { CarBrandIcon } from "../../assets/icons/CarBrandIcons.tsx";
 import { telemetry } from "../../stores/telemetryStore.ts";
+import { debugLogPath } from "../../services/debugLog.ts";
 import {
   THEME_FONTS,
   fontStatus,
@@ -40,7 +42,14 @@ import {
 } from "../../services/fonts.ts";
 
 export const ControlApp: Component<{ standalone?: boolean }> = (props) => {
-  const [activeTab, setActiveTab] = createSignal<"widgets" | "profile" | "theme" | "display" | "shortcuts" | "language">("widgets");
+  const [activeTab, setActiveTab] = createSignal<"widgets" | "profile" | "theme" | "display" | "shortcuts" | "language" | "diagnostics">("widgets");
+
+  // Resolved by Rust: the same directory logic the writer uses, so what the user
+  // reads here is exactly where the file lands.
+  const [resolvedLogPath, setResolvedLogPath] = createSignal("");
+  createEffect(() => {
+    void debugLogPath(settings.debugLogPath).then(setResolvedLogPath);
+  });
 
   const widgetDefinitions = () => [
     { key: "leaderboard" as WidgetKey, name: t().wLeaderboard, category: "Timing", desc: t().wLeaderboardDesc },
@@ -222,6 +231,18 @@ export const ControlApp: Component<{ standalone?: boolean }> = (props) => {
             >
               <Keyboard class="w-4 h-4 text-[#ffd60a]" />
               <span>{t().tabShortcuts}</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab("diagnostics")}
+              class={`w-full px-3 py-2 rounded-lg flex items-center gap-2.5 text-xs font-medium text-left transition-all ${
+                activeTab() === "diagnostics"
+                  ? "bg-white/15 text-white shadow-sm"
+                  : "text-white/60 hover:text-white hover:bg-white/5"
+              }`}
+            >
+              <FileText class="w-4 h-4 text-[#30d158]" />
+              <span>{t().tabDiagnostics}</span>
             </button>
           </div>
 
@@ -811,6 +832,57 @@ export const ControlApp: Component<{ standalone?: boolean }> = (props) => {
                     </p>
                   </div>
                 </div>
+              </div>
+            </Show>
+
+            {/* 6. 진단 & 로그 탭 */}
+            <Show when={activeTab() === "diagnostics"}>
+              <div class="flex flex-col gap-4">
+                <div class="border-b border-white/10 pb-3">
+                  <h2 class="text-base font-semibold text-white">{t().diagTitle}</h2>
+                  <p class="text-xs text-white/50">{t().diagSubtitle}</p>
+                </div>
+
+                <div class="p-4 rounded-xl bg-[#202025] border border-white/10 flex items-center justify-between gap-4">
+                  <div class="min-w-0">
+                    <span class="text-sm font-bold text-white">{t().diagEnable}</span>
+                    <p class="text-xs text-white/50 mt-0.5">{t().diagEnableDesc}</p>
+                  </div>
+                  <button
+                    onClick={() => updateSettings("debugLogging", !settings.debugLogging)}
+                    class={`shrink-0 w-11 h-6 rounded-full transition-colors relative ${
+                      settings.debugLogging ? "bg-[#30d158]" : "bg-white/15"
+                    }`}
+                    aria-pressed={settings.debugLogging}
+                  >
+                    <span
+                      class={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-all ${
+                        settings.debugLogging ? "left-[22px]" : "left-0.5"
+                      }`}
+                    />
+                  </button>
+                </div>
+
+                <div class="p-4 rounded-xl bg-[#202025] border border-white/10 flex flex-col gap-2">
+                  <span class="text-sm font-bold text-white">{t().diagPathLabel}</span>
+                  <input
+                    type="text"
+                    value={settings.debugLogPath}
+                    onInput={(e) => updateSettings("debugLogPath", e.currentTarget.value)}
+                    placeholder={t().diagPathHint}
+                    spellcheck={false}
+                    class="w-full px-3 py-2 rounded-lg bg-[#141417] border border-white/10 text-xs text-white/90 font-mono outline-none focus:border-[#30d158]/60"
+                  />
+                  {/* The resolved absolute path, so nobody has to guess where it went. */}
+                  <div class="text-[11px] text-white/45 font-mono break-all">
+                    <Show when={!settings.debugLogPath}>
+                      <span class="text-white/35">{t().diagPathDefault} · </span>
+                    </Show>
+                    {resolvedLogPath()}
+                  </div>
+                </div>
+
+                <p class="text-[11px] leading-relaxed text-white/40">{t().diagWhatIsLogged}</p>
               </div>
             </Show>
           </div>

@@ -67,7 +67,7 @@ export const TelemetryMonitor: Component<Props> = (props) => {
         rpm={p()?.rpm}
         lapDelta={p()?.lastLapDelta}
         fuelLiters={p()?.fuelLevelLiters}
-        fuelLaps={p()?.fuelLapsRemaining}
+        fuelLaps={telemetry.frame?.fuel?.lapsOnFuel}
         isEditMode={settings.isEditMode}
         scale={settings.widgets.telemetryHub.scale}
         onScaleChange={(scale) => updateWidgetTransform("telemetryHub", { scale })}

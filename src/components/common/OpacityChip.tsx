@@ -18,7 +18,9 @@ export const OpacityChip: Component<{ widgetKey: WidgetKey }> = (props) => {
 
   return (
     <div
-      class="absolute bottom-1 left-1 z-50 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/85 backdrop-blur-md border border-white/20 pointer-events-auto select-none"
+      class={`absolute bottom-1 ${
+        props.widgetKey === "spotterRight" ? "right-0" : "left-1"
+      } z-50 flex items-center gap-1 px-1.5 py-0.5 rounded bg-black/85 backdrop-blur-md border border-white/20 pointer-events-auto select-none`}
       onMouseDown={(e) => e.stopPropagation()}
       title={t().bgOpacityTitle}
     >

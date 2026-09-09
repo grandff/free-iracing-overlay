@@ -1,5 +1,24 @@
 import { settings } from "../../stores/settingsStore.ts";
-import { TelemetryFrame, CarTelemetry, SystemEventKind, SectorColor, LapDeltaTelemetry } from "./types.ts";
+import {
+  TelemetryFrame,
+  CarTelemetry,
+  SystemEventKind,
+  SectorColor,
+  LapDeltaTelemetry,
+  IRSDK_FLAGS,
+  PitLaneTelemetry,
+} from "./types.ts";
+import {
+  CarLeftRight,
+  CarSpeedTracker,
+  FuelPerLapTracker,
+  detectHazardAhead,
+  distanceToPitStall,
+  fuelStrategy,
+  remainingLaps,
+  spotterSides,
+} from "./derive.ts";
+import { calculateSOF, calculateEloChanges } from "./iratingCalculator.ts";
 
 // ponytail: lightweight 60Hz simulated telemetry generator for macOS/Linux dev without iRacing running
 export class MockTelemetryEngine {
@@ -9,6 +28,14 @@ export class MockTelemetryEngine {
   private currentLap = 3;
   private fuelRemaining = 42.5;
   private trackLength = 4500; // 4.5km circuit
+
+  // The mock produces RAW SDK-shaped values; every derived number the widgets
+  // show comes back out of derive.ts, exactly as the shmem reader will do (M5.2).
+  private readonly fuelTracker = new FuelPerLapTracker();
+  private readonly carSpeeds = new CarSpeedTracker();
+  /** Session YAML DriverInfo.DriverCarFuelMaxLtr / DriverCarMaxFuelPct. */
+  private readonly driverCarFuelMaxLtr = 110;
+  private readonly driverCarMaxFuelPct = 1.0;
 
   private simulatedCars: CarTelemetry[] = [
     { carIdx: 1, carNumber: "7", driverName: "K. Jeongmin", country: "KR", carBrand: "Porsche", irating: 6840, safetyRating: { license: "S", value: 4.98 }, classPosition: 1, overallPosition: 1, positionDelta: 0, lap: 3, lapDistPct: 0.15, lastLapTime: 84.12, bestLapTime: 83.89, inPit: false, carClass: "Hypercar", carClassColor: "#E10600", speedKmh: 245, gapToPlayerSeconds: 0, trackSurface: 3 },
@@ -137,29 +164,21 @@ export class MockTelemetryEngine {
       targetMode: "best",
     };
 
-    // Proximity spotter dynamic simulation (16s cycle: Clear -> Warning Left -> Danger Left -> Warning Right -> Clear)
-    const spotterCycle = (Date.now() / 1000) % 16;
-    let spotterLeftDist = 6.0;
-    let spotterRightDist = 6.0;
-    let carBitfield = 1; // irsdk_LRClear
-
-    if (spotterCycle >= 3.0 && spotterCycle < 7.0) {
-      // 1 Car on Left: Warning (Amber)
-      spotterLeftDist = 2.4;
-      carBitfield = 2; // irsdk_LRCarLeft
-    } else if (spotterCycle >= 7.0 && spotterCycle < 10.5) {
-      // 2 Cars on Left / Extreme Close: Danger (Red)
-      spotterLeftDist = 1.1;
-      carBitfield = 5; // irsdk_LR2CarsLeft
-    } else if (spotterCycle >= 10.5 && spotterCycle < 14.0) {
-      // 1 Car on Right: Warning (Amber)
-      spotterRightDist = 2.2;
-      carBitfield = 3; // irsdk_LRCarRight
-    }
-
-    // Hazard simulation: Car #42 is spinning ahead around lapDist 0.21
-    const hazardDist = Math.max(0, (0.21 - this.lapDist) * this.trackLength);
-    const hasHazard = hazardDist > 0 && hazardDist < 400;
+    // CarLeftRight is the raw enum the SDK publishes. 20s cycle:
+    // clear -> car left -> two left -> car right -> both sides -> clear.
+    const spotterCycle = (Date.now() / 1000) % 20;
+    const carLeftRight =
+      spotterCycle < 3
+        ? CarLeftRight.Clear
+        : spotterCycle < 7
+        ? CarLeftRight.CarLeft
+        : spotterCycle < 10.5
+        ? CarLeftRight.TwoCarsLeft
+        : spotterCycle < 14
+        ? CarLeftRight.CarRight
+        : spotterCycle < 17
+        ? CarLeftRight.CarLeftRight
+        : CarLeftRight.Clear;
 
     // Radio & System Comms simulation cycle (every 24 seconds)
     const cycleSec = (Date.now() / 1000) % 24;
@@ -199,6 +218,129 @@ export class MockTelemetryEngine {
     const isPitLimiter = activeEvent === "pitEntry";
     const isRevLimiter = playerRpm >= 12500;
 
+    // SessionFlags dynamic simulation (40s cycle)
+    const flagCycle = (Date.now() / 1000) % 40;
+    let sessionFlags: number = IRSDK_FLAGS.green;
+    if (flagCycle >= 20 && flagCycle < 27) {
+      sessionFlags = IRSDK_FLAGS.yellow | IRSDK_FLAGS.yellowWaving;
+    } else if (flagCycle >= 27 && flagCycle < 32) {
+      sessionFlags = IRSDK_FLAGS.blue;
+    } else if (flagCycle >= 32 && flagCycle < 40) {
+      sessionFlags = IRSDK_FLAGS.checkered;
+    }
+
+    const pitLaneActive = (Date.now() / 1000) % 50 >= 35 && (Date.now() / 1000) % 50 < 48;
+
+    // #51 loses it and beaches itself ahead of the player for 8s of every 30.
+    // Only the raw CarIdx* state is faked here — detectHazardAhead does the real
+    // work of deciding whether that counts as an incident worth warning about.
+    const incidentCar = this.simulatedCars.find((c) => c.carIdx === 4);
+    if (incidentCar) {
+      if ((Date.now() / 1000) % 30 < 8) {
+        incidentCar.lapDistPct = (this.lapDist + 0.03) % 1.0; // beached ~135m ahead
+        incidentCar.trackSurface = 0; // irsdk_OffTrack
+      } else if (incidentCar.trackSurface === 0) {
+        incidentCar.trackSurface = 3; // irsdk_OnTrack — recovered
+      }
+    }
+    for (const c of this.simulatedCars) {
+      this.carSpeeds.update(c.carIdx, c.lapDistPct, this.trackLength, now);
+    }
+
+    const spotterState = spotterSides({
+      carLeftRight,
+      cars: this.simulatedCars,
+      playerCarIdx: 1,
+      playerLapDistPct: this.lapDist,
+      trackLengthM: this.trackLength,
+    });
+
+    const hazard = detectHazardAhead({
+      cars: this.simulatedCars,
+      playerCarIdx: 1,
+      playerLapDistPct: this.lapDist,
+      trackLengthM: this.trackLength,
+      sessionFlags,
+      speedsKmh: this.carSpeeds.speedKmh,
+    });
+
+    // Fuel: raw SDK inputs in, plan out. FuelLevel deltas across clean green laps
+    // are the per-lap burn — FuelUsePerHour (kg/h, instantaneous) cannot give it.
+    this.fuelTracker.update(this.currentLap, this.fuelRemaining, pitLaneActive, sessionFlags);
+    const sessionLapsTotal = 57;
+    const sessionTimeRemainingSec = 1512;
+    const fuel = fuelStrategy({
+      fuelLevel: this.fuelRemaining,
+      fuelMaxLtr: this.driverCarFuelMaxLtr,
+      maxFuelPct: this.driverCarMaxFuelPct,
+      lapsRemaining: remainingLaps(sessionLapsTotal, 18, sessionTimeRemainingSec, 84.12),
+      avgPerLap: this.fuelTracker.average || 2.35, // seeded until a clean lap completes
+      pitSvFuel: 22, // PitSvFuel, as set in the in-game F4 black box
+      fuelFillChecked: true, // PitSvFlags & irsdk_FuelFill
+      currentLap: this.currentLap,
+    });
+
+    // Pit lane, 50s cycle. Only the raw state is faked; the stall countdown comes
+    // out of the same derivation the shmem reader will use.
+    const pitCycle = (Date.now() / 1000) % 50;
+    const isPitActive = pitLaneActive;
+    // YAML DriverInfo.DriverPitTrkPct — where this driver's box sits on the lap.
+    const driverPitTrkPct = 0.02;
+    const pitDist = distanceToPitStall(this.lapDist, isPitActive ? driverPitTrkPct : undefined, this.trackLength);
+    const pitLane: PitLaneTelemetry = {
+      onPitRoad: isPitActive,
+      inPitStall: pitDist !== undefined && pitDist <= 1.0,
+      approachingPits: pitCycle >= 30 && pitCycle < 35,
+      pitSpeedLimitKmh: 60,
+      distanceToStallMeters: pitDist !== undefined ? Math.round(pitDist * 10) / 10 : undefined,
+      pitRepairRemainingSec: 0,
+      limiterActive: isPitActive || isPitLimiter,
+    };
+
+    // Calculate real-time ELO changes and SOF for the field
+    const eloInputs = this.simulatedCars.map((c) => ({
+      carIdx: c.carIdx,
+      irating: c.irating,
+      finishPosition: c.classPosition,
+      started: true,
+    }));
+    const eloResults = calculateEloChanges(eloInputs);
+    const calculatedSof = calculateSOF(this.simulatedCars.map((c) => c.irating));
+
+    for (const car of this.simulatedCars) {
+      const res = eloResults.get(car.carIdx);
+      if (res) {
+        car.projectedIratingGain = res.iratingChange;
+      }
+    }
+
+    const playerElo = eloResults.get(1);
+    const playerGain = playerElo?.iratingChange ?? 38;
+
+    // Connect Revenge Target to simulated competitor #2 (M. Verstappen)
+    const targetCar = this.simulatedCars.find((c) => c.carIdx === 2) || this.simulatedCars[1];
+    const playerLastLap = 84.12;
+    const targetLastLap = targetCar?.lastLapTime ?? 84.34;
+    const lastLapDelta = Number((targetLastLap - playerLastLap).toFixed(2));
+
+    const revenge = {
+      hasTarget: true,
+      targetCarIdx: targetCar?.carIdx ?? 2,
+      driverName: targetCar?.driverName ?? "M. Verstappen",
+      carNumber: targetCar?.carNumber ?? "1",
+      country: targetCar?.country ?? "NL",
+      carBrand: targetCar?.carBrand ?? "Red Bull",
+      position: targetCar?.classPosition ?? 2,
+      gapSeconds: targetCar?.gapToPlayerSeconds ?? -0.42,
+      incidentCount: 4,
+      incidentTimestamp: Date.now() - 45_000,
+      lapDistPct: targetCar?.lapDistPct ?? 0.145,
+      avgLapTime: 84.22,
+      lastLapDelta,
+      targetLastLapTime: targetLastLap,
+      playerLastLapTime: playerLastLap,
+    };
+
     const frame: TelemetryFrame = {
       timestamp: Date.now(),
       tickRateHz: 60,
@@ -207,9 +349,12 @@ export class MockTelemetryEngine {
       // Real pipeline reads Sessions[SessionNum].SessionType. Until the shmem
       // reader lands, the control panel's simulator picker stands in for it.
       sessionType: settings.sessionType,
-      sessionLapsTotal: 57,
-      sessionLapsRemaining: 18,
-      sessionTimeRemainingSec: 1512,
+      sessionLapsTotal,
+      sessionLapsRemaining: fuel.lapsRemaining,
+      sessionTimeRemainingSec,
+      sessionFlags,
+      sof: calculatedSof,
+      projectedIratingGain: playerGain,
       player: {
         carIdx: 1,
         carNumber: "7",
@@ -217,26 +362,14 @@ export class MockTelemetryEngine {
         country: "KR",
         carBrand: "Porsche",
         irating: 6840,
+        projectedIratingGain: playerGain,
         safetyRating: { license: "S", value: 4.98 },
         speedKmh: playerSpeed,
         rpm: playerRpm,
         gear: gearNum,
-        fuelLevelLiters: Number(this.fuelRemaining.toFixed(2)),
-        fuelMaxLiters: 110,
-        fuelAvgPerLap: 2.38,
-        fuelLastLap: 2.35,
-        fuelLapsRemaining: Number((this.fuelRemaining / 2.38).toFixed(1)),
-        fuelNeededToFinish: Number((24 * 2.38 + 1.2).toFixed(1)),
-        fuelPitAddLiters: Number(Math.max(0, 24 * 2.38 + 1.2 - this.fuelRemaining).toFixed(1)),
-        fuelSaveTargetPerLap: 2.22,
-        fuelSaveDelta: Number((2.38 - 2.22).toFixed(2)),
-        pitWindowOpenLap: 12,
-        pitWindowCloseLap: Math.max(this.currentLap + 1, this.currentLap + Math.floor(this.fuelRemaining / 2.38)),
-        pitLossSeconds: Number((18.0 + Math.max(0, 24 * 2.38 + 1.2 - this.fuelRemaining) / 2.8).toFixed(1)),
-        inGamePitFuel: Number(Math.max(0, 24 * 2.38 + 1.2 - this.fuelRemaining).toFixed(0)),
-        inGameFuelFillChecked: true,
-        isExtraLapConfirmed: true,
-        safetyMarginLiters: 1.2,
+        fuelLevelLiters: this.fuelRemaining,
+        lap: this.currentLap,
+        onPitRoad: pitLaneActive,
         lastLapTime: 84.12,
         bestLapTime: 83.89,
         lastLapDelta: dynamicDelta,
@@ -244,38 +377,33 @@ export class MockTelemetryEngine {
         tirePressurePsi: [28.5, 28.6, 28.2, 28.3],
         tireWearPct: [94, 91, 96, 93],
         tireSurfaceLoadPct: [68, 74, 62, 65],
+        tireTempC: [88.5, 89.2, 85.1, 86.4],
       },
+      fuel,
       cars: this.simulatedCars,
       spotter: {
-        leftDistanceMeters: Number(spotterLeftDist.toFixed(1)),
-        rightDistanceMeters: Number(spotterRightDist.toFixed(1)),
-        leftState: spotterLeftDist <= 1.5 ? "danger" : spotterLeftDist <= 3.5 ? "warning" : "clear",
-        rightState: spotterRightDist <= 1.5 ? "danger" : spotterRightDist <= 3.5 ? "warning" : "clear",
-        carLeftRightBitfield: carBitfield,
+        leftState: spotterState.left,
+        rightState: spotterState.right,
+        carLeftRight,
       },
-      hazard: {
-        hasIncident: hasHazard,
-        distanceMeters: Math.round(hazardDist),
-        incidentCarNumber: "42",
-        incidentSector: 2,
-        incidentLapDistPct: 0.21,
-        hazardType: "spin",
-        speedKmh: 18,
-      },
-      revenge: {
-        hasTarget: true,
-        driverName: "J. Montoya",
-        carNumber: "99",
-        gapSeconds: -8.4,
-        incidentCount: 4,
-      },
+      hazard,
+      revenge,
       weather: {
         airTempC: 22.4,
         trackTempC: 34.8,
         windSpeedKmh: 14.2,
         windDirDeg: 65,
+        windDirRad: 65 * (Math.PI / 180),
         trackWetnessPct: 0,
+        relativeHumidityPct: 58,
+        fogLevelPct: 0,
+        skies: 1, // partly cloudy
+        weatherType: 1, // dynamic Tempest
+        weatherVersion: 2,
+        trackWetness: 1, // irsdk_TrackWetness_Dry
         precipitationPct: 0,
+        airPressureHg: 29.92,
+        airDensity: 1.198,
       },
       multiclass: {
         hasApproachingFastCar: false,
@@ -313,6 +441,7 @@ export class MockTelemetryEngine {
         pitLimiterActive: isPitLimiter,
         revLimiterActive: isRevLimiter,
       },
+      pitLane,
     };
 
     if (this.onTickCallback) {

@@ -136,13 +136,9 @@ export const ShiftLight: Component<ShiftLightProps> = (props) => {
       {/* Edit Mode Controls */}
       <Show when={props.isEditMode}>
         <div
-          class="flex items-center justify-between px-2 py-1 mb-1.5 f1-slab text-[10px] text-white/80"
+          class="flex items-center justify-end px-2 py-1 mb-1.5 f1-slab text-[10px] text-white/80"
           onMouseDown={(e) => e.stopPropagation()}
         >
-          <div class="flex items-center gap-1.5">
-            <span class="f1-oblique text-[10px] text-white/80">{t().shiftLightTitle}</span>
-          </div>
-
           <div class="flex items-center gap-1.5">
             {/* Style Switcher */}
             <button

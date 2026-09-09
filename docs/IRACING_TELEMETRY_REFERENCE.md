@@ -172,11 +172,14 @@
 | `AirPressure` | `float[1]` | `Hg` | Pressure of air at start/finish line |
 | `AirTemp` | `float[1]` | `C` | Temperature of air at start/finish line |
 | `FogLevel` | `float[1]` | `%` | Fog level |
+| `Precipitation` | `float[1]` | `%` | Rain precipitation intensity at start/finish line (Tempest) |
 | `RelativeHumidity` | `float[1]` | `%` | Relative Humidity |
 | `Skies` | `int[1]` | — | Skies (0=clear/1=p cloudy/2=m cloudy/3=overcast) |
 | `TrackTemp` | `float[1]` | `C` | Deprecated  set to TrackTempCrew |
 | `TrackTempCrew` | `float[1]` | `C` | Temperature of track measured by crew around track |
-| `WeatherType` | `int[1]` | — | Weather type (0=constant  1=dynamic) |
+| `TrackWetness` | `int[1]` | enum | Track surface wetness level 0..7 (Tempest, irsdk_TrackWetness) |
+| `WeatherType` | `int[1]` | — | Weather type (0=constant  1=dynamic Tempest) |
+| `WeatherVersion` | `int[1]` | — | Weather engine version (Tempest) |
 | `WindDir` | `float[1]` | `rad` | Wind direction at start/finish line |
 | `WindVel` | `float[1]` | `m/s` | Wind velocity at start/finish line |
 
@@ -556,7 +559,7 @@ M2~M4 구현 시 이 표의 변수명을 그대로 `src/services/telemetry/types
 | 6 | **연료 시뮬레이터** | `FuelLevel`, `FuelLevelPct`, `FuelUsePerHour`, `LapCompleted`, `SessionLapsRemainEx`, `SessionTimeRemain` | 랩당 소비량은 랩 완료 시점의 `FuelLevel` 차이를 직접 누적 (3~5랩 이동평균) |
 | 7 | **타이어 분석** | `LFwearL/M/R`, `RFwearL/M/R`, `LRwearL/M/R`, `RRwearL/M/R`, `LFtempCL/CM/CR`(4륜), `LFcoldPressure`(4륜) | ⚠️ **마모·온도는 피트인 후에만 갱신됩니다.** 주행 중 실시간 값 아님 (AGENTS.md §3 기능7의 "추정치" 필요 이유) |
 | 8 | **전방 사고 경고** | `SessionFlags`(`irsdk_yellow`/`yellowWaving`/`debris`), `CarIdxTrackSurface`(`irsdk_OffTrack`), `CarIdxLapDistPct`, `LapDistPct` | 전방 거리 = (상대 `LapDistPct` − 내 `LapDistPct`) × 트랙 길이 |
-| 9 | **날씨 & 트랙** | `AirTemp`, `TrackTempCrew`, `WindVel`, `WindDir`, `Skies`, `RelativeHumidity`, `FogLevel`, `WeatherType` | `TrackTemp`은 deprecated → `TrackTempCrew` 사용. `WindDir`은 **라디안** |
+| 9 | **날씨 & 트랙** | `AirTemp`, `TrackTempCrew`, `WindVel`, `WindDir`, `Skies`, `RelativeHumidity`, `FogLevel`, `WeatherType`, `Precipitation`, `TrackWetness` | `TrackTemp`은 deprecated → `TrackTempCrew` 사용. `WindDir`은 **라디안**. `Precipitation`은 강수량 %, `TrackWetness`는 노면 젖음 0..7 단계 (Tempest 시스템) |
 | 10 | **멀티클래스 접근 경고** | `CarIdxClass`, `PlayerCarClass`, `CarIdxEstTime`, `SessionFlags`(`irsdk_blue`) | 상위 클래스 판정 후 `EstTime` 차 < 3초면 경보 |
 | 11 | **2D 트랙 맵** | `WeekendInfo: TrackName/TrackID`, `CarIdxLapDistPct`, `CarIdxTrackSurface`, `CarIdxOnPitRoad`, `CarIdxClass`, `PlayerCarIdx`, `SessionFlags`, `SplitTimeInfo: Sectors` | 서킷 SVG 경로는 세션 TrackName 기반 매핑. `LapDistPct`(0.0~1.0)를 SVG path 길이에 매핑. 사고 지점(Hazard) 및 3섹터 동적 컬러링 연동 |
 | — | **콕핏 허브** | `Gear`, `RPM`, `Speed`, `Throttle`, `Brake`, `Clutch`, `SteeringWheelAngle`, `PushToPass` | `Speed`는 **m/s** → km/h는 ×3.6 |

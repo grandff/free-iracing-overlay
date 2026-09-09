@@ -1,6 +1,5 @@
 import { Component, Show } from "solid-js";
 import { createPresence } from "../../utils/presence.ts";
-import { t } from "../../i18n/index.ts";
 
 interface Props {
   speed?: number;
@@ -40,11 +39,10 @@ export const TelemetryHub: Component<Props> = (props) => {
     <div class="relative flex flex-col font-sans select-none w-[310px] shadow-2xl">
       <Show when={editPresence.mounted()}>
         <div
-          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 hud-surface-raised border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
+          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-end gap-3 px-3 py-1 hud-surface-raised border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
             editPresence.visible() ? "is-visible" : "is-hidden"
           }`}
         >
-          <span class="text-[10px] font-medium text-white/70 whitespace-nowrap">{t().wTelemetryHub}</span>
           <div class="flex items-center gap-1.5">
             <button
               onClick={() => props.onScaleChange && props.onScaleChange(Math.max(0.7, (props.scale || 1) - 0.1))}
