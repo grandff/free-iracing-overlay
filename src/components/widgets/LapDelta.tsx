@@ -1,5 +1,4 @@
 import { Component, Show, For, createSignal, createMemo, onCleanup } from "solid-js";
-import { IconStopwatch, IconChevronDown, IconChevronUp } from "../../assets/icons/Icons.tsx";
 import { LapDeltaTelemetry, SectorColor } from "../../services/telemetry/types.ts";
 import { t } from "../../i18n/index.ts";
 
@@ -12,35 +11,6 @@ export interface LapDeltaProps {
   width?: number;
   onScaleChange?: (newScale: number) => void;
   onWidthChange?: (newWidth: number) => void;
-}
-
-function getSectorStyle(status: SectorColor) {
-  switch (status) {
-    case "purple":
-      return {
-        bg: "bg-[#B055F5]",
-        border: "border-[#B055F5]",
-        text: "text-black",
-      };
-    case "green":
-      return {
-        bg: "bg-[#00D26A]",
-        border: "border-[#00D26A]",
-        text: "text-black",
-      };
-    case "yellow":
-      return {
-        bg: "bg-[#FFD100]",
-        border: "border-[#FFD100]",
-        text: "text-black",
-      };
-    default:
-      return {
-        bg: "bg-white/[0.04]",
-        border: "border-white/10",
-        text: "text-white/30",
-      };
-  }
 }
 
 export const LapDelta: Component<LapDeltaProps> = (props) => {
@@ -192,13 +162,13 @@ export const LapDelta: Component<LapDeltaProps> = (props) => {
     >
       {/* Edit Mode Top Control Bar */}
       <Show when={props.isEditMode}>
-        <div class="flex items-center justify-between px-3 py-1 bg-black/90 backdrop-blur-md border-t border-x border-white/20 rounded-t text-white select-none">
+        <div class="flex items-center justify-between px-3 py-1 f1-slab border-b-0 text-white select-none">
           <button
             onClick={(e) => {
               e.stopPropagation();
               setTestMode((prev) => ((prev + 1) % 3) as 0 | 1 | 2);
             }}
-            class="px-2 py-0.5 rounded-[2px] bg-[#E10600]/15 hover:bg-[#E10600]/25 text-white border border-[#E10600]/60 text-[10px] font-mono font-bold cursor-pointer transition-all active:scale-95"
+            class="px-2 py-0.5 bg-[#E10600]/20 hover:bg-[#E10600]/35 text-white border border-[#E10600]/70 text-[10px] f1-oblique cursor-pointer transition-all active:scale-95"
             title="델타 테스트 상태 전환 (베스트 / 지연 / 세션 최고)"
           >
             {t().deltaModeBtn}: {testMode() === 0 ? "BEST" : testMode() === 1 ? "SLOWER" : "PURPLE"}
@@ -232,119 +202,129 @@ export const LapDelta: Component<LapDeltaProps> = (props) => {
         </div>
       </Show>
 
-      {/* Main Horizontal 3-Sector LapDelta Bar */}
+      {/* F1 world-feed delta strip: oblique caps, square corners, value-over-label,
+          red rule tab on the left — same lockup the broadcast uses for onboard delta. */}
       <div
-        class={`relative flex items-center h-[42px] px-2 bg-[#12141c]/95 backdrop-blur-md border border-l-[3px] border-l-[#E10600] shadow-[0_8px_24px_rgba(0,0,0,0.55)] ${
-          props.isEditMode ? "rounded-b-[3px] border-b border-r border-white/20" : "rounded-[3px] border-white/15"
+        class={`relative flex items-stretch h-[46px] f1-slab border-l-[3px] border-l-[#E10600] ${
+          props.isEditMode ? "border-b border-r border-t-0" : ""
         }`}
       >
-        {/* 1. Target Comparison Pill (Left) */}
-        <div class="flex items-center gap-1.5 px-2 py-1 border-r border-white/10 shrink-0">
-          <IconStopwatch size={13} class="text-[#E10600] shrink-0" />
-          <span class="text-[10px] font-mono font-black text-white/80 tracking-wider whitespace-nowrap">
-            {activeDelta().targetName}
+        {/* 1. Reference target — micro caps label, no icon chrome */}
+        <div class="flex flex-col justify-center px-2.5 shrink-0 w-[64px]">
+          <span class="f1-oblique text-[11px] leading-none text-white">
+            {activeDelta().targetName.replace("VS ", "")}
           </span>
+          <span class="f1-label mt-1">TARGET</span>
         </div>
 
-        {/* 2. Live Delta Time & Center-0 Gauge Bar (Center) */}
-        <div class="flex-1 flex flex-col justify-center px-2.5 min-w-0">
-          {/* Top row: Delta number + Chevron */}
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-1">
-              <Show when={activeDelta().isValid}>
-                <Show
-                  when={activeDelta().isFaster}
-                  fallback={<IconChevronUp class="w-3.5 h-3.5 text-[#ff4d4d] shrink-0" />}
-                >
-                  <IconChevronDown
-                    class={`w-3.5 h-3.5 shrink-0 ${activeDelta().isPurple ? "text-[#B055F5]" : "text-[#00D26A]"}`}
-                  />
-                </Show>
-              </Show>
+        <div class="f1-divider my-2" />
+
+        {/* 2. Live delta — big oblique value over its label, centre-zero rule beneath */}
+        <div class="flex-1 flex flex-col justify-center px-3 min-w-0">
+          <div class="flex items-baseline justify-between">
+            <div class="flex items-baseline gap-1">
               <span
-                class={`font-mono text-[16px] font-black tracking-wider tabular-nums leading-none ${
+                class={`f1-value text-[26px] ${
                   !activeDelta().isValid
-                    ? "text-white/35"
+                    ? "text-white/30"
                     : activeDelta().isPurple
                     ? "text-[#B055F5]"
                     : activeDelta().isFaster
                     ? "text-[#00D26A]"
-                    : "text-[#ff4d4d]"
+                    : "text-[#FF3B30]"
                 }`}
               >
-                {deltaText()}s
+                {deltaText()}
               </span>
+              <span class="f1-oblique text-[11px] text-white/45 -ml-0.5">S</span>
             </div>
 
-            <Show when={currentWidth() >= 420}>
-              <span class="text-[9px] font-mono text-white/40 tracking-wider">
-                {!activeDelta().isValid ? "NO DATA" : activeDelta().isPurple ? "SESSION BEST" : activeDelta().isFaster ? "FASTER" : "SLOWER"}
+            <Show when={currentWidth() >= 400}>
+              <span
+                class={`f1-oblique text-[9px] tracking-[0.14em] ${
+                  !activeDelta().isValid
+                    ? "text-white/30"
+                    : activeDelta().isPurple
+                    ? "text-[#B055F5]"
+                    : activeDelta().isFaster
+                    ? "text-[#00D26A]"
+                    : "text-[#FF3B30]"
+                }`}
+              >
+                {!activeDelta().isValid
+                  ? "NO DATA"
+                  : activeDelta().isPurple
+                  ? "SESSION BEST"
+                  : activeDelta().isFaster
+                  ? "FASTER"
+                  : "SLOWER"}
               </span>
             </Show>
           </div>
 
-          {/* Bottom row: Center-0 Symmetrical Delta Gauge Bar */}
-          <div class="relative w-full h-[5px] mt-1 bg-black/60 rounded-full border border-white/10 overflow-hidden">
-            {/* Center Zero Marker Tick */}
-            <div class="absolute left-1/2 -top-0.5 bottom-0.5 w-[1.5px] bg-white/50 z-20 -translate-x-1/2" />
-
-            {/* Faster bar (grows left from center) */}
+          {/* Centre-zero rule: square, 3px, grows out from the middle tick */}
+          <div class="relative w-full h-[3px] mt-2 bg-white/[0.16]">
+            <div class="absolute left-1/2 -top-[2px] -bottom-[2px] w-px bg-white/70 -translate-x-1/2 z-20" />
             <Show when={activeDelta().isValid && activeDelta().isFaster}>
               <div
-                class={`absolute top-0 bottom-0 right-1/2 rounded-l-full transition-all duration-75 ${
+                class={`absolute inset-y-0 right-1/2 transition-[width] duration-75 ${
                   activeDelta().isPurple ? "bg-[#B055F5]" : "bg-[#00D26A]"
                 }`}
-                style={{
-                  width: `${barPercent()}%`,
-                  "box-shadow": activeDelta().isPurple ? "0 0 4px #B055F5" : "0 0 4px #00D26A",
-                }}
+                style={{ width: `${barPercent()}%` }}
               />
             </Show>
-
-            {/* Slower bar (grows right from center) */}
             <Show when={activeDelta().isValid && !activeDelta().isFaster}>
               <div
-                class="absolute top-0 bottom-0 left-1/2 rounded-r-full bg-[#ff3b30] transition-all duration-75"
-                style={{
-                  width: `${barPercent()}%`,
-                  "box-shadow": "0 0 6px #ff3b30",
-                }}
+                class="absolute inset-y-0 left-1/2 bg-[#FF3B30] transition-[width] duration-75"
+                style={{ width: `${barPercent()}%` }}
               />
             </Show>
           </div>
         </div>
 
-        {/* 3. 3-Sector Segment Blocks [ S1 | S2 | S3 ] (Right) */}
-        <div class="flex items-center gap-1 shrink-0 pl-1">
+        <div class="f1-divider my-2" />
+
+        {/* 3. Sector strip — F1 timing-tower bars: number above, colour bar below */}
+        <div class="flex items-center gap-[3px] shrink-0 px-2.5">
           <For each={activeDelta().sectors}>
             {(sec) => {
-              const style = getSectorStyle(sec.status);
-              const isCurr = () => sec.isCurrent;
+              const colour = () =>
+                sec.status === "purple"
+                  ? "#B055F5"
+                  : sec.status === "green"
+                  ? "#00D26A"
+                  : sec.status === "yellow"
+                  ? "#FFD100"
+                  : "rgba(255,255,255,0.16)";
 
               return (
                 <div
-                  class={`relative flex flex-col items-center justify-center w-10 h-[30px] rounded-[2px] border ${
-                    style.bg
-                  } ${style.border} ${
-                    isCurr() ? "ring-1 ring-inset ring-white/90" : ""
-                  }`}
-                  title={`Sector ${sec.sectorNumber}: ${sec.status.toUpperCase()} ${
-                    sec.deltaSeconds !== undefined ? `(${sec.deltaSeconds > 0 ? "+" : ""}${sec.deltaSeconds.toFixed(2)}s)` : ""
+                  class="flex flex-col items-center justify-center w-[40px]"
+                  title={`Sector ${sec.sectorNumber}: ${sec.status.toUpperCase()}${
+                    sec.deltaSeconds !== undefined
+                      ? ` (${sec.deltaSeconds > 0 ? "+" : ""}${sec.deltaSeconds.toFixed(2)}s)`
+                      : ""
                   }`}
                 >
-                  {/* Sector Number */}
-                  <span class={`text-[11px] font-mono font-black leading-none ${style.text}`}>
-                    S{sec.sectorNumber}
-                  </span>
-
-                  {/* Sector Split/Delta Time */}
-                  <span class={`text-[8px] font-mono font-bold tabular-nums leading-none mt-0.5 ${sec.status === "none" ? "text-white/35" : "text-black/75"}`}>
+                  <span
+                    class={`f1-value text-[9px] ${
+                      sec.status === "none" ? "text-white/30" : "text-white"
+                    }`}
+                  >
                     {sec.deltaSeconds !== undefined
                       ? `${sec.deltaSeconds > 0 ? "+" : ""}${sec.deltaSeconds.toFixed(2)}`
-                      : isCurr()
+                      : sec.isCurrent
                       ? "LIVE"
                       : "—"}
                   </span>
+                  <div
+                    class="w-full h-[5px] mt-1.5"
+                    style={{
+                      background: colour(),
+                      "box-shadow": sec.isCurrent ? `0 0 6px ${colour()}` : undefined,
+                    }}
+                  />
+                  <span class="f1-label mt-1">S{sec.sectorNumber}</span>
                 </div>
               );
             }}

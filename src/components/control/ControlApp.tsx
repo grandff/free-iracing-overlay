@@ -1,4 +1,4 @@
-import { Component, createSignal, Show, For } from "solid-js";
+import { Component, createSignal, createEffect, Show, For } from "solid-js";
 import {
   settings,
   updateSettings,
@@ -31,6 +31,13 @@ import { t, setLanguage, SUPPORTED_LANGUAGES } from "../../i18n/index.ts";
 import { CountryFlag, getCountryInfo } from "../../assets/icons/CountryFlags.tsx";
 import { CarBrandIcon } from "../../assets/icons/CarBrandIcons.tsx";
 import { telemetry } from "../../stores/telemetryStore.ts";
+import {
+  THEME_FONTS,
+  fontStatus,
+  installThemeFont,
+  SETUP_FONTS_COMMAND,
+  type FontStatus,
+} from "../../services/fonts.ts";
 
 export const ControlApp: Component<{ standalone?: boolean }> = (props) => {
   const [activeTab, setActiveTab] = createSignal<"widgets" | "profile" | "theme" | "display" | "shortcuts" | "language">("widgets");
@@ -49,14 +56,36 @@ export const ControlApp: Component<{ standalone?: boolean }> = (props) => {
     { key: "weather" as WidgetKey, name: t().wWeather, category: "Environment", desc: t().wWeatherDesc },
     { key: "multiclassRadar" as WidgetKey, name: t().wMulticlass, category: "Battle", desc: t().wMulticlassDesc },
     { key: "trackMap" as WidgetKey, name: t().wTrackMap, category: "Map", desc: t().wTrackMapDesc },
+    { key: "shiftLight" as WidgetKey, name: t().wShiftLight, category: "Cockpit", desc: t().wShiftLightDesc },
     { key: "telemetryHub" as WidgetKey, name: t().wTelemetryHub, category: "Cockpit", desc: t().wTelemetryHubDesc },
   ];
-
-  const activeCount = () => Object.values(settings.widgets).filter((w) => w.visible).length;
 
   // standalone = this is its own OS window (Tauri "control"), so no backdrop,
   // no fake traffic lights, and no click-outside-to-close. The browser preview
   // keeps the modal-card presentation.
+  // Selecting a theme selects its official typeface, so report whether that face
+  // actually resolved rather than assuming it did.
+  const [fontState, setFontState] = createSignal<FontStatus>(fontStatus(settings.theme));
+  createEffect(() => {
+    const theme = settings.theme;
+    setFontState(fontStatus(theme));
+    document.fonts.ready.then(() => setFontState(fontStatus(theme)));
+  });
+
+  const [fontInstalling, setFontInstalling] = createSignal(false);
+  const [fontError, setFontError] = createSignal<string | null>(null);
+
+  const runFontInstall = async () => {
+    setFontInstalling(true);
+    setFontError(null);
+    const result = await installThemeFont(settings.theme);
+    if (!result.ok) {
+      setFontError(result.faces.filter((f) => !f.ok).map((f) => f.error).join(" · "));
+    }
+    setFontState(fontStatus(settings.theme));
+    setFontInstalling(false);
+  };
+
   const standalone = () => !!props.standalone;
 
   return (
@@ -132,7 +161,7 @@ export const ControlApp: Component<{ standalone?: boolean }> = (props) => {
               }`}
             >
               <Layers class="w-4 h-4 text-[#30d158]" />
-              <span>{t().tabWidgets} ({activeCount()}/13)</span>
+              <span>{t().tabWidgets}</span>
             </button>
 
             <button
@@ -335,7 +364,6 @@ export const ControlApp: Component<{ standalone?: boolean }> = (props) => {
                   <For each={widgetDefinitions()}>
                     {(w) => {
                       const isVis = () => settings.widgets[w.key]?.visible !== false;
-                      const scale = () => Math.round((settings.widgets[w.key]?.scale || 1.0) * 100);
 
                       return (
                         <div class="flex items-center justify-between p-3 rounded-xl bg-[#202025] border border-white/10 hover:border-white/20 transition-all">
@@ -352,7 +380,6 @@ export const ControlApp: Component<{ standalone?: boolean }> = (props) => {
                           </div>
 
                           <div class="flex items-center gap-3">
-                            <div class="text-xs font-mono text-white/50">{scale()}%</div>
                             <button
                               onClick={() => toggleWidgetVisibility(w.key)}
                               class={`px-3 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer ${
@@ -401,6 +428,65 @@ export const ControlApp: Component<{ standalone?: boolean }> = (props) => {
                       </div>
                     </div>
                     <Check class="w-5 h-5 text-[#30d158] stroke-[2.5]" />
+                  </div>
+
+                  {/* Official typeface of the selected theme — real resolved state */}
+                  <div class="px-4 py-3 rounded-xl bg-[#202025] border border-white/10 flex flex-col gap-2">
+                    <div class="flex items-center justify-between gap-3">
+                      <div class="flex items-center gap-2 min-w-0">
+                        <span
+                          class={`w-2 h-2 rounded-full shrink-0 ${
+                            fontState() === "installed" ? "bg-[#30d158]" : "bg-[#ff9f0a]"
+                          }`}
+                        />
+                        <span class="text-xs font-medium text-white truncate">
+                          {THEME_FONTS[settings.theme].label || settings.theme.toUpperCase()}
+                        </span>
+                      </div>
+                      <span
+                        class={`text-[10px] font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                          fontState() === "installed"
+                            ? "bg-[#30d158]/15 text-[#30d158]"
+                            : "bg-[#ff9f0a]/15 text-[#ffd60a]"
+                        }`}
+                      >
+                        {fontState() === "installed"
+                          ? t().fontInstalled
+                          : fontState() === "missing"
+                          ? t().fontMissing
+                          : t().fontThemeUnavailable}
+                      </span>
+                    </div>
+
+                    <Show when={fontState() === "missing"}>
+                      <p class="text-[11px] text-white/55 leading-relaxed">{t().fontMissingHelp}</p>
+                      <button
+                        onClick={runFontInstall}
+                        disabled={fontInstalling()}
+                        class="w-full py-2 rounded-lg bg-[#E10600] hover:bg-[#c00500] disabled:opacity-50 disabled:cursor-wait text-white text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer"
+                      >
+                        {fontInstalling() ? t().fontInstalling : t().fontInstallButton}
+                      </button>
+                      <p class="text-[10px] text-white/35">{t().fontInstallVerified}</p>
+                      <details class="text-[10px] text-white/35">
+                        <summary class="cursor-pointer hover:text-white/60">{t().fontManualAlt}</summary>
+                        <code class="mt-1.5 block bg-black/50 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] font-mono text-[#ffd60a] select-text">
+                          {SETUP_FONTS_COMMAND}
+                        </code>
+                      </details>
+                    </Show>
+
+                    <Show when={fontError()}>
+                      <p class="text-[10px] text-[#ff453a] leading-relaxed break-all">
+                        {t().fontInstallFailed}: {fontError()}
+                      </p>
+                    </Show>
+
+                    <Show when={THEME_FONTS[settings.theme].rightsHolder}>
+                      <p class="text-[10px] text-white/35">
+                        {THEME_FONTS[settings.theme].rightsHolder} · {t().fontRightsNotice}
+                      </p>
+                    </Show>
                   </div>
 
                   {/* Upcoming Themes */}
@@ -559,6 +645,70 @@ export const ControlApp: Component<{ standalone?: boolean }> = (props) => {
                     <p class="text-xs text-white/50 leading-relaxed">
                       {t().centerClampDesc}
                     </p>
+
+                    <Show when={settings.tripleMonitorMode === "center-clamp"}>
+                      <div class="mt-3 pt-3 border-t border-white/10 flex flex-col gap-3" onClick={(e) => e.stopPropagation()}>
+                        {/* 1. Center Monitor Width */}
+                        <div class="flex items-center justify-between">
+                          <div>
+                            <div class="text-xs font-semibold text-white/90">{t().tripleCenterWidthLabel}</div>
+                            <div class="text-[10px] text-white/50">1080p FHD (1920px) / 1440p QHD (2560px)</div>
+                          </div>
+                          <div class="flex items-center gap-1 bg-[#1a1a1e] p-1 rounded-lg border border-white/10">
+                            <button
+                              onClick={() => updateSettings("centerClampWidth", 1920)}
+                              class={`px-2.5 py-1 text-xs rounded font-medium transition-all cursor-pointer ${
+                                settings.centerClampWidth === 1920
+                                  ? "bg-[#0a84ff] text-white font-bold shadow"
+                                  : "text-white/60 hover:text-white"
+                              }`}
+                            >
+                              {t().tripleCenterFHD}
+                            </button>
+                            <button
+                              onClick={() => updateSettings("centerClampWidth", 2560)}
+                              class={`px-2.5 py-1 text-xs rounded font-medium transition-all cursor-pointer ${
+                                settings.centerClampWidth === 2560
+                                  ? "bg-[#0a84ff] text-white font-bold shadow"
+                                  : "text-white/60 hover:text-white"
+                              }`}
+                            >
+                              {t().tripleCenterQHD}
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* 2. Spotter Bezel Anchor */}
+                        <div class="flex items-center justify-between border-t border-white/5 pt-2">
+                          <div>
+                            <div class="text-xs font-semibold text-white/90">{t().bezelSnapLabel}</div>
+                            <div class="text-[10px] text-white/50">{t().wSpotterL} & {t().wSpotterR}</div>
+                          </div>
+                          <div class="flex items-center gap-1 bg-[#1a1a1e] p-1 rounded-lg border border-white/10">
+                            <button
+                              onClick={() => updateSettings("spotterBezelAnchor", "center-bezel")}
+                              class={`px-2.5 py-1 text-xs rounded font-medium transition-all cursor-pointer ${
+                                settings.spotterBezelAnchor === "center-bezel"
+                                  ? "bg-[#0a84ff] text-white font-bold shadow"
+                                  : "text-white/60 hover:text-white"
+                              }`}
+                            >
+                              {t().bezelCenter}
+                            </button>
+                            <button
+                              onClick={() => updateSettings("spotterBezelAnchor", "screen-edge")}
+                              class={`px-2.5 py-1 text-xs rounded font-medium transition-all cursor-pointer ${
+                                settings.spotterBezelAnchor === "screen-edge"
+                                  ? "bg-[#0a84ff] text-white font-bold shadow"
+                                  : "text-white/60 hover:text-white"
+                              }`}
+                            >
+                              {t().bezelEdge}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </Show>
                   </div>
 
                   <div

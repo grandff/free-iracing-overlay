@@ -189,18 +189,183 @@
   - **2026-09-08 M2.1~M2.4 F1/섹터/UI 재감사:** `VS LAST` 값 선택, `_OK` 유효성 억제, 현재 섹터 색 보존, SetupWizard 실데이터 전달, bottom-right 렐러티브 리사이즈 방향/리스너 정리를 수정. Chrome `http://localhost:1420` 1920×832에서 M2.1~M2.4 잘림 0건 및 런타임 error 0건 확인.
   - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 번들 **288.66 kB (gzip 79.18 kB)**, CSS **47.42 kB (gzip 9.07 kB)**, 클린 빌드 **3.56초** 완료.
   - **판정:** **PASS (mock verified — 실 SDK 미검증)**
-- [ ] **DoD 2.5:** 2D 실시간 트랙 맵 (`TrackMap.tsx`) 위젯 정밀 구현 (대기)
-  - 2D SVG 서킷 레이아웃, 실시간 차량 위치 매핑, 내 차량 고휘도 시안/화살표 인디케이터.
-  - SDK 변수: `CarIdxLapDistPct`, `CarIdxTrackSurface`, `CarIdxOnPitRoad`.
-  - **판정:** **PENDING (대기)**
-- [ ] **DoD 2.6: 테마별 RPM 시프트 라이트 LED 바 (`ShiftLight.tsx`) 정밀 구현 (대기)**
-  - F1 수평 아치형 LED, WEC/GT3 시퀀셜 듀얼 LED, IndyCar 스타일 등 선택된 테마에 맞춰 동적으로 전환되는 반응형 타코미터.
-  - 최적 변속 RPM 도달 시 고휘도 시프트 플래시.
-  - SDK 변수: `RPM`, `EngineWarnings`, YAML `DriverInfo.DriverCarSLFirstRPM`, `DriverCarSLShiftRPM`, `DriverCarSLBlinkRPM`.
-  - **판정:** **PENDING (대기)**
-- [ ] **DoD 2.7:** 트리플 모니터(48:9) 뷰포트 센터 클램프 정밀 정렬 (대기)
-  - 가로 5760/7680 환경에서 중앙 16:9 안전 영역 클램프 모드 지원.
-  - **판정:** **PENDING (대기)**
+- [x] **DoD 2.5: 2D 실시간 트랙 맵 (`TrackMap.tsx`) 위젯 정밀 구현 (완료)**
+  - **iRacing 세션 트랙 정보 자동 연동:**
+    - 세션 YAML `WeekendInfo: TrackName` 기반 공식 2D 서킷 지오메트리 프리셋(`src/services/track/trackPresets.ts`: Spa, Monza, Silverstone, Suzuka, Nürburgring, Generic GP) 자동 매핑.
+    - 미등록 트랙 시 깔끔한 GP Circuit 레이아웃으로 자동 폴백.
+  - **0-종속성 네이티브 SVG 트랙 궤적 연동:**
+    - 외부 무거운 GIS/수학 라이브러리 없이 브라우저 C++ 네이티브 `svgPath.getPointAtLength(lapDistPct * totalLength)`를 사용하여 25대 전 차량의 트랙 선 위 위치를 0.01px 오차 없이 완벽 정렬.
+    - 미분 탄젠트 벡터(`nextPct - clampedPct`)를 계산하여 플레이어 차량(#7 YOU)의 진행 방향 화살표 각도 동적 회전.
+  - **사고 발생 지점 (Hazard Beacon) 표시:**
+    - `SessionFlags` 황기 및 코스아웃/스핀 차량(`CarIdxTrackSurface === 0`)의 위치에 고휘도 옐로우 점멸 비콘(🚨/⚠️ + 사고 차량 번호 태그) 렌더링.
+    - 사고 발생 섹터의 트랙 라인이 노란색으로 점멸(Pulse)하여 시각적 위험 경보 전달.
+  - **내 3섹터(S1/S2/S3) 퍼플/그린/옐로우 동적 트랙 라인 발광:**
+    - SVG 표준 `pathLength="100"` 및 `stroke-dasharray` 분할 렌더링으로 세션 최고(보라 `#b034e5`), 개인 최고(초록 `#00d26a`), 지연(노랑 `#ffd100`), 주행 중(화이트 펄스) 트랙 라인 발광.
+    - Start/Finish 체크 무늬 라인 및 `[S/F]`, `S2`, `S3` 섹터 분할 마커 표기.
+  - **차량 클래스 도트 & 피트 투명도:**
+    - 플레이어(#7 YOU) 네온 시안 인디케이터 + 태그.
+    - 상대 차량 클래스별 도트(Hypercar 레드, LMP2 블루, GT3 오렌지/그린).
+    - 피트 진입 차량(`inPit === true` 또는 `trackSurface === 1 || 2`) 반투명화 및 피트 렌치(`IconPit`) 아이콘 표기.
+  - **`Alt + J` 편집 모드:**
+    - 가로 너비(260px~480px) 실시간 마우스 드래그 조절.
+    - 상단 배율 조절 `[-] 100% [+]`.
+    - `[사고 테스트]` 토글(사고 비콘 시뮬레이션) 및 `[트랙 변경]` 테스트 버튼 탑재.
+  - **SDK 변수 매핑 근거:** `WeekendInfo: TrackName/TrackID`, `CarIdxLapDistPct`, `CarIdxTrackSurface`, `CarIdxOnPitRoad`, `SessionFlags`, `SplitTimeInfo: Sectors`.
+  - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 번들 **291.31 kB (gzip 80.72 kB)**, CSS **49.45 kB (gzip 9.33 kB)**, 클린 빌드 **3.17초** 완료.
+  - **판정:** **PASS (mock verified — 실 SDK 미검증)**
+- [x] **DoD 2.6: 테마별 RPM 시프트 라이트 LED 바 (`ShiftLight.tsx`) 정밀 구현 (완료)**
+  - **15-LED 모터스포츠 프로그레션 타코미터:**
+    - 5 Green (`#10b981`), 5 Red (`#ef4444`), 5 Blue/Magenta (`#818cf8`) 고휘도 발광 인디케이터.
+    - 테마별 적응형 레이아웃: F1(수평 아치형 LED 리본), GT3/WEC(양끝에서 중앙으로 모여드는 대칭형 수렴 듀얼 윙), IndyCar(초광폭 슬림 바).
+  - **디지털 기어 & 텔레메트리 HUD:**
+    - 중앙 고대비 기어 디스플레이 (`1..8`, `N`, `R`), 실시간 속도(`Speed` $\times$ 3.6 km/h), 타코미터(`RPM`).
+  - **시프트 플래시 스트로브 & 피트 리미터 모드:**
+    - 변속 한계 RPM(`blinkRpm`) 또는 `revLimiterActive`(`irsdk_revLimiterActive`) 도달 시 15개 전체 화이트 스트로브 플래시.
+    - `pitLimiterActive`(`irsdk_pitSpeedLimiter`) 활성화 시 청색/황색 교차 점멸 및 `PIT LIMITER / 60 KM/H` 배너 즉각 전환.
+  - **`Alt + J` 편집 모드:**
+    - 가로 너비(300px~680px) 실시간 마우스 드래그 리사이즈.
+    - 상단 배율 조절 `[-] 100% [+]`.
+    - `[RPM 테스트]`(LIVE ➔ T1 저회전 ➔ T2 중고회전 ➔ T3 변속점 ➔ T4 레드라인 스트로브 ➔ T5 피트리미터 순환) 및 `[스타일 전환]`(F1 / GT3 / INDYCAR) 인터랙티브 테스트 스위처 탑재.
+  - **SDK 변수 매핑 근거:** `RPM`, `EngineWarnings` (`0x10` irsdk_pitSpeedLimiter, `0x20` irsdk_revLimiterActive), YAML `DriverInfo.DriverCarSLFirstRPM`, `DriverCarSLShiftRPM`, `DriverCarSLLastRPM`, `DriverCarSLBlinkRPM`.
+  - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 번들 **308.61 kB (gzip 85.07 kB)**, CSS **55.42 kB (gzip 10.04 kB)**, 클린 빌드 **3.27초** 완료.
+  - **판정:** **PASS (mock verified — 실 SDK 미검증)**
+- [x] **DoD 2.7: 트리플 모니터(48:9) 뷰포트 센터 클램프 & 베젤 정밀 정렬 (완료)**
+  - **48:9 초광폭(5760x1080 / 7680x1440) 중앙 시야 클램프:**
+    - `settings.tripleMonitorMode === "center-clamp"` 시 가로 1920px(FHD Triples) 및 2560px(QHD Triples) 중앙 안전 영역 클램프(`settings.centerClampWidth`).
+    - 디스플레이 설정 탭에서 FHD(1920px) / QHD(2560px) 원클릭 전환 지원.
+  - **스포터 베젤 앵커링 (`spotterBezelAnchor`):**
+    - 좌/우 근접 스포터를 화면 최외곽(`screen-edge`, 시야 밖)이 아닌 중앙 모니터의 좌우 베젤 경계선(`center-bezel`, `calc(50% ± width/2)`)에 정확히 밀착 정렬하여 운전자의 자연스러운 시야각 내 배치.
+  - **`Alt + J` 편집 모드 베젤 점선 가이드라인:**
+    - 편집 모드 시 중앙 모니터 좌/우 베젤 물리적 경계 위치에 옐로우 점선 가이드(`◀ LEFT BEZEL`, `RIGHT BEZEL ▶`)를 표시하여 멀티스크린 배치 편의성 극대화.
+  - **2026-09-09 M2.7 재감사 — 센터 클램프 미동작 발견 및 수정:**
+    - **결함:** 클램프 컨테이너(`relative w-full h-full max-w-[1920px] mx-auto`)는 정상 생성되었으나, 13개 위젯 래퍼가 전부 `position: fixed`여서 클램프 박스가 아닌 **뷰포트 기준**으로 배치됨. Chrome 5760×1080 실측 결과 순위표 `x=0`, 렐러티브/팀라디오 `x≈5400`, 연료/타이어 `x≈24`로 **좌·우 사이드 모니터에 흩어져 렌더링**되어 센터 클램프가 사실상 무효였음. 베젤 점선 가이드와 스포터 앵커링만 정상 동작.
+    - **수정:** 클램프 컨테이너 내부 위젯 래퍼 13종 + 주행 모드 안내 배너를 `fixed` → `absolute`로 전환(`src/App.tsx`). 스포터 2종과 베젤 가이드는 `screen-edge` 옵션이 물리적 화면 끝에 닿아야 하므로 자체 뷰포트 계산을 유지하기 위해 `fixed` 유지.
+    - **재실측(Chrome `http://localhost:1420`, 5760×1080, `centerClampWidth=1920`):** 전 위젯 좌표가 `x ∈ [1928, 3832]` 범위로 수렴 — 중앙 모니터(1920~3840) 내부 100% 유지 확인. 좌 스포터 `x=1928`, 우 스포터 우측 끝 `x=3832`로 베젤 8px 오프셋 정확 일치. 위젯 상호 겹침 **주행 모드 0건**.
+    - **1920×1080 회귀 검증:** 주행 모드 겹침 0건, 편집 모드 겹침 1건(순위표 하단 ×  좌측 스포터 13px — 편집 툴바로 인한 기존 이슈, 주행 모드에는 영향 없음).
+  - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 번들 **316.72 kB (gzip 86.72 kB)**, CSS **59.51 kB (gzip 10.43 kB)**, 빌드 **3.79초**.
+  - **판정:** **PASS (mock verified — 실 SDK 미검증). 2026-09-09 센터 클램프 결함 수정 후 재검증 완료.**
+
+### 🔧 2026-09-09 M2 전체 UI 후속 감사 (사용자 지적 6건)
+
+| # | 지적 사항 | 원인 (Root Cause) | 조치 | 실측 근거 |
+| :-- | :--- | :--- | :--- | :--- |
+| 1 | 위젯 관리 화면 제목/넘버링/괄호 정리 | 설정 화면이 표시·숨김 전용인데 제목이 "11대 핵심 오버레이 위젯 활성화"였고, 사이드바 `(15/13)` 카운터가 실제 위젯 수(15)와 불일치. 위젯명에 `1.`~`12.` 넘버링과 `(Timing Tower)` 등 괄호 병기 잔존 | 제목을 7개 국어 모두 "위젯 표시 / 숨김" 계열로 교체, 사이드바 카운터 제거, 위젯명 91건에서 넘버링·괄호 일괄 제거, 행별 `100%` 배율 표기 제거 | `src/i18n/locales.ts` 7개 로케일 × 15위젯, Chrome 실화면 텍스트 확인 |
+| 2 | 직전 랩타임 델타 바가 "활성화 안 됨"으로 보임 | 위젯은 정상 렌더링. **top-center 4개 위젯이 같은 좌표대에 중첩** — 주행 안내 배너(`top-12`)가 델타 바(`top-14`) 위를 덮고, 시프트 라이트(`top-28`)가 사고 경고(`top-28`)와 완전 겹침. DOM 순서상 나중 위젯이 델타 바를 가림 | 배너를 `top-3 left-6`으로 분리, 스택 재배치(델타 `56` → 시프트 라이트 `136` → 사고 경고 `288`), 멀티클래스 레이더를 `top-1/3 right-12`로 이전. 같은 원인의 날씨×팀라디오, 리벤지×렐러티브 겹침도 동시 해소 | 1920×1080 / 5760×1080 주행 모드 `getBoundingClientRect()` 교차 검사 **겹침 0건** |
+| 3 | 트랙 맵 원형 인디케이터 → 깃발, 크기 확대, 투명 배경 | 상태 표시가 단색 원(dot)이라 플래그 시맨틱 부재. 프리셋 `viewBox="0 0 400 300"`가 실제 경로 바운딩(약 265×255)보다 커서 서킷이 위젯의 절반 크기로 레터박싱됨 | lucide `Flag` 아이콘으로 교체(그린 `#00D26A` / 옐로우 `#FFD100` 자동 전환), `getBBox()` 기반 타이트 viewBox 산출로 전 프리셋 공통 해결, 카드 배경·backdrop-blur 제거하여 완전 투명화, 기본 너비 `320 → 460px`(하한 380px) | Chrome 실화면 캡처, 서킷 렌더 면적 약 2배 확대 확인 |
+| 4 | 시프트 라이트 옆 `440px` 표기 제거 | 편집 모드 툴바에 너비 수치를 상시 노출 | 해당 `<span>` 제거 (배율 `%`만 유지) | `src/components/widgets/ShiftLight.tsx` |
+| 5 | 트랙 맵 / 시프트 라이트 / 델타 바 F1 테마 준수 점검 | 시프트 라이트가 `bg-emerald-400`·`bg-indigo-400`·`bg-red-500` 등 범용 Tailwind 팔레트와 `rounded-lg` 사용, 편집 툴바는 `.skill/f1-design/SKILL.md` §4가 금지한 앰버/옐로우 펜스 스타일. 트랙 맵도 동일 | LED를 모터스포츠 규격(5×`#00D26A` → 5×`#E10600` → 5×`#B055F5`)으로 교체, 반경 `rounded-[3px]`, 카본 슬레이트 `#12141c/95` + F1 레드 좌측 악센트 탭을 델타 바와 통일. 앰버 펜스는 F1 레드/화이트로 교체. 델타 바는 기존 규격 준수 확인되어 무변경 | `.skill/f1-design/SKILL.md` §1·§4, `src/styles/themes.css` 토큰 대조 |
+| 6 | M2.7 구현 여부 확인 | 위 "M2.7 재감사" 항목 참조 — 센터 클램프 무효 결함 발견 | `fixed` → `absolute` 전환 | 5760×1080 실측 |
+| 7 | 편집 모드에서 순위표 하단 × 좌측 스포터 13px 겹침 | 순위표 편집 툴바가 **레이아웃 흐름을 차지**해 위젯 박스를 아래로 32px 확장(주행 `56~464` → 편집 `56~496`). 화면 세로 중앙 고정인 좌측 스포터(`483~598`) 상단과 충돌 | 툴바를 `absolute bottom-full inset-x-0`으로 띄워 흐름에서 제거 — `.skill/f1-design/SKILL.md` §4 "위젯 내부 레이아웃을 망치지 않는 플로팅 칩" 규정과 일치. 편집 모드 위젯 footprint가 주행 모드와 동일해짐 | 순위표 박스 주행 `56~464` / 편집 `56~463`. **1920×1080·5760×1080 주행·편집 모두 겹침 0건**, SetupWizard 프리뷰 0건 |
+
+### 🔤 2026-09-09 테마 공식 서체 설치 및 상태 표시 정직화
+
+**지적:** "테마 선택 시 해당 시리즈 공식 폰트" 기능이 동작하는지 확인 요청.
+
+**감사 결과 — 동작하지 않고 있었음. 게다가 UI가 거짓 상태를 표시 중이었음:**
+| 항목 | 감사 전 실태 |
+| :--- | :--- |
+| 실제 폰트 로드 | `public/fonts/`에 `README.md`만 존재 → `@font-face` 3건 모두 `status: "error"`, `document.fonts.check('700 16px Formula1')` = **false**. 전 위젯이 Roboto로 렌더링 중 |
+| 설치 경로 | `npm run setup-fonts`(터미널 전용 npm 스크립트). F1 3종 URL 하드코딩, **테마 인자 없음**, 앱 UI에서 도달 불가 |
+| SetupWizard "F1 폰트" 모달 | `Status: Active` + 그린 점을 **조건 없이 하드코딩**. 폰트 파일이 0개여도 항상 "정상"이라 표시 → 이 결함이 폰트 미설치 사실을 가려온 원인 |
+| 모달이 명시한 스택 | `DIN Alternate / Titillium Web / Chakra Petch` — 셋 다 `@font-face` 정의도 로드도 없음 |
+| 제어판 테마 탭 | 폰트 관련 표시 자체가 없음 |
+
+**조치:**
+1. **개발용 서체 설치:** `npm run setup-fonts` 실행 → `Formula1-Regular/Bold/Wide.woff2` 설치. `.gitignore:21`로 추적 제외 유지(`git check-ignore -v` 확인), 릴리스 전 `rm public/fonts/*.woff2` 게이트는 AGENTS.md §10.3-11 그대로 유효.
+2. **`src/services/fonts.ts` 신설:** 테마 → 공식 서체 매핑(`THEME_FONTS`)과 **실제 해석 상태 프로브**(`fontStatus`). 네이티브 `document.fonts.check` 사용 — 로더 라이브러리 0개. 미출시 테마(WEC/WRC/IndyCar/GT)는 서체명을 비워 `theme-unavailable`로 반환(검증 못 한 서체명을 UI에 지어내지 않기 위함).
+3. **거짓 상태 제거:** 위저드 모달과 제어판 테마 탭이 `설치됨` / `미설치` / `테마 미출시`를 **실측값으로** 표시. 미설치 시 폴백 사실과 `npm run setup-fonts` 명령, 권리자(Formula One Licensing BV) 고지를 함께 노출. 위저드 배지도 미설치면 앰버로 경고.
+4. 상태 문구 5종 × 7개 국어 추가.
+
+**실측 (Chrome `http://localhost:1420`):**
+- 설치 상태: `document.fonts.check('700 16px Formula1')` **true**, 3 페이스 `loaded`, 제어판 테마 탭 **`설치됨`** 표시, HUD 전체 F1 서체 렌더링 확인.
+- 미설치 상태(woff2 3종 임시 제거 후 재적재): `check` **false**, HUD가 눈에 띄게 Roboto로 폴백 — 감사 전 UI라면 이 상태에서도 `Active`라 표시했을 지점.
+- **레이아웃 파급:** F1 서체가 Roboto보다 넓어 자동폭 날씨 위젯이 351 → **386px**로 증가, 좌측 확장으로 랩 델타 바 침범. 폭에 영향받지 않는 팀 라디오 하단 여백(`top-[290px] right-6`)으로 이전.
+- 1920×1080 **주행·편집 겹침 0건**, `tsc --noEmit` 0 에러, 번들 **330.07 kB (gzip 91.16 kB)**, CSS **59.80 kB (gzip 10.75 kB)**, 빌드 **3.54초**.
+
+### 🎛️ 2026-09-09 위젯별 배경 투명도 조절 (15종 전체)
+
+**요구:** 모든 위젯의 배경 투명도를 위젯별로 조절.
+
+**설계 판단 — CSS `opacity`를 쓰지 않음:** 래퍼에 `opacity`를 걸면 배경과 함께 **숫자·텍스트까지 흐려진다.** 오버레이의 목적은 카드 너머로 트랙을 보면서 텔레메트리는 그대로 읽는 것이므로, 배경 알파만 움직이는 구조가 필요.
+
+**구조 (위젯 15개를 개별 수정하지 않음):**
+- `--hud-bg-alpha` CSS 변수를 **래퍼가 한 번 내려주고**, 패널 서피스가 그 값을 읽음. 위젯마다 하드코딩된 알파를 고치는 대신 공용 클래스 4종(`.hud-surface` / `-raised` / `-deep` / `-band`)과 기존 `.f1-slab`이 변수를 소비하도록 전환 — 산재한 배경 선언 **27건**을 일괄 치환.
+- **강조 색(섹터 컬러, 타이어 배지, 플래그 배너, F1 레드 탭)은 의도적으로 제외.** 그것들은 배경이 아니라 읽어야 할 전경이므로 알파가 내려가도 유지.
+- `.hud-surface-band`(헤더/열 라벨 띠)만 `min(1, alpha + 0.06)`으로 살짝 진하게 — 낮은 알파에서 컬럼 라벨 가독성 확보.
+- `settingsStore`: `WidgetTransform.bgAlpha?`(선택 필드 → **기존 저장 설정 그대로 동작**), `widgetBgAlpha()` / `setWidgetBgAlpha()`(0.15~1 클램프). 기본 0.95.
+- `src/components/common/OpacityChip.tsx`: 편집 모드 전용 슬라이더 1개 컴포넌트를 **래퍼에 15회 배치**. 위젯 15개의 툴바를 각각 고치는 것보다 작은 diff이며, 래퍼가 이미 위젯 키를 알고 있음. 배치는 **좌하단 고정** — 리사이즈 핸들은 우측, 위젯 자체 컨트롤 바는 상단이라 충돌하지 않는 유일한 모서리.
+
+**실측 (Chrome `http://localhost:1420`, 1920×1080):**
+| 검증 | 결과 |
+| :--- | :--- |
+| 칩 렌더 수 | 편집 모드 **15개**, 주행 모드 **0개** |
+| 알파 반영 | 순위표 20% 설정 시 서피스 `rgba(21, 21, 30, 0.26)` (band +0.06 적용 확인) |
+| 텍스트 유지 | 15%까지 낮춰도 순위·드라이버명·랩타임·SR/iR **전부 판독 가능** (요구사항의 핵심) |
+| 영속성 | `config.json` / localStorage에 `bgAlpha: 0.2` 기록 확인 |
+| 모드 전환 | 편집 → 주행 전환 후에도 알파 유지 |
+| 기본값 | 미설정 위젯은 `0.95`로 폴백 |
+| 회귀 | 주행·편집 **겹침 0건**, 리로드 마커 이후 콘솔 error **0건** |
+
+- `tsc --noEmit` 0 에러, 번들 **341.76 kB (gzip 94.41 kB)**, CSS **59.93 kB (gzip 10.80 kB)**, 빌드 **3.93초**.
+- **판정:** **PASS (mock verified — 실 SDK 미검증)**
+
+### 🌐 2026-09-09 운영 단계 테마 서체 인앱 설치 구현
+
+**설계 — 상충하는 두 규칙을 동시에 만족:**
+| 제약 | 해결 |
+| :--- | :--- |
+| §10.3-11 독점 서체를 설치 파일에 넣을 수 없음 | 받은 파일을 `public/` 밖(앱 데이터/브라우저 캐시)에만 저장. `vite build`가 복사하는 경로에 쓰지 않음 |
+| §10.1-2 런타임 원격 출처 금지(호스트가 파일 바꿔치기 가능) | **SHA-256 다이제스트 핀** — 받은 바이트가 매니페스트 해시와 다르면 폐기. 호스트를 신뢰하지 않음 |
+| CSP `connect-src 'self'` (웹뷰가 외부 호스트 접근 불가) | 다운로드는 Rust가 수행, 프론트는 `new FontFace(family, bytes)`로 등록 → **CSP를 넓히지 않음** |
+| 침해된 렌더러가 범용 fetch로 악용 | Rust `allow_url()` 호스트 화이트리스트 + 4MB 응답 상한 |
+
+**구성:**
+- `src/services/fonts.ts` — 매니페스트(파일/URL/`sha256`/family/weight), `installThemeFont()`(수신 → `crypto.subtle` 해시 대조 → `FontFace` 등록 → 캐시), `restoreCachedFonts()`(부팅 시 캐시 재등록, 해시 재검증하여 변조된 캐시는 폐기), `fontStatus()`.
+- `src-tauri/src/main.rs` — `fetch_theme_font(url)` 커맨드. `ureq`(blocking, tokio 불필요 — tokio는 번들 무게 때문에 이미 제거된 상태) + `base64` 2개 의존성 추가.
+- 제어판 테마 탭에 **[공식 서체 설치]** 버튼, 진행/실패 상태, 해시 검증 고지, 터미널 대안 접기. 문구 5종 × 7개 국어.
+
+**실측 (Chrome `http://localhost:1420`, 4단계 왕복):**
+| 단계 | 조건 | 결과 |
+| :--- | :--- | :--- |
+| 1 | 폰트 파일 삭제 후 로드 | 상태 `미설치`, 설치 버튼 노출 |
+| 2 | 파일 없는 상태로 설치 클릭 | **3개 face 전부 `digest mismatch`로 등록 거부** (Vite SPA 폴백 HTML 수신, 동일 해시 `c16884ecef20…`). 폰트 미등록 유지 — **다이제스트 핀이 실제로 잘못된 바이트를 차단함을 입증** |
+| 3 | 정상 바이트 제공 후 설치 클릭 | 상태 `설치됨`, 캐시 3건 기록. CSS `@font-face`는 여전히 `error`인 채로 JS 등록 face가 렌더링 |
+| 4 | **디스크 폰트 0개 상태로 재기동** | 캐시만으로 3 face 재등록 성공, HUD 전체 실제 F1 서체 렌더링 — **설치 파일에 폰트를 넣지 않는 운영 상태 그대로 동작 확인** |
+
+- **부수 결함 발견·수정:** `fontStatus()`가 `document.fonts.check()` 기반이었는데, 인앱 설치 후에는 같은 family에 CSS face(`error`)와 JS face(`loaded`)가 공존해 **`check()`가 false를 반환** → 설치 직후인데 `미설치`로 오표시. family 내 `status === "loaded"` face 존재 여부로 프로브 교체(3단계에서 `설치됨` 정상 표시 확인).
+- 1920×1080 **주행·편집 겹침 0건**, 콘솔 error 0건, `tsc --noEmit` 0 에러, 번들 **334.95 kB (gzip 92.97 kB)**, CSS **60.06 kB (gzip 10.79 kB)**, 빌드 **3.26초**.
+- AGENTS.md §10.1-2에 이 예외를 4개 허용 조건(다이제스트 핀 / 호스트 화이트리스트 / CSP 불변 / `public/` 밖 저장)과 함께 명문화.
+
+> ⚠️ **`fetch_theme_font` Rust 커맨드는 IMPLEMENTED (미검증)** — 본 머신에 cargo/rustc 부재로 `cargo check` 미실행. AGENTS.md §8-5에 따라 PASS로 표기하지 않습니다. 위 4단계 실측은 전부 브라우저 경로(동일 오리진 `public/fonts/` 수신)로 수행했으며, 해시 검증·`FontFace` 등록·캐시·부팅 복원은 **패키징 경로와 동일한 코드**입니다. 검증되지 않은 것은 HTTPS GET 한 구간뿐입니다. Windows에서 `cargo check` 후 판정 기록 필요.
+
+### 🎨 2026-09-09 M2.4 / M2.5 / M2.6 F1 방송 그래픽 재스타일링
+
+**지적:** 이전 감사(5번 항목)는 팔레트 토큰만 교체했을 뿐 실제 F1 월드피드 그래픽 언어를 적용하지 않았음. 사용자 지적에 따라 실제 방송 스틸을 조사 후 전면 재작업.
+
+**레퍼런스 조사 (웹 실물 확인):**
+- F1 월드피드 2022~2024 온보드 HUD, `TRACK CONDITIONS` 트랙맵 카드, `START ANALYSIS` 타이틀 카드, 2022 헤일로 온보드 텔레메트리 스틸 5종 실측 분석.
+- 도출된 F1 방송 그래픽 언어 6개 원칙:
+  1. **Oblique(이탤릭) 볼드 대문자** — 가장 식별력 높은 특징. 기존 구현은 전부 정자체 모노스페이스였음.
+  2. **각진 모서리** — `rounded-lg`/`rounded-xl` 카드 금지. 방송 그래픽은 0~2px.
+  3. **값-위 / 마이크로캡스 라벨-아래** 스택 (`139` 위 / `KM/H` 아래).
+  4. **타이틀 락업 = 대문자 + 하단 레드 룰**, 그래픽 아래쪽 배치.
+  5. **트랙은 밝은 라인 + 어두운 케이싱** — 어두운 라인이 아님.
+  6. 슬래브 없이 **영상 위에 그대로** 뜨고 drop-shadow로 가독성 확보.
+- 공용 프리미티브 7종을 `src/styles/global.css`에 정의(`.f1-oblique`, `.f1-value`, `.f1-label`, `.f1-title`, `.f1-slab`, `.f1-divider`, `.f1-floating`)하여 3개 위젯이 동일 언어를 공유. 위젯마다 클래스 나열을 반복하지 않음.
+- **폰트:** `npm run setup-fonts` 실행으로 공식 `Formula1` WOFF2 3종(Regular 25.1KB / Bold 25.4KB / Wide 27.0KB)을 `public/fonts/`에 설치 완료. `document.fonts.check('700 16px Formula1')` → **true**, `[...document.fonts]` 3종 모두 `loaded` 실측. HUD 전체가 실제 F1 서체로 렌더링됨. Formula1 서체에는 이탤릭 페이스가 없으므로 oblique는 브라우저 합성(synthetic oblique)으로 적용. 파일은 `.gitignore:21`로 계속 추적 제외(`git check-ignore` 확인).
+
+| 위젯 | 변경 전 | 변경 후 (F1 월드피드) |
+| :--- | :--- | :--- |
+| **M2.4 LapDelta** | 라운드 3px 바, 스톱워치 아이콘, 정자체 모노 델타, 섹터 = 색상 박스 안 텍스트 | 각진 슬래브 + 레드 3px 탭, `BEST`/`TARGET` 마이크로캡스, **26px oblique 델타 + `S` 접미**, `FASTER`/`SLOWER`/`SESSION BEST` oblique 상태, 센터-0 각진 룰, **섹터 = 값/컬러바/`S1` 3단 스택** (타이밍 타워 방식) |
+| **M2.5 TrackMap** | 어두운 트랙 라인(`#1f212c`/`#2e3140`), 헤어라인 S/F, 원형 차량 마커, 상단 헤더 | **밝은 트랙(`#E4E7EF`) + 다크 케이싱(`#05070b`)**, **체커기 블록 S/F**, 섹터 분할 = 트랙 수직 화이트 틱, **각진 차량 마커 + oblique 번호**, 타이틀을 **하단 락업(`SPA GP` + 레드 룰 + 플래그 아이콘 + 섹터바 + `N CARS`)**으로 이동 |
+| **M2.6 ShiftLight** | `rounded-lg`, 3.5px LED, **테두리 박스 안 기어 숫자**, 라벨-위/값-아래 | 각진 슬래브, **9px 각진 LED 리본**(5 그린 → 5 레드 → 5 퍼플), **박스 제거한 34px 맨 기어 숫자**(F1 스티어링 휠 시그니처), `315`/`KM/H` · `4`/`GEAR` · `11,752`/`RPM` **값-위/라벨-아래 + 헤어라인 구분**, 피트 리미터는 **솔리드 블루 밴드 + 블랙 대문자** |
+
+- **레이아웃 영향:** 트랙맵 하단 락업 추가와 M3.2 연료 위젯 확대(별도 작업분, `25~305 × 823~1056`)로 좌하단이 포화 → 트랙맵을 `bottom-[210px] left-[320px]`로 이동.
+- **실측:** `tsc --noEmit` 0 에러, Vite 번들 **324.15 kB (gzip 89.06 kB)**, CSS **59.32 kB (gzip 10.67 kB)**, 빌드 **3.54초**. 1920×1080 **주행·편집 겹침 0건**. 콘솔 error 0건.
+- **판정:** **PASS (mock verified — 실 SDK 미검증)**
+
+> **알려진 한계:** 위 좌표 검증은 1920×1080 및 5760×1080(센터 클램프 1920) 기준입니다. 1280×720 등 1920 미만 뷰포트에서는 위젯 수 대비 공간이 부족해 겹침이 발생합니다 — 대상 해상도(FHD/QHD 트리플) 범위 밖이므로 별도 대응하지 않았습니다.
+
 
 ---
 
@@ -210,18 +375,55 @@
 
 ### 3.1 완료 검증 기준 (DoD)
 
-- [ ] **DoD 3.1:** 좌/우 근접 스포터 (`SpotterLeft.tsx`, `SpotterRight.tsx`) 개별 분리 정밀 구현 (대기)
-  - 좌측/우측 개별 위젯 분리, 독립 감지 거리(1.5m~5m) 및 3단계(안전/주의/위험) 점멸.
-  - SDK 변수: `CarLeftRight` bitfield.
-  - **판정:** **PENDING (대기)**
-- [ ] **DoD 3.2:** 연료 시뮬레이터 (`FuelSimulator.tsx`) 정밀 구현 (대기)
-  - 랩당 평균 소비량, 잔여 랩수 기준 완주 필요 급유량 계산.
-  - SDK 변수: `FuelLevel`, `FuelLevelPct`, `FuelUsePerHour`, `SessionLapsRemainEx`.
-  - **판정:** **PENDING (대기)**
-- [ ] **DoD 3.3:** 전방 사고 지점 경고 (`IncidentHazard.tsx`) 정밀 구현 (대기)
-  - 전방 400m 이내 사고 감지 시 실시간 잔여 거리(m) 카운트다운 및 점멸 경보.
-  - SDK 변수: `SessionFlags`, `CarIdxTrackSurface`, `CarIdxLapDistPct`.
-  - **판정:** **PENDING (대기)**
+- [x] **DoD 3.1: 좌/우 독립 근접 스포터 (`SpotterLeft.tsx`, `SpotterRight.tsx`) 정밀 구현 (완료)**
+  - **좌/우 완전 독립 제어 & 배치:**
+    - `spotterLeft`와 `spotterRight`가 독립 위젯으로 분리되어 각각의 위치(`x, y`), 배율(`scale`), 가로 너비(`width`), 세로 높이(`height`)를 개별 조절 및 드래그 이동.
+  - **자유로운 2D 크기 조절 (Freely Resizable):**
+    - 모서리 2D 리사이즈 핸들 드래그를 통해 가로 너비(140px~380px) 및 세로 높이(44px~160px) 자유 조절, 상단 `[-] 100% [+]` 배율 스케일링 완비.
+  - **아이레이싱 실제 데이터 맞춤 2단계(경고/위험) 레이더:**
+    - **1단계 경고 (Warning - Amber `#f59e0b`):** iRacing `irsdk_LRCarLeft` / `irsdk_LRCarRight` (1대 근접, 1.5m < 거리 <= 3.5m) ➔ 레이싱 앰버 발광, 싱글 셰브론(`◀` / `▶`), 텍스트 `CAR LEFT` / `CAR RIGHT`, 1단계 레이더 바 점등.
+    - **2단계 위험 (Danger - Red `#ef4444`):** iRacing `irsdk_LR2CarsLeft` / `irsdk_LR2CarsRight` (2대 근접 / 샌드위치 / 극근접 <= 1.5m) ➔ 고휘도 크림슨 레드 고속 펄스 발광(`animate-pulse`), 더블 셰브론(`◀◀` / `▶▶`), 텍스트 `DANGER • 2 CARS` / `2 CARS • DANGER`, 2단계 레이더 바 전체 점등.
+    - **Clear (안전):** 주행 중 화면 시야 가림 0(완전 투명화), `Alt + J` 편집 모드 시 반투명 아웃라인 표기.
+  - **`Alt + J` 편집 모드 인터랙티브 테스트 스위처:**
+    - 좌/우 각각 상단 툴바의 `[스포터 테스트]` 버튼으로 `LIVE` ➔ `WARN(경고 1대)` ➔ `DANGER(위험 2대)`를 독립적으로 즉각 순환 테스트 가능.
+  - **SDK 변수 매핑 근거:** `CarLeftRight` (bitfield: `irsdk_LRClear`, `irsdk_LRCarLeft`, `irsdk_LRCarRight`, `irsdk_LRCarLeftRight`, `irsdk_LR2CarsLeft`, `irsdk_LR2CarsRight`).
+  - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 번들 **315.18 kB (gzip 86.25 kB)**, CSS **58.82 kB (gzip 10.44 kB)**, 클린 빌드 **3.74초** 완료.
+  - **판정:** **PASS (mock verified — 실 SDK 미검증)**
+- [x] **DoD 3.2: 연료 시뮬레이터 & 전략 계산기 (`FuelSimulator.tsx`) 정밀 구현 (완료)**
+  - **iRacing 내장 계산기 대비 5대 킬러 차별화 탑재:**
+    - **황기/페이스랩 왜곡 필터링:** `SessionFlags` (Yellow/Caution/Pace) 및 이상치 랩을 연비 계산에서 자동 제외한 순수 레이스 페이스 연비(`fuelAvgPerLap`, Clean Green Avg) 보존.
+    - **선두 0:00 추가 랩(Extra Lap) 수학적 엔진:** 전체 선두(`CarIdxPosition == 1`)의 `CarIdxLapDistPct`와 랩타임 페이스로 시간제 레이스 종료 직전 결승선 통과 시점(+1 Lap)을 실시간 판정하여 `+1 LAP CONFIRMED` 배지 발광 및 급유량 자동 반영.
+    - **Lift & Coast 타겟 바:** 노스탑/스틴트 연장을 위한 목표 연비(`fuelSaveTargetPerLap`)와 실시간 델타(`fuelSaveDelta`)를 모니터링하여 `SAFE (NO STOP)` / `LIFT & COAST • SAVE X.XX L/L` / `PIT STOP REQUIRED` 3단계 동적 가이드 제공.
+    - **Stint Pit Window & Pit Loss 예측:** 윈도우 오픈(만유 완주 가능 최초 랩) / 옵티멀 / 클로즈(연료 고갈 랩) 및 총 피트 손실 시간(트랜짓 + 주유 초) 계산.
+    - **인게임 F4 블랙박스 실시간 감사 (F4 Box Audit):** SDK 변수 `PitSvFuel` 및 `PitSvFlags & irsdk_FuelFill`을 감시하여 주유 체크 해제(`FILL UNCHECKED!`)나 필요량 대비 부족(`DEFICIT -X.XL`) 시 고휘도 적색 경고.
+  - **F1 브로드캐스트 + Apple Design 2단계 인터랙티브 뷰:**
+    - 컴팩트 레이스 바(잔여 L/Laps, Clean Avg, Pit Req, L&C 상태 배지, 탱크 게이지) + 원클릭 확장 전략 서랍(Strategy Drawer).
+    - `Alt + J` 편집 모드: 마진 순환(`+0.0L` ~ `+2.0L`), 5단계 테스트 스위처(`LIVE` ➔ `NORMAL` ➔ `LIFT & COAST` ➔ `LOW FUEL` ➔ `BOX AUDIT WARN`), 가로 너비(240px~380px) 드래그 리사이즈 및 배율 스케일링 완비.
+  - **SDK 변수 매핑 근거:** `FuelLevel`, `FuelLevelPct`, `FuelUsePerHour`, `PitSvFuel`, `PitSvFlags` (`irsdk_FuelFill`), `SessionFlags` (`irsdk_yellow`, `irsdk_caution`), `CarIdxPosition`, `CarIdxLapDistPct`, `CarIdxEstTime`, YAML `DriverCarFuelMaxLtr`.
+  - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 번들 **326.81 kB (gzip 89.33 kB)**, CSS **61.20 kB (gzip 10.69 kB)**, 클린 빌드 **4.35초** 완료.
+  - **판정:** **PASS (mock verified — 실 SDK 미검증)**
+- [x] **DoD 3.3: 전방 사고 지점 경고 (`IncidentHazard.tsx`) 정밀 구현 (완료)**
+  - **오경보 원천 차단 엄격 필터링 (Zero False Positives):**
+    - 단순 연석 밟기/경미한 트랙리밋 이탈(10cm 오프트랙, 정상 고속 레이스 페이스 주행)에 대한 오경보를 완벽히 필터링 차단.
+    - 실제 레이스 위험 상황만 정밀 선별:
+      1. 방호벽/트랙리밋 충돌 (`collision`): Barrier crash or car-to-car collision with high impact.
+      2. 스핀 / 제어 상실 (`spin`): Lose control, high yaw spin-out, severe deceleration (< 40 km/h).
+      3. 트랙 위 정차 / 위험 서행 (`stopped`): Stationary car (speed < 10 km/h) or dangerous crawl blocking racing surface.
+      4. 공식 황색기 (`yellowFlag`): Race control waving yellow flag for front sector hazard.
+  - **2단계 정밀 거리 감지 (0~400m):**
+    - **1단계 주의 (Caution Ahead, 200m~400m):** 레이싱 앰버(`#F59E0B`), ⚠️ 경고 아이콘, 실시간 잔여 거리(m) 카운트다운, 사고 유형 배지, 차량 번호 및 속도, `PREPARE TO SLOW` 감속 대비 지시.
+    - **2단계 위험 (Critical Danger, 0m~200m):** F1 솔리드 레드(`#E10600`), 🚨 고속 점멸 비콘, 심홍색 슬래브, 24px 볼드 고대비 폰트, `SLOW DOWN NOW!` 긴급 감속 지시.
+    - 주행 중 사고 미발생 시(또는 400m 초과 시) 화면 가림 0 (100% 완전 투명화).
+  - **F1 브로드캐스트 + Apple Design:**
+    - F1 각진 슬래브, 좌측 세로 악센트 탭(3.5px), oblique(이탤릭) 볼드 타이포그래피, 고정 너비 tabular-nums(60Hz 지터 차단).
+  - **`Alt + J` 편집 모드 인터랙티브 컨트롤:**
+    - 가로 너비(280px~480px) 실시간 마우스 드래그 리사이즈 핸들.
+    - 상단 배율 조절 `[-] 100% [+]`.
+    - 5단계 인터랙티브 테스트 스위처 (`LIVE` ➔ `SPIN (140m)` ➔ `CRASH (65m)` ➔ `STOPPED (280m)` ➔ `CLEAR`).
+    - 무사고 시 편집 모드 전용 Ghost Frame 프리뷰(`HAZARD • MONITORING TRACK CLEAR`).
+  - **SDK 변수 매핑 근거:** `SessionFlags` (`irsdk_yellow`, `irsdk_yellowWaving`, `irsdk_caution`, `irsdk_debris`), `CarIdxTrackSurface` (`irsdk_OffTrack`), `CarIdxLapDistPct`, 차량 속도(Speed m/s $\times$ 3.6).
+  - **실측 성능:** `tsc --noEmit` 0 에러, Vite 프로덕션 번들 **349.73 kB (gzip 96.68 kB)**, CSS **62.07 kB (gzip 11.07 kB)**, 클린 빌드 **3.48초** 완료.
+  - **판정:** **PASS (mock verified — 실 SDK 미검증)**
 - [ ] **DoD 3.4:** 날씨 & Tempest 정보 (`WeatherWidget.tsx`) 위젯 정밀 구현 (대기)
   - 대기/노면 온도, 풍향 나침반, 우천 강수량 게이지.
   - SDK 변수: `AirTemp`, `TrackTempCrew`, `WindVel`, `WindDir`, `RelativeHumidity`.

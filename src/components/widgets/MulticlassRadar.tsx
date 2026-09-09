@@ -24,7 +24,7 @@ export const MulticlassRadar: Component<Props> = (props) => {
     <div class="relative flex flex-col font-sans select-none w-[280px] shadow-2xl">
       <Show when={editPresence.mounted()}>
         <div
-          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
+          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 hud-surface-raised border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
             editPresence.visible() ? "is-visible" : "is-hidden"
           }`}
         >

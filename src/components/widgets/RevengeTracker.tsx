@@ -27,7 +27,7 @@ export const RevengeTracker: Component<Props> = (props) => {
     <div class="relative flex flex-col font-sans select-none w-[260px] shadow-2xl">
       <Show when={editPresence.mounted()}>
         <div
-          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
+          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 hud-surface-raised border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
             editPresence.visible() ? "is-visible" : "is-hidden"
           }`}
         >
@@ -50,7 +50,7 @@ export const RevengeTracker: Component<Props> = (props) => {
         </div>
       </Show>
 
-      <div class="bg-[#12131a]/95 border border-red-500/30 rounded-lg overflow-hidden shadow-2xl">
+      <div class="hud-surface border border-red-500/30 rounded-lg overflow-hidden shadow-2xl">
         <div class="flex items-center justify-between bg-red-950/60 border-b border-red-500/30 px-3 py-1.5 text-red-200">
           <div class="flex items-center gap-1.5">
             <IconCrosshair size={14} class="text-red-400" />

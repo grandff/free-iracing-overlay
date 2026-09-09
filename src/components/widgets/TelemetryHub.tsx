@@ -40,7 +40,7 @@ export const TelemetryHub: Component<Props> = (props) => {
     <div class="relative flex flex-col font-sans select-none w-[310px] shadow-2xl">
       <Show when={editPresence.mounted()}>
         <div
-          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
+          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 hud-surface-raised border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
             editPresence.visible() ? "is-visible" : "is-hidden"
           }`}
         >
@@ -63,7 +63,7 @@ export const TelemetryHub: Component<Props> = (props) => {
         </div>
       </Show>
 
-      <div class="bg-[#12131a]/95 border border-white/15 rounded-lg overflow-hidden shadow-2xl p-2.5">
+      <div class="hud-surface border border-white/15 rounded-lg overflow-hidden shadow-2xl p-2.5">
         <div class="flex items-center justify-between mb-1.5">
           <div class="flex items-baseline gap-1">
             <span class="text-3xl font-mono font-black text-white tabular-nums tracking-tighter">{speed()}</span>

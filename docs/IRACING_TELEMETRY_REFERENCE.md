@@ -558,7 +558,7 @@ M2~M4 구현 시 이 표의 변수명을 그대로 `src/services/telemetry/types
 | 8 | **전방 사고 경고** | `SessionFlags`(`irsdk_yellow`/`yellowWaving`/`debris`), `CarIdxTrackSurface`(`irsdk_OffTrack`), `CarIdxLapDistPct`, `LapDistPct` | 전방 거리 = (상대 `LapDistPct` − 내 `LapDistPct`) × 트랙 길이 |
 | 9 | **날씨 & 트랙** | `AirTemp`, `TrackTempCrew`, `WindVel`, `WindDir`, `Skies`, `RelativeHumidity`, `FogLevel`, `WeatherType` | `TrackTemp`은 deprecated → `TrackTempCrew` 사용. `WindDir`은 **라디안** |
 | 10 | **멀티클래스 접근 경고** | `CarIdxClass`, `PlayerCarClass`, `CarIdxEstTime`, `SessionFlags`(`irsdk_blue`) | 상위 클래스 판정 후 `EstTime` 차 < 3초면 경보 |
-| 11 | **2D 트랙 맵** | `CarIdxLapDistPct`, `CarIdxTrackSurface`, `CarIdxOnPitRoad`, `CarIdxClass`, `PlayerCarIdx` | 서킷 SVG 경로는 별도 자산. `LapDistPct`(0.0~1.0)를 path 길이에 매핑 |
+| 11 | **2D 트랙 맵** | `WeekendInfo: TrackName/TrackID`, `CarIdxLapDistPct`, `CarIdxTrackSurface`, `CarIdxOnPitRoad`, `CarIdxClass`, `PlayerCarIdx`, `SessionFlags`, `SplitTimeInfo: Sectors` | 서킷 SVG 경로는 세션 TrackName 기반 매핑. `LapDistPct`(0.0~1.0)를 SVG path 길이에 매핑. 사고 지점(Hazard) 및 3섹터 동적 컬러링 연동 |
 | — | **콕핏 허브** | `Gear`, `RPM`, `Speed`, `Throttle`, `Brake`, `Clutch`, `SteeringWheelAngle`, `PushToPass` | `Speed`는 **m/s** → km/h는 ×3.6 |
 
 > **섹터 정확도 경계:** `SplitTimeInfo`를 사용하면 트랙이 정의한 split 경계는 정확히 구분할 수 있지만, split 개수는 트랙에 따라 달라 F1식 3구간을 보장하지 않습니다. 정확히 3구간인 세션만 S1/S2/S3에 1:1 매핑하고, 그 외에는 별도 집계 정책 없이는 3섹터로 재해석하지 않습니다. 또한 공유 메모리에는 상대 차량별 섹터 스플릿/델타가 없고 클라이언트 델타 변수도 플레이어 전용이므로, 렐러티브 상대 행의 Purple/Green/Yellow 및 F1의 전체 드라이버 기준 Purple은 네이티브 데이터만으로 확정할 수 없습니다. 현재 M2.4는 목업 프리뷰이며 실제 `SplitTimeInfo` 파서는 M5에서 연결합니다.

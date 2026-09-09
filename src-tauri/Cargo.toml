@@ -13,6 +13,10 @@ tauri = { version = "2", features = [] }
 tauri-plugin-global-shortcut = "2"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+# Font install (fetch_theme_font). ureq is the blocking, tokio-free client:
+# tokio was deliberately removed from this project for bundle weight.
+ureq = { version = "2", default-features = false, features = ["tls"] }
+base64 = "0.22"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.59", features = [

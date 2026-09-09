@@ -3,7 +3,10 @@
 
 mod iracing;
 
+use base64::engine::general_purpose::STANDARD as BASE64;
+use base64::Engine as _;
 use std::fs;
+use std::io::Read;
 use std::path::PathBuf;
 use std::time::Duration;
 use tauri::{AppHandle, Emitter, Manager};
@@ -77,6 +80,52 @@ fn set_overlay_visible(app: AppHandle, visible: bool) -> Result<(), String> {
     Ok(())
 }
 
+/// Fetches one theme typeface over HTTPS on behalf of the webview.
+///
+/// The webview cannot do this itself: its CSP allows `connect-src 'self'` only,
+/// so a compromised renderer has no path to an arbitrary host. Routing the GET
+/// through here keeps that property while still letting the user install the
+/// official face of the theme they picked.
+///
+/// This deliberately does NOT verify the digest or touch the filesystem:
+/// - the caller (`src/services/fonts.ts`) checks the bytes against a pinned
+///   SHA-256 before registering them, so tampered bytes are rejected there;
+/// - nothing is written under `public/`, which `vite build` copies wholesale
+///   into the release bundle (AGENTS.md S10.3-11 forbids shipping the font).
+///
+/// `allow_url` is the supply-chain guard: only hosts we pin are reachable, so a
+/// compromised renderer cannot turn this into a general-purpose fetch primitive.
+fn allow_url(url: &str) -> bool {
+    url.starts_with("https://raw.githubusercontent.com/Thomson-19/F1-Fonts/")
+        && !url.contains("..")
+}
+
+#[tauri::command]
+fn fetch_theme_font(url: String) -> Result<String, String> {
+    if !allow_url(&url) {
+        return Err(format!("refused: {url} is not a pinned font source"));
+    }
+
+    let resp = ureq::get(&url)
+        .timeout(Duration::from_secs(20))
+        .call()
+        .map_err(|e| e.to_string())?;
+
+    let mut bytes: Vec<u8> = Vec::new();
+    resp.into_reader()
+        // A display woff2 is ~27KB; 4MB is a generous ceiling that still refuses
+        // to buffer an unbounded response into memory.
+        .take(4 * 1024 * 1024)
+        .read_to_end(&mut bytes)
+        .map_err(|e| e.to_string())?;
+
+    if bytes.is_empty() {
+        return Err("empty response".into());
+    }
+
+    Ok(BASE64.encode(bytes))
+}
+
 #[tauri::command]
 fn get_connection_status() -> Result<serde_json::Value, String> {
     let mut reader = iracing::memory::SharedMemoryReader::new();
@@ -126,7 +175,8 @@ fn main() {
             set_clickthrough,
             set_overlay_visible,
             show_control_window,
-            get_connection_status
+            get_connection_status,
+            fetch_theme_font
         ])
         .on_window_event(|window, event| {
             // Closing the control window quits the app; closing the HUD just hides it.

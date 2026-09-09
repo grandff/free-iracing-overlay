@@ -288,7 +288,7 @@ export const Relative: Component<RelativeProps> = (props) => {
     >
       {/* Edit Mode Top Shaded Bar: 타이틀 일체 배제, 배율 조절 컨트롤만 깔끔하게 노출 */}
       <Show when={props.isEditMode}>
-        <div class="flex items-center justify-end px-3 py-1 bg-black/90 backdrop-blur-md border-t border-x border-white/20 rounded-t text-white select-none">
+        <div class="flex items-center justify-end px-3 py-1 hud-surface-deep backdrop-blur-md border-t border-x border-white/20 rounded-t text-white select-none">
           <div class="flex items-center gap-1.5 shrink-0" onMouseDown={(e) => e.stopPropagation()}>
             <button
               onClick={(e) => {
@@ -319,7 +319,7 @@ export const Relative: Component<RelativeProps> = (props) => {
 
       {/* Header: Non-circle motorsport timing delta icon */}
       <div
-        class={`flex items-center justify-between bg-[#15151e] border-t-[3px] border-t-[#E10600] border-b border-b-white/15 px-3 py-1.5 ${
+        class={`flex items-center justify-between hud-surface-band border-t-[3px] border-t-[#E10600] border-b border-b-white/15 px-3 py-1.5 ${
           props.isEditMode ? "border-x border-white/20" : "rounded-t border border-white/10"
         } shadow-sm`}
       >
@@ -349,7 +349,7 @@ export const Relative: Component<RelativeProps> = (props) => {
 
       {/* Subheader: POS, #, DRIVER, SEC, TYRE, GAP */}
       {/* ponytail: unified grid layout and synchronized border-box padding ensure 100% mathematical text alignment between header and body rows */}
-      <div class="grid grid-cols-[38px_40px_1fr_52px_32px_70px] items-center px-2 py-1 bg-black/85 text-[9px] font-mono text-white/45 tracking-wider border-b border-white/[0.08] border-l-[3.5px] border-l-transparent">
+      <div class="grid grid-cols-[38px_40px_1fr_52px_32px_70px] items-center px-2 py-1 hud-surface-deep text-[9px] font-mono text-white/45 tracking-wider border-b border-white/[0.08] border-l-[3.5px] border-l-transparent">
         <span class="text-center font-bold">POS</span>
         <span class="text-center font-bold">#</span>
         <span class="pl-2 font-bold text-left">DRIVER</span>
@@ -457,7 +457,7 @@ export const Relative: Component<RelativeProps> = (props) => {
       </div>
 
       {/* Bottom Border Accent */}
-      <div class="h-1 bg-[#15151e] rounded-b border-t border-white/[0.08]" />
+      <div class="h-1 hud-surface-band rounded-b border-t border-white/[0.08]" />
 
       {/* 1. Horizontal Drag Resize Handle (Left Edge: bottom-right anchored widget) */}
       <Show when={props.isEditMode}>

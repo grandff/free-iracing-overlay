@@ -121,3 +121,99 @@
   transition-duration: 150ms;
 }
 
+
+/* =========================================================
+   F1 BROADCAST GRAPHICS PRIMITIVES
+   World-feed 패키지 실물 관찰 기반 (2022~2024 온보드/트랙컨디션/스타트분석):
+   oblique 볼드 대문자, 각진 모서리, 값-위/라벨-아래 스택,
+   타이틀 아래 레드 룰, 영상 위에 그대로 떠 있는 그래픽.
+   ========================================================= */
+
+/* 1. Oblique 대문자 — F1 방송 타이포의 가장 식별력 높은 특징 */
+.f1-oblique {
+  font-style: italic;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+/* 2. 라이브 수치: oblique + black + 지터 0 */
+.f1-value {
+  font-style: italic;
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" on;
+}
+
+/* 3. 값 아래 붙는 마이크로 캡스 라벨 (`139` / `KM/H` 패턴) */
+.f1-label {
+  font-size: 8px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* 4. 방송 타이틀 락업: 대문자 + 하단 F1 레드 룰 */
+.f1-title {
+  font-style: italic;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 2px solid var(--f1-red);
+  padding-bottom: 2px;
+}
+
+/* 5. 월드피드 슬래브: 각진 모서리 + 1px 헤어라인. 장난감 라운딩 금지 */
+.f1-slab {
+  background: rgb(10 12 17 / var(--hud-bg-alpha, 0.9));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.6);
+}
+
+/* 6. 스트립 내부 필드 구분 헤어라인 */
+.f1-divider {
+  width: 1px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 7. 슬래브 없이 영상 위에 그대로 뜨는 그래픽의 가독성 확보 */
+.f1-floating {
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.95))
+          drop-shadow(0 0 6px rgba(0, 0, 0, 0.55));
+}
+
+/* =========================================================
+   PER-WIDGET BACKGROUND TRANSPARENCY
+   Each widget wrapper sets --hud-bg-alpha from
+   settings.widgets[key].bgAlpha, and every panel SURFACE reads it.
+
+   Deliberately not CSS `opacity` on the wrapper: that fades the numbers
+   along with the panel, and the whole point is to see the track through
+   the card while the telemetry stays legible. Accent fills (sector
+   colours, tyre badges, flag banners) keep their own alpha on purpose —
+   they are the readable foreground, not the background.
+   ========================================================= */
+:root {
+  --hud-bg-alpha: 0.95;
+}
+
+.hud-surface {
+  background-color: rgb(18 19 26 / var(--hud-bg-alpha));
+}
+.hud-surface-raised {
+  background-color: rgb(26 27 36 / var(--hud-bg-alpha));
+}
+.hud-surface-deep {
+  background-color: rgb(10 12 17 / var(--hud-bg-alpha));
+}
+/* Header/among-rows band: intentionally a touch denser than the card so the
+   column labels stay readable at low alpha. */
+.hud-surface-band {
+  background-color: rgb(21 21 30 / min(1, calc(var(--hud-bg-alpha) + 0.06)));
+}

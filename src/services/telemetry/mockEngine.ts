@@ -137,9 +137,25 @@ export class MockTelemetryEngine {
       targetMode: "best",
     };
 
-    // Proximity spotter simulation (Car #16 is 2.8m to our left)
-    const spotterLeftDist = 2.8;
-    const spotterRightDist = 99.0;
+    // Proximity spotter dynamic simulation (16s cycle: Clear -> Warning Left -> Danger Left -> Warning Right -> Clear)
+    const spotterCycle = (Date.now() / 1000) % 16;
+    let spotterLeftDist = 6.0;
+    let spotterRightDist = 6.0;
+    let carBitfield = 1; // irsdk_LRClear
+
+    if (spotterCycle >= 3.0 && spotterCycle < 7.0) {
+      // 1 Car on Left: Warning (Amber)
+      spotterLeftDist = 2.4;
+      carBitfield = 2; // irsdk_LRCarLeft
+    } else if (spotterCycle >= 7.0 && spotterCycle < 10.5) {
+      // 2 Cars on Left / Extreme Close: Danger (Red)
+      spotterLeftDist = 1.1;
+      carBitfield = 5; // irsdk_LR2CarsLeft
+    } else if (spotterCycle >= 10.5 && spotterCycle < 14.0) {
+      // 1 Car on Right: Warning (Amber)
+      spotterRightDist = 2.2;
+      carBitfield = 3; // irsdk_LRCarRight
+    }
 
     // Hazard simulation: Car #42 is spinning ahead around lapDist 0.21
     const hazardDist = Math.max(0, (0.21 - this.lapDist) * this.trackLength);
@@ -174,8 +190,17 @@ export class MockTelemetryEngine {
       rawSysText = "PIT LANE ENTRY - 60 KM/H LIMIT";
     }
 
+    // Gear & RPM simulation: realistic acceleration cycle
+    const cycleMs = 4000;
+    const cyclePhase = (Date.now() % cycleMs) / cycleMs; // 0.0 ~ 1.0
+    const playerRpm = Math.round(9800 + Math.pow(cyclePhase, 0.8) * (12700 - 9800));
+    const gearNum = 4 + (Math.floor(Date.now() / cycleMs) % 3); // cycles 4 -> 5 -> 6
+    const playerSpeed = Math.round(220 + gearNum * 20 + cyclePhase * 25);
+    const isPitLimiter = activeEvent === "pitEntry";
+    const isRevLimiter = playerRpm >= 12500;
+
     const frame: TelemetryFrame = {
-      timestamp: performance.now(),
+      timestamp: Date.now(),
       tickRateHz: 60,
       trackLengthMeters: this.trackLength,
       trackName: "Spa-Francorchamps GP",
@@ -193,14 +218,25 @@ export class MockTelemetryEngine {
         carBrand: "Porsche",
         irating: 6840,
         safetyRating: { license: "S", value: 4.98 },
-        speedKmh: Math.round(238 + Math.sin(Date.now() / 800) * 12),
-        rpm: Math.round(11200 + Math.sin(Date.now() / 400) * 800),
-        gear: 6,
+        speedKmh: playerSpeed,
+        rpm: playerRpm,
+        gear: gearNum,
         fuelLevelLiters: Number(this.fuelRemaining.toFixed(2)),
         fuelMaxLiters: 110,
-        fuelAvgPerLap: 2.35,
-        fuelLapsRemaining: Math.floor(this.fuelRemaining / 2.35),
-        fuelNeededToFinish: Number((18 * 2.35 - this.fuelRemaining + 1.5).toFixed(1)),
+        fuelAvgPerLap: 2.38,
+        fuelLastLap: 2.35,
+        fuelLapsRemaining: Number((this.fuelRemaining / 2.38).toFixed(1)),
+        fuelNeededToFinish: Number((24 * 2.38 + 1.2).toFixed(1)),
+        fuelPitAddLiters: Number(Math.max(0, 24 * 2.38 + 1.2 - this.fuelRemaining).toFixed(1)),
+        fuelSaveTargetPerLap: 2.22,
+        fuelSaveDelta: Number((2.38 - 2.22).toFixed(2)),
+        pitWindowOpenLap: 12,
+        pitWindowCloseLap: Math.max(this.currentLap + 1, this.currentLap + Math.floor(this.fuelRemaining / 2.38)),
+        pitLossSeconds: Number((18.0 + Math.max(0, 24 * 2.38 + 1.2 - this.fuelRemaining) / 2.8).toFixed(1)),
+        inGamePitFuel: Number(Math.max(0, 24 * 2.38 + 1.2 - this.fuelRemaining).toFixed(0)),
+        inGameFuelFillChecked: true,
+        isExtraLapConfirmed: true,
+        safetyMarginLiters: 1.2,
         lastLapTime: 84.12,
         bestLapTime: 83.89,
         lastLapDelta: dynamicDelta,
@@ -211,16 +247,20 @@ export class MockTelemetryEngine {
       },
       cars: this.simulatedCars,
       spotter: {
-        leftDistanceMeters: spotterLeftDist,
-        rightDistanceMeters: spotterRightDist,
-        leftState: spotterLeftDist < 2.0 ? "danger" : spotterLeftDist < 4.0 ? "caution" : "clear",
-        rightState: "clear",
+        leftDistanceMeters: Number(spotterLeftDist.toFixed(1)),
+        rightDistanceMeters: Number(spotterRightDist.toFixed(1)),
+        leftState: spotterLeftDist <= 1.5 ? "danger" : spotterLeftDist <= 3.5 ? "warning" : "clear",
+        rightState: spotterRightDist <= 1.5 ? "danger" : spotterRightDist <= 3.5 ? "warning" : "clear",
+        carLeftRightBitfield: carBitfield,
       },
       hazard: {
         hasIncident: hasHazard,
         distanceMeters: Math.round(hazardDist),
         incidentCarNumber: "42",
         incidentSector: 2,
+        incidentLapDistPct: 0.21,
+        hazardType: "spin",
+        speedKmh: 18,
       },
       revenge: {
         hasTarget: true,
@@ -262,6 +302,17 @@ export class MockTelemetryEngine {
         timestamp: performance.now(),
       },
       lapDelta: lapDeltaData,
+      shiftLight: {
+        rpm: playerRpm,
+        gear: gearNum,
+        speedKmh: playerSpeed,
+        firstRpm: 10500,
+        shiftRpm: 12000,
+        lastRpm: 12400,
+        blinkRpm: 12500,
+        pitLimiterActive: isPitLimiter,
+        revLimiterActive: isRevLimiter,
+      },
     };
 
     if (this.onTickCallback) {

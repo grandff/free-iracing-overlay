@@ -10,7 +10,13 @@ export interface WidgetTransform {
   x: number;
   y: number;
   scale: number;
+  /**
+   * Panel background alpha, 0.15..1. Feeds --hud-bg-alpha on the widget wrapper.
+   * Optional so configs saved before this existed keep working on the default.
+   */
+  bgAlpha?: number;
   width?: number;
+  height?: number;
   maxRows?: number;
   visible: boolean;
 }
@@ -29,6 +35,7 @@ export type WidgetKey =
   | "weather"
   | "multiclassRadar"
   | "trackMap"
+  | "shiftLight"
   | "telemetryHub";
 
 export interface UserProfile {
@@ -49,6 +56,8 @@ export interface SettingsState {
   sessionType: "PRACTICE" | "QUALIFY" | "RACE"; // Session mode (Practice, Qualify, Race)
   translateSystemMessages: boolean; // true = translate system messages into current language, false = verbatim English
   tripleMonitorMode: TripleMonitorMode;
+  centerClampWidth: 1920 | 2560; // 1920 (FHD Triples 5760x1080) vs 2560 (QHD Triples 7680x1440)
+  spotterBezelAnchor: "screen-edge" | "center-bezel"; // Spotters at outer edges vs center screen bezels
   storageTarget: "disk-file" | "local-storage";
   userProfile: UserProfile;
   widgets: Record<WidgetKey, WidgetTransform>;
@@ -67,6 +76,8 @@ const defaultSettings: SettingsState = {
   sessionType: "RACE",
   translateSystemMessages: false,
   tripleMonitorMode: "center-clamp",
+  centerClampWidth: 1920,
+  spotterBezelAnchor: "center-bezel",
   storageTarget: "local-storage",
   userProfile: {
     driverName: "K. Jeongmin",
@@ -80,14 +91,15 @@ const defaultSettings: SettingsState = {
     teamRadio: { x: 0, y: 0, scale: 1.0, width: 340, visible: true },
     lapDelta: { x: 0, y: 0, scale: 1.0, width: 440, visible: true },
     revengeTracker: { x: 0, y: 0, scale: 1.0, visible: true },
-    spotterLeft: { x: 0, y: 0, scale: 1.0, visible: true },
-    spotterRight: { x: 0, y: 0, scale: 1.0, visible: true },
-    fuelCalculator: { x: 0, y: 0, scale: 1.0, visible: true },
+    spotterLeft: { x: 0, y: 0, scale: 1.0, width: 200, height: 56, visible: true },
+    spotterRight: { x: 0, y: 0, scale: 1.0, width: 200, height: 56, visible: true },
+    fuelCalculator: { x: 0, y: 0, scale: 1.0, width: 280, visible: true },
     tireAnalysis: { x: 0, y: 0, scale: 1.0, visible: true },
-    incidentHazard: { x: 0, y: 0, scale: 1.0, visible: true },
+    incidentHazard: { x: 0, y: 0, scale: 1.0, width: 340, visible: true },
     weather: { x: 0, y: 0, scale: 1.0, visible: true },
     multiclassRadar: { x: 0, y: 0, scale: 1.0, visible: true },
-    trackMap: { x: 0, y: 0, scale: 1.0, visible: true },
+    trackMap: { x: 0, y: 0, scale: 1.0, width: 460, visible: true },
+    shiftLight: { x: 0, y: 0, scale: 1.0, width: 440, visible: true },
     telemetryHub: { x: 0, y: 0, scale: 1.0, visible: true },
   },
 };
@@ -104,6 +116,8 @@ function loadInitialSettings(): SettingsState {
         showThemeLogo: parsed.showThemeLogo !== undefined ? parsed.showThemeLogo : true,
         sessionType: parsed.sessionType || "RACE",
         translateSystemMessages: parsed.translateSystemMessages !== undefined ? parsed.translateSystemMessages : false,
+        centerClampWidth: parsed.centerClampWidth || 1920,
+        spotterBezelAnchor: parsed.spotterBezelAnchor || "center-bezel",
         userProfile: {
           ...defaultSettings.userProfile,
           ...(parsed.userProfile || {}),
@@ -113,8 +127,11 @@ function loadInitialSettings(): SettingsState {
           ...(parsed.widgets || {}),
           teamRadio: parsed.widgets?.teamRadio || defaultSettings.widgets.teamRadio,
           lapDelta: parsed.widgets?.lapDelta || defaultSettings.widgets.lapDelta,
+          trackMap: parsed.widgets?.trackMap || defaultSettings.widgets.trackMap,
+          shiftLight: parsed.widgets?.shiftLight || defaultSettings.widgets.shiftLight,
           spotterLeft: parsed.widgets?.spotterLeft || defaultSettings.widgets.spotterLeft,
           spotterRight: parsed.widgets?.spotterRight || defaultSettings.widgets.spotterRight,
+          incidentHazard: parsed.widgets?.incidentHazard || defaultSettings.widgets.incidentHazard,
         },
         theme: "f1",
       };
@@ -141,12 +158,17 @@ export async function hydrateFromDiskConfig() {
         showThemeLogo: parsed.showThemeLogo !== undefined ? parsed.showThemeLogo : true,
         sessionType: parsed.sessionType || "RACE",
         translateSystemMessages: parsed.translateSystemMessages !== undefined ? parsed.translateSystemMessages : false,
+        centerClampWidth: parsed.centerClampWidth || 1920,
+        spotterBezelAnchor: parsed.spotterBezelAnchor || "center-bezel",
         storageTarget: "disk-file",
         theme: "f1",
         widgets: {
           ...defaultSettings.widgets,
           ...(parsed.widgets || {}),
           teamRadio: parsed.widgets?.teamRadio || defaultSettings.widgets.teamRadio,
+          lapDelta: parsed.widgets?.lapDelta || defaultSettings.widgets.lapDelta,
+          trackMap: parsed.widgets?.trackMap || defaultSettings.widgets.trackMap,
+          shiftLight: parsed.widgets?.shiftLight || defaultSettings.widgets.shiftLight,
           spotterLeft: parsed.widgets?.spotterLeft || defaultSettings.widgets.spotterLeft,
           spotterRight: parsed.widgets?.spotterRight || defaultSettings.widgets.spotterRight,
         },
@@ -213,6 +235,17 @@ export function setTranslateSystemMessages(enabled: boolean) {
 
 export function updateWidgetTransform(widgetKey: keyof SettingsState["widgets"], transform: Partial<WidgetTransform>) {
   setSettings("widgets", widgetKey, (prev) => ({ ...prev, ...transform }));
+  schedulePersist();
+}
+
+/** Panel background alpha for one widget. Clamped: fully invisible or fully
+ *  opaque are both useless states to leave a user stuck in. */
+export const DEFAULT_BG_ALPHA = 0.95;
+export function widgetBgAlpha(widgetKey: WidgetKey): number {
+  return settings.widgets[widgetKey]?.bgAlpha ?? DEFAULT_BG_ALPHA;
+}
+export function setWidgetBgAlpha(widgetKey: WidgetKey, alpha: number) {
+  setSettings("widgets", widgetKey, "bgAlpha", Math.max(0.15, Math.min(1, alpha)));
   schedulePersist();
 }
 

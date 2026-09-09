@@ -1,91 +1,242 @@
-import { Component, Show } from "solid-js";
-import { createPresence } from "../../utils/presence.ts";
+import { Component, Show, createSignal, createMemo } from "solid-js";
+import { SpotterState } from "../../services/telemetry/types.ts";
 import { t } from "../../i18n/index.ts";
 
-interface Props {
+export interface SpotterProps {
   distance?: number;
-  state?: "clear" | "caution" | "danger";
+  state?: SpotterState;
   isEditMode?: boolean;
   scale?: number;
+  width?: number;
+  height?: number;
   onScaleChange?: (newScale: number) => void;
+  onWidthChange?: (newWidth: number) => void;
+  onHeightChange?: (newHeight: number) => void;
 }
 
-export const SpotterRight: Component<Props> = (props) => {
-  const dist = () => (props.distance !== undefined ? props.distance : 1.8);
-  const state = () => props.state || (props.isEditMode ? "caution" : "clear");
-  const editPresence = createPresence(() => !!props.isEditMode, 160);
+export const SpotterRight: Component<SpotterProps> = (props) => {
+  // Test switcher in Edit Mode (0 = live, 1 = warning [1 car], 2 = danger [2 cars])
+  // ponytail: intentional simplification — local test state without complex mocks
+  const [testStateStep, setTestStateStep] = createSignal<number>(0);
 
-  const isDanger = () => state() === "danger" || (dist() <= 1.5 && state() !== "clear");
-  const isCaution = () => state() === "caution" || (dist() > 1.5 && dist() <= 4.0 && state() !== "clear");
-  const isClear = () => state() === "clear";
+  const cycleTest = (e: MouseEvent) => {
+    e.stopPropagation();
+    setTestStateStep((prev) => (prev + 1) % 3);
+  };
+
+  const current = createMemo(() => {
+    const step = testStateStep();
+    if (step === 1) {
+      return { state: "warning" as SpotterState, distance: 2.4 };
+    }
+    if (step === 2) {
+      return { state: "danger" as SpotterState, distance: 1.1 };
+    }
+    const dist = props.distance !== undefined ? props.distance : 2.4;
+    const rawState = props.state || (props.isEditMode ? "warning" : "clear");
+    return { state: rawState, distance: dist };
+  });
+
+  const isDanger = createMemo(() => {
+    const s = current().state;
+    return s === "danger" || (current().distance <= 1.5 && s !== "clear");
+  });
+
+  const isWarning = createMemo(() => {
+    const s = current().state;
+    if (isDanger()) return false;
+    return s === "warning" || s === "caution" || (current().distance <= 3.5 && s !== "clear");
+  });
+
+  const isClear = createMemo(() => !isDanger() && !isWarning());
+
+  const width = () => props.width ?? 200;
+  const height = () => props.height ?? 56;
 
   return (
-    <div class="relative flex items-center font-sans select-none pointer-events-auto">
-      <Show when={editPresence.mounted()}>
+    <div
+      class="relative flex flex-col font-sans select-none pointer-events-auto group/spotter"
+      style={{
+        width: `${width()}px`,
+      }}
+    >
+      {/* Edit Mode Top Toolbar */}
+      <Show when={props.isEditMode}>
         <div
-          class={`absolute -top-10 right-0 z-50 flex items-center gap-2 px-2.5 py-1 bg-[#1c1c24]/95 border border-white/15 rounded-full shadow-lg text-white pointer-events-auto whitespace-nowrap apple-pill-enter ${
-            editPresence.visible() ? "is-visible" : "is-hidden"
-          }`}
+          class="flex items-center justify-between px-2 py-1 mb-1 rounded hud-surface-deep backdrop-blur-md border border-white/20 text-[10px] text-white/80 shadow-lg"
+          onMouseDown={(e) => e.stopPropagation()}
         >
-          <span class="text-[10px] font-medium text-white/70">{t().wSpotterR}</span>
-          <div class="flex items-center gap-1">
+          <div class="flex items-center gap-1.5">
+            {/* Scale +/- */}
+            <div class="flex items-center gap-0.5">
+              <button
+                onClick={() => props.onScaleChange?.(Math.max(0.6, (props.scale ?? 1.0) - 0.05))}
+                class="w-4 h-4 flex items-center justify-center rounded bg-white/10 hover:bg-white/20 font-mono text-[9px]"
+              >
+                -
+              </button>
+              <span class="font-mono text-[9px] w-7 text-center">
+                {Math.round((props.scale ?? 1.0) * 100)}%
+              </span>
+              <button
+                onClick={() => props.onScaleChange?.(Math.min(2.0, (props.scale ?? 1.0) + 0.05))}
+                class="w-4 h-4 flex items-center justify-center rounded bg-white/10 hover:bg-white/20 font-mono text-[9px]"
+              >
+                +
+              </button>
+            </div>
+
+            {/* Test State Switcher */}
             <button
-              onClick={() => props.onScaleChange && props.onScaleChange(Math.max(0.7, (props.scale || 1) - 0.1))}
-              class="w-5 h-5 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-xs font-bold cursor-pointer"
+              onClick={cycleTest}
+              class={`px-1.5 py-0.5 rounded text-[9px] font-bold transition-colors cursor-pointer ${
+                testStateStep() === 2
+                  ? "bg-red-500/40 text-red-200 border border-red-400/50"
+                  : testStateStep() === 1
+                  ? "bg-amber-500/40 text-amber-200 border border-amber-400/50"
+                  : "bg-white/10 hover:bg-white/20 text-white/70"
+              }`}
+              title={t().spotterTestBtn}
             >
-              -
+              {testStateStep() === 2
+                ? t().spotterDanger
+                : testStateStep() === 1
+                ? t().spotterWarn
+                : "LIVE"}
             </button>
-            <span class="text-[10px] font-mono font-semibold w-8 text-center">
-              {Math.round((props.scale || 1) * 100)}%
+          </div>
+
+          <div class="flex items-center gap-1.5">
+            <span class="font-mono text-[9px] text-white/60">
+              {width()}x{height()}
             </span>
-            <button
-              onClick={() => props.onScaleChange && props.onScaleChange(Math.min(1.5, (props.scale || 1) + 0.1))}
-              class="w-5 h-5 rounded-full bg-white/15 hover:bg-white/25 active:scale-95 flex items-center justify-center text-xs font-bold cursor-pointer"
-            >
-              +
-            </button>
+            <span class="text-white/40">|</span>
+            <span class="font-bold text-amber-400">{t().wSpotterR} ▶</span>
           </div>
         </div>
       </Show>
 
+      {/* Main Spotter Body */}
       <div
-        class={`flex items-center gap-2.5 px-3 py-2.5 rounded-l-xl border-y border-l transition-all duration-150 ${
+        style={{
+          height: `${height()}px`,
+        }}
+        class={`relative flex items-center justify-between px-3 rounded-l-2xl border-y border-l transition-all duration-150 backdrop-blur-md ${
           isDanger()
-            ? "bg-[#ff3b30] text-white border-[#ff453a] animate-pulse shadow-md"
-            : isCaution()
-            ? "bg-[#ff9f0a] text-black border-[#ff9f0a] shadow-sm"
+            ? "bg-gradient-to-r from-red-950/90 via-red-900/80 to-red-950/90 border-red-500 text-white shadow-[0_0_25px_rgba(239,68,68,0.6)] animate-pulse"
+            : isWarning()
+            ? "bg-gradient-to-r from-amber-950/90 via-[#261e05]/85 to-amber-950/90 border-amber-500/70 text-amber-100 shadow-[0_0_18px_rgba(245,158,11,0.35)]"
             : props.isEditMode
-            ? "bg-[#1c1c1e]/90 text-white/60 border-white/15 shadow-sm"
+            ? "bg-black/60 border-white/20 text-white/40 border-dashed"
             : "opacity-0 pointer-events-none"
         }`}
       >
-        <div class="flex flex-col items-end pr-1">
-          <span class="text-[9px] font-mono font-extrabold uppercase opacity-80">
-            {isDanger() ? "CAR RIGHT" : isCaution() ? "HOLD" : "CLEAR"}
+        {/* Text & Distance */}
+        <div class="flex flex-col items-start pl-1">
+          <span
+            class={`font-mono font-black text-[10px] tracking-wider uppercase ${
+              isDanger() ? "text-red-300" : isWarning() ? "text-amber-300" : "text-white/40"
+            }`}
+          >
+            {isDanger() ? "2 CARS • DANGER" : isWarning() ? "CAR RIGHT" : "CLEAR"}
           </span>
-          <span class="text-sm font-mono font-black tabular-nums tracking-tight">
-            {isClear() && !props.isEditMode ? "--" : `${dist().toFixed(1)}m`}
-          </span>
+          <div class="flex items-baseline gap-1">
+            <span
+              class={`font-mono text-xl font-black tabular-nums tracking-tight ${
+                isDanger() ? "text-white drop-shadow" : isWarning() ? "text-white" : "text-white/40"
+              }`}
+            >
+              {isClear() && !props.isEditMode ? "--" : `${current().distance.toFixed(1)}m`}
+            </span>
+          </div>
         </div>
 
-        <div class="flex items-center gap-1 h-7">
-          <div class={`w-1.5 h-3 rounded-full ${isDanger() ? "bg-white" : "bg-white/10"}`} />
-          <div
-            class={`w-1.5 h-5 rounded-full ${
-              isDanger() ? "bg-white" : isCaution() ? "bg-black/60" : "bg-white/10"
-            }`}
-          />
-          <div
-            class={`w-1.5 h-full rounded-full ${
-              isDanger() || isCaution() ? (isDanger() ? "bg-white" : "bg-black") : "bg-white/20"
-            }`}
-          />
+        {/* Arrow & Stage Indicator */}
+        <div class="flex items-center gap-2 pr-2">
+          {/* 2-Stage Authentic Proximity Segments */}
+          <div class="flex flex-col gap-1 justify-center">
+            {/* Stage 1: Warning bar */}
+            <div
+              class={`w-2.5 h-2 rounded-sm transition-all ${
+                isDanger()
+                  ? "bg-red-400 shadow-[0_0_8px_#ef4444]"
+                  : isWarning()
+                  ? "bg-amber-400 shadow-[0_0_8px_#f59e0b]"
+                  : "bg-white/10"
+              }`}
+            />
+            {/* Stage 2: Danger bar */}
+            <div
+              class={`w-2.5 h-3 rounded-sm transition-all ${
+                isDanger() ? "bg-red-500 shadow-[0_0_10px_#ef4444]" : "bg-white/10"
+              }`}
+            />
+          </div>
+
+          <div class="flex items-center font-black tracking-tighter">
+            <Show
+              when={isDanger()}
+              fallback={
+                <span
+                  class={`text-2xl transition-transform ${
+                    isWarning() ? "text-amber-400 scale-110" : "text-white/40"
+                  }`}
+                >
+                  ▶
+                </span>
+              }
+            >
+              <span class="text-2xl text-red-400 font-black">▶</span>
+              <span class="text-2xl text-red-400 font-black -ml-2.5 animate-ping inline-block">▶</span>
+            </Show>
+          </div>
         </div>
 
-        <div class="flex flex-col items-center justify-center w-5">
-          <span class="text-base font-black leading-none">▶</span>
-          <span class="text-[8px] font-mono font-black uppercase mt-0.5 tracking-wider">RIGHT</span>
-        </div>
+        {/* Right Side Accent Bar */}
+        <div
+          class={`absolute right-0 top-0 bottom-0 w-2 transition-colors ${
+            isDanger()
+              ? "bg-red-500 shadow-[0_0_12px_#ef4444]"
+              : isWarning()
+              ? "bg-amber-400 shadow-[0_0_10px_#f59e0b]"
+              : "bg-white/20"
+          }`}
+        />
+
+        {/* Bottom-Left 2D Corner Resize Handle (Edit Mode) */}
+        <Show when={props.isEditMode}>
+          <div
+            class="absolute -bottom-1.5 -left-1.5 w-4 h-4 bg-amber-400/80 hover:bg-amber-300 rounded-bl cursor-nesw-resize z-50 flex items-end justify-start p-0.5 border border-black shadow pointer-events-auto"
+            title="Drag to resize width & height"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              const startX = e.clientX;
+              const startY = e.clientY;
+              const startW = width();
+              const startH = height();
+
+              const handleMouseMove = (moveEvt: MouseEvent) => {
+                // Dragging left increases width because origin is at the right edge
+                const deltaX = startX - moveEvt.clientX;
+                const deltaY = moveEvt.clientY - startY;
+                const newW = Math.max(140, Math.min(380, Math.round(startW + deltaX)));
+                const newH = Math.max(44, Math.min(160, Math.round(startH + deltaY)));
+                props.onWidthChange?.(newW);
+                props.onHeightChange?.(newH);
+              };
+
+              const handleMouseUp = () => {
+                window.removeEventListener("mousemove", handleMouseMove);
+                window.removeEventListener("mouseup", handleMouseUp);
+              };
+
+              window.addEventListener("mousemove", handleMouseMove);
+              window.addEventListener("mouseup", handleMouseUp);
+            }}
+          >
+            <div class="w-1.5 h-1.5 border-l-2 border-b-2 border-black" />
+          </div>
+        </Show>
       </div>
     </div>
   );

@@ -50,9 +50,20 @@ export interface PlayerTelemetry {
   gear: number;
   fuelLevelLiters: number;
   fuelMaxLiters: number;
-  fuelAvgPerLap: number;
-  fuelLapsRemaining: number;
-  fuelNeededToFinish: number;
+  fuelAvgPerLap: number; // Clean green-flag average consumption
+  fuelLastLap?: number; // Last lap consumption
+  fuelLapsRemaining: number; // Laps remaining on current fuel
+  fuelNeededToFinish: number; // Total fuel needed to finish (including safety margin)
+  fuelPitAddLiters?: number; // Recommended refuel amount for next pit stop
+  fuelSaveTargetPerLap?: number; // Target per lap to eliminate pit stop / reach end
+  fuelSaveDelta?: number; // Consumption delta (positive = burning too much, negative = saving)
+  pitWindowOpenLap?: number; // First lap when full tank pit stop reaches finish
+  pitWindowCloseLap?: number; // Last lap before fuel runs dry
+  pitLossSeconds?: number; // Estimated pit lane transit + refueling duration
+  inGamePitFuel?: number; // iRacing F4 blackbox PitSvFuel
+  inGameFuelFillChecked?: boolean; // iRacing PitSvFlags irsdk_FuelFill bit
+  isExtraLapConfirmed?: boolean; // Overall leader 0:00 S/F line crossing extra lap
+  safetyMarginLiters?: number; // Configured safety margin buffer
   lastLapTime: number;
   bestLapTime: number;
   lastLapDelta: number; // positive = slower, negative = faster
@@ -62,18 +73,26 @@ export interface PlayerTelemetry {
   tireSurfaceLoadPct: [number, number, number, number]; // Estimated dynamic load (0~100)
 }
 
+export type SpotterState = "clear" | "warning" | "caution" | "danger";
+
 export interface SpotterTelemetry {
-  leftDistanceMeters: number; // > 5 means clear
+  leftDistanceMeters: number; // > 3.5 means clear
   rightDistanceMeters: number;
-  leftState: "clear" | "caution" | "danger";
-  rightState: "clear" | "caution" | "danger";
+  leftState: SpotterState;
+  rightState: SpotterState;
+  carLeftRightBitfield?: number; // iRacing SDK CarLeftRight (irsdk_CarLeftRight)
 }
+
+export type HazardType = "spin" | "collision" | "stopped" | "yellowFlag";
 
 export interface HazardTelemetry {
   hasIncident: boolean;
   distanceMeters: number;
   incidentCarNumber: string;
   incidentSector: number;
+  incidentLapDistPct?: number; // Normalized track position (0.0~1.0) of the incident
+  hazardType?: HazardType;
+  speedKmh?: number; // Speed of the crashed/spinning car
 }
 
 export interface RevengeTelemetry {
@@ -156,6 +175,18 @@ export interface LapDeltaTelemetry {
   targetMode: "best" | "last";
 }
 
+export interface ShiftLightTelemetry {
+  rpm: number; // 60Hz Telemetry: RPM
+  gear: number | string; // 60Hz Telemetry: Gear (-1=R, 0=N, 1..8)
+  speedKmh: number; // 60Hz Telemetry: Speed * 3.6
+  firstRpm: number; // YAML: DriverInfo.DriverCarSLFirstRPM
+  shiftRpm: number; // YAML: DriverInfo.DriverCarSLShiftRPM
+  lastRpm: number; // YAML: DriverInfo.DriverCarSLLastRPM
+  blinkRpm: number; // YAML: DriverInfo.DriverCarSLBlinkRPM
+  pitLimiterActive: boolean; // Telemetry: EngineWarnings & 0x10 (irsdk_pitSpeedLimiter)
+  revLimiterActive: boolean; // Telemetry: EngineWarnings & 0x20 (irsdk_revLimiterActive)
+}
+
 export interface TelemetryFrame {
   timestamp: number;
   tickRateHz: number;
@@ -175,4 +206,5 @@ export interface TelemetryFrame {
   radio: RadioTelemetry;
   systemMessage: SystemMessageTelemetry;
   lapDelta: LapDeltaTelemetry;
+  shiftLight?: ShiftLightTelemetry;
 }

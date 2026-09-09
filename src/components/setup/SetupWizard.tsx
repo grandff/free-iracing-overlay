@@ -1,4 +1,4 @@
-import { Component, createSignal, Show, For, onCleanup, onMount } from "solid-js";
+import { Component, createSignal, createEffect, Show, For, onCleanup, onMount } from "solid-js";
 import {
   settings,
   updateSettings,
@@ -7,8 +7,16 @@ import {
   saveSettingsAsDefault,
   toggleEditMode,
   WidgetKey,
+  widgetBgAlpha,
 } from "../../stores/settingsStore.ts";
 import { telemetry } from "../../stores/telemetryStore.ts";
+import { OpacityChip } from "../common/OpacityChip.tsx";
+import {
+  THEME_FONTS,
+  fontStatus,
+  SETUP_FONTS_COMMAND,
+  type FontStatus,
+} from "../../services/fonts.ts";
 import {
   LogoF1,
   LogoWEC,
@@ -40,6 +48,7 @@ import { IncidentHazard } from "../widgets/IncidentHazard.tsx";
 import { WeatherWidget } from "../widgets/WeatherWidget.tsx";
 import { MulticlassRadar } from "../widgets/MulticlassRadar.tsx";
 import { TrackMap } from "../widgets/TrackMap.tsx";
+import { ShiftLight } from "../widgets/ShiftLight.tsx";
 import { TelemetryHub } from "../widgets/TelemetryHub.tsx";
 import { createPresence } from "../../utils/presence.ts";
 import { t, setLanguage, SUPPORTED_LANGUAGES } from "../../i18n/index.ts";
@@ -66,6 +75,15 @@ export const SetupWizard: Component = () => {
   const langDropdownPresence = createPresence(() => isLangDropdownOpen(), 160);
   const step2LangPresence = createPresence(() => isStep2LangOpen(), 160);
   const fontModalPresence = createPresence(() => showFontInfo(), 220);
+
+  // document.fonts resolves asynchronously, so probe once it settles and again
+  // whenever the theme changes. The old modal just hardcoded a green "Active".
+  const [fontState, setFontState] = createSignal<FontStatus>(fontStatus(settings.theme));
+  createEffect(() => {
+    const theme = settings.theme;
+    setFontState(fontStatus(theme));
+    document.fonts.ready.then(() => setFontState(fontStatus(theme)));
+  });
   const widgetListPresence = createPresence(() => showWidgetList(), 160);
 
   // Dragging state for Step 2
@@ -97,6 +115,7 @@ export const SetupWizard: Component = () => {
     { key: "weather" as WidgetKey, name: t().wWeather, category: "Environment" },
     { key: "multiclassRadar" as WidgetKey, name: t().wMulticlass, category: "Battle" },
     { key: "trackMap" as WidgetKey, name: t().wTrackMap, category: "Map" },
+    { key: "shiftLight" as WidgetKey, name: t().wShiftLight, category: "Cockpit" },
     { key: "telemetryHub" as WidgetKey, name: t().wTelemetryHub, category: "Cockpit" },
   ];
 
@@ -443,10 +462,17 @@ export const SetupWizard: Component = () => {
             {/* F1 Font Status Pill */}
             <button
               onClick={() => setShowFontInfo(true)}
-              class="px-2.5 py-1 rounded-full text-xs font-f1 bg-white/5 hover:bg-white/10 text-white/85 border border-white/10 flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-[0.96]"
+              class={`px-2.5 py-1 rounded-full text-xs font-f1 border flex items-center gap-1.5 cursor-pointer pointer-events-auto transition-all active:scale-[0.96] ${
+                fontState() === "installed"
+                  ? "bg-white/5 hover:bg-white/10 text-white/85 border-white/10"
+                  : "bg-[#ff9f0a]/15 hover:bg-[#ff9f0a]/25 text-[#ffd60a] border-[#ff9f0a]/40"
+              }`}
             >
-              <Type class="w-3.5 h-3.5 text-[#e10600]" />
+              <Type class={`w-3.5 h-3.5 ${fontState() === "installed" ? "text-[#e10600]" : "text-[#ffd60a]"}`} />
               <span>{t().f1FontBadge}</span>
+              <Show when={fontState() !== "installed"}>
+                <span class="text-[10px] font-bold">!</span>
+              </Show>
             </button>
 
             {/* Step 2 Language Pill */}
@@ -548,17 +574,48 @@ export const SetupWizard: Component = () => {
                 </div>
 
                 <div class="flex flex-col gap-2.5 text-xs text-[#a0a0b0] leading-relaxed">
-                  <p>Formula 1 Official Broadcast Font Stack & Web Fonts</p>
-                  <div class="bg-black/40 border border-white/10 rounded-xl p-3 flex flex-col gap-1.5 font-mono text-[11px] text-white/90">
-                    <div class="flex items-center gap-2">
-                      <span class="w-2 h-2 rounded-full bg-[#00d26a]" />
-                      <span>Status: <strong class="text-[#00d26a]">Active</strong></span>
+                  <div class="bg-black/40 border border-white/10 rounded-xl p-3 flex flex-col gap-2">
+                    <div class="flex items-center gap-2 text-[11px]">
+                      <span
+                        class={`w-2 h-2 rounded-full ${
+                          fontState() === "installed" ? "bg-[#00d26a]" : "bg-[#ff9f0a]"
+                        }`}
+                      />
+                      <span class="text-white/90">
+                        {THEME_FONTS[settings.theme].label || settings.theme.toUpperCase()}
+                      </span>
+                      <strong
+                        class={fontState() === "installed" ? "text-[#00d26a]" : "text-[#ffd60a]"}
+                      >
+                        {fontState() === "installed"
+                          ? t().fontInstalled
+                          : fontState() === "missing"
+                          ? t().fontMissing
+                          : t().fontThemeUnavailable}
+                      </strong>
                     </div>
-                    <div class="pl-4 text-[10px] text-white/60">
-                      • Timing & Leaderboard: <code class="text-amber-300">DIN Alternate / Titillium Web</code><br/>
-                      • Cockpit Telemetry: <code class="text-amber-300">Chakra Petch</code>
-                    </div>
+
+                    <Show when={fontState() === "missing"}>
+                      <p class="text-[11px] text-white/70">{t().fontMissingHelp}</p>
+                      <code class="block bg-black/60 border border-white/10 rounded-lg px-2.5 py-1.5 text-[11px] text-[#ffd60a] select-text">
+                        {SETUP_FONTS_COMMAND}
+                      </code>
+                    </Show>
+
+                    <Show when={fontState() === "installed"}>
+                      <div class="pl-4 text-[10px] text-white/55 flex flex-col gap-0.5">
+                        <For each={THEME_FONTS[settings.theme].faces}>
+                          {(f) => <span>• {f.file}</span>}
+                        </For>
+                      </div>
+                    </Show>
                   </div>
+
+                  <Show when={THEME_FONTS[settings.theme].rightsHolder}>
+                    <p class="text-[10px] text-white/40">
+                      {THEME_FONTS[settings.theme].rightsHolder} · {t().fontRightsNotice}
+                    </p>
+                  </Show>
                 </div>
 
                 <button
@@ -578,6 +635,7 @@ export const SetupWizard: Component = () => {
               <div
                 onMouseDown={(e) => handleMouseDown("leaderboard", e)}
                 style={{
+                  "--hud-bg-alpha": widgetBgAlpha("leaderboard"),
                   transform: `translate3d(${settings.widgets.leaderboard.x}px, ${settings.widgets.leaderboard.y}px, 0) scale(${settings.widgets.leaderboard.scale})`,
                   "transform-origin": "top left",
                 }}
@@ -596,6 +654,9 @@ export const SetupWizard: Component = () => {
                   onScaleChange={(scale) => updateWidgetTransform("leaderboard", { scale })}
                   onWidthChange={(width) => updateWidgetTransform("leaderboard", { width })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="leaderboard" />
+                </Show>
               </div>
             </Show>
 
@@ -604,10 +665,11 @@ export const SetupWizard: Component = () => {
               <div
                 onMouseDown={(e) => handleMouseDown("relative", e)}
                 style={{
+                  "--hud-bg-alpha": widgetBgAlpha("relative"),
                   transform: `translate3d(${settings.widgets.relative.x}px, ${settings.widgets.relative.y}px, 0) scale(${settings.widgets.relative.scale})`,
                   "transform-origin": "bottom right",
                 }}
-                class={`fixed bottom-8 right-6 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed bottom-6 right-6 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
                     ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
@@ -622,6 +684,9 @@ export const SetupWizard: Component = () => {
                   onWidthChange={(width) => updateWidgetTransform("relative", { width })}
                   onMaxRowsChange={(maxRows) => updateWidgetTransform("relative", { maxRows })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="relative" />
+                </Show>
               </div>
             </Show>
 
@@ -630,6 +695,7 @@ export const SetupWizard: Component = () => {
               <div
                 onMouseDown={(e) => handleMouseDown("teamRadio", e)}
                 style={{
+                  "--hud-bg-alpha": widgetBgAlpha("teamRadio"),
                   transform: `translate3d(${settings.widgets.teamRadio?.x ?? 0}px, ${settings.widgets.teamRadio?.y ?? 0}px, 0) scale(${settings.widgets.teamRadio?.scale ?? 1.0})`,
                   "transform-origin": "top right",
                 }}
@@ -648,6 +714,9 @@ export const SetupWizard: Component = () => {
                   onScaleChange={(scale) => updateWidgetTransform("teamRadio", { scale })}
                   onWidthChange={(width) => updateWidgetTransform("teamRadio", { width })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="teamRadio" />
+                </Show>
               </div>
             </Show>
 
@@ -656,6 +725,7 @@ export const SetupWizard: Component = () => {
               <div
                 onMouseDown={(e) => handleMouseDown("lapDelta", e)}
                 style={{
+                  "--hud-bg-alpha": widgetBgAlpha("lapDelta"),
                   transform: `translate3d(calc(-50% + ${settings.widgets.lapDelta.x}px), ${settings.widgets.lapDelta.y}px, 0) scale(${settings.widgets.lapDelta.scale})`,
                   "transform-origin": "top center",
                 }}
@@ -674,6 +744,9 @@ export const SetupWizard: Component = () => {
                   onScaleChange={(scale) => updateWidgetTransform("lapDelta", { scale })}
                   onWidthChange={(width) => updateWidgetTransform("lapDelta", { width })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="lapDelta" />
+                </Show>
               </div>
             </Show>
 
@@ -682,10 +755,11 @@ export const SetupWizard: Component = () => {
               <div
                 onMouseDown={(e) => handleMouseDown("revengeTracker", e)}
                 style={{
+                  "--hud-bg-alpha": widgetBgAlpha("revengeTracker"),
                   transform: `translate3d(${settings.widgets.revengeTracker.x}px, ${settings.widgets.revengeTracker.y}px, 0) scale(${settings.widgets.revengeTracker.scale})`,
                   "transform-origin": "bottom right",
                 }}
-                class={`fixed bottom-24 right-80 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed bottom-24 right-[380px] z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
                     ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
@@ -700,18 +774,26 @@ export const SetupWizard: Component = () => {
                   scale={settings.widgets.revengeTracker.scale}
                   onScaleChange={(scale) => updateWidgetTransform("revengeTracker", { scale })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="revengeTracker" />
+                </Show>
               </div>
             </Show>
 
-            {/* 기능 5-L: 좌측 근접 스포터 (Left Screen Edge) */}
+            {/* 기능 5-L: 좌측 근접 스포터 (Left Screen Edge or Center Bezel) */}
             <Show when={settings.widgets.spotterLeft?.visible !== false}>
               <div
                 onMouseDown={(e) => handleMouseDown("spotterLeft", e)}
                 style={{
+                  "--hud-bg-alpha": widgetBgAlpha("spotterLeft"),
                   transform: `translate3d(${settings.widgets.spotterLeft.x}px, calc(-50% + ${settings.widgets.spotterLeft.y}px), 0) scale(${settings.widgets.spotterLeft.scale})`,
                   "transform-origin": "left center",
+                  left:
+                    settings.tripleMonitorMode === "center-clamp" && settings.spotterBezelAnchor === "center-bezel"
+                      ? `calc(50% - ${settings.centerClampWidth / 2}px + 8px)`
+                      : "8px",
                 }}
-                class={`fixed top-1/2 left-2 z-40 select-none transition-shadow duration-150 ${
+                class={`fixed top-1/2 z-40 select-none transition-[left] duration-150 ${
                   settings.isEditMode
                     ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-r-xl"
                     : "pointer-events-none"
@@ -722,20 +804,32 @@ export const SetupWizard: Component = () => {
                   state="danger"
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.spotterLeft.scale}
+                  width={settings.widgets.spotterLeft.width ?? 200}
+                  height={settings.widgets.spotterLeft.height ?? 56}
                   onScaleChange={(scale) => updateWidgetTransform("spotterLeft", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("spotterLeft", { width })}
+                  onHeightChange={(height) => updateWidgetTransform("spotterLeft", { height })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="spotterLeft" />
+                </Show>
               </div>
             </Show>
 
-            {/* 기능 5-R: 우측 근접 스포터 (Right Screen Edge) */}
+            {/* 기능 5-R: 우측 근접 스포터 (Right Screen Edge or Center Bezel) */}
             <Show when={settings.widgets.spotterRight?.visible !== false}>
               <div
                 onMouseDown={(e) => handleMouseDown("spotterRight", e)}
                 style={{
+                  "--hud-bg-alpha": widgetBgAlpha("spotterRight"),
                   transform: `translate3d(${settings.widgets.spotterRight.x}px, calc(-50% + ${settings.widgets.spotterRight.y}px), 0) scale(${settings.widgets.spotterRight.scale})`,
                   "transform-origin": "right center",
+                  right:
+                    settings.tripleMonitorMode === "center-clamp" && settings.spotterBezelAnchor === "center-bezel"
+                      ? `calc(50% - ${settings.centerClampWidth / 2}px + 8px)`
+                      : "8px",
                 }}
-                class={`fixed top-1/2 right-2 z-40 select-none transition-shadow duration-150 ${
+                class={`fixed top-1/2 z-40 select-none transition-[right] duration-150 ${
                   settings.isEditMode
                     ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-l-xl"
                     : "pointer-events-none"
@@ -743,11 +837,18 @@ export const SetupWizard: Component = () => {
               >
                 <SpotterRight
                   distance={2.8}
-                  state="caution"
+                  state="warning"
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.spotterRight.scale}
+                  width={settings.widgets.spotterRight.width ?? 200}
+                  height={settings.widgets.spotterRight.height ?? 56}
                   onScaleChange={(scale) => updateWidgetTransform("spotterRight", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("spotterRight", { width })}
+                  onHeightChange={(height) => updateWidgetTransform("spotterRight", { height })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="spotterRight" />
+                </Show>
               </div>
             </Show>
 
@@ -756,10 +857,11 @@ export const SetupWizard: Component = () => {
               <div
                 onMouseDown={(e) => handleMouseDown("fuelCalculator", e)}
                 style={{
+                  "--hud-bg-alpha": widgetBgAlpha("fuelCalculator"),
                   transform: `translate3d(${settings.widgets.fuelCalculator.x}px, ${settings.widgets.fuelCalculator.y}px, 0) scale(${settings.widgets.fuelCalculator.scale})`,
-                  "transform-origin": "top right",
+                  "transform-origin": "bottom left",
                 }}
-                class={`fixed top-14 right-72 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed bottom-6 left-6 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
                     ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
@@ -770,6 +872,9 @@ export const SetupWizard: Component = () => {
                   scale={settings.widgets.fuelCalculator.scale}
                   onScaleChange={(scale) => updateWidgetTransform("fuelCalculator", { scale })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="fuelCalculator" />
+                </Show>
               </div>
             </Show>
 
@@ -778,10 +883,11 @@ export const SetupWizard: Component = () => {
               <div
                 onMouseDown={(e) => handleMouseDown("tireAnalysis", e)}
                 style={{
+                  "--hud-bg-alpha": widgetBgAlpha("tireAnalysis"),
                   transform: `translate3d(${settings.widgets.tireAnalysis.x}px, ${settings.widgets.tireAnalysis.y}px, 0) scale(${settings.widgets.tireAnalysis.scale})`,
                   "transform-origin": "bottom left",
                 }}
-                class={`fixed bottom-8 left-6 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed bottom-6 left-80 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
                     ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
@@ -792,6 +898,9 @@ export const SetupWizard: Component = () => {
                   scale={settings.widgets.tireAnalysis.scale}
                   onScaleChange={(scale) => updateWidgetTransform("tireAnalysis", { scale })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="tireAnalysis" />
+                </Show>
               </div>
             </Show>
 
@@ -800,10 +909,11 @@ export const SetupWizard: Component = () => {
               <div
                 onMouseDown={(e) => handleMouseDown("incidentHazard", e)}
                 style={{
+                  "--hud-bg-alpha": widgetBgAlpha("incidentHazard"),
                   transform: `translate3d(calc(-50% + ${settings.widgets.incidentHazard.x}px), ${settings.widgets.incidentHazard.y}px, 0) scale(${settings.widgets.incidentHazard.scale})`,
                   "transform-origin": "top center",
                 }}
-                class={`fixed top-28 left-1/2 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed top-[288px] left-1/2 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
                     ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
@@ -812,8 +922,13 @@ export const SetupWizard: Component = () => {
                 <IncidentHazard
                   isEditMode={settings.isEditMode}
                   scale={settings.widgets.incidentHazard.scale}
+                  width={settings.widgets.incidentHazard.width ?? 340}
                   onScaleChange={(scale) => updateWidgetTransform("incidentHazard", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("incidentHazard", { width })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="incidentHazard" />
+                </Show>
               </div>
             </Show>
 
@@ -822,10 +937,11 @@ export const SetupWizard: Component = () => {
               <div
                 onMouseDown={(e) => handleMouseDown("weather", e)}
                 style={{
+                  "--hud-bg-alpha": widgetBgAlpha("weather"),
                   transform: `translate3d(${settings.widgets.weather.x}px, ${settings.widgets.weather.y}px, 0) scale(${settings.widgets.weather.scale})`,
                   "transform-origin": "top right",
                 }}
-                class={`fixed top-14 right-6 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed top-[290px] right-6 z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
                     ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
@@ -836,6 +952,9 @@ export const SetupWizard: Component = () => {
                   scale={settings.widgets.weather.scale}
                   onScaleChange={(scale) => updateWidgetTransform("weather", { scale })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="weather" />
+                </Show>
               </div>
             </Show>
 
@@ -844,6 +963,7 @@ export const SetupWizard: Component = () => {
               <div
                 onMouseDown={(e) => handleMouseDown("multiclassRadar", e)}
                 style={{
+                  "--hud-bg-alpha": widgetBgAlpha("multiclassRadar"),
                   transform: `translate3d(${settings.widgets.multiclassRadar.x}px, ${settings.widgets.multiclassRadar.y}px, 0) scale(${settings.widgets.multiclassRadar.scale})`,
                   "transform-origin": "right center",
                 }}
@@ -858,6 +978,9 @@ export const SetupWizard: Component = () => {
                   scale={settings.widgets.multiclassRadar.scale}
                   onScaleChange={(scale) => updateWidgetTransform("multiclassRadar", { scale })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="multiclassRadar" />
+                </Show>
               </div>
             </Show>
 
@@ -866,20 +989,55 @@ export const SetupWizard: Component = () => {
               <div
                 onMouseDown={(e) => handleMouseDown("trackMap", e)}
                 style={{
-                  transform: `translate3d(${settings.widgets.trackMap.x}px, ${settings.widgets.trackMap.y}px, 0) scale(${settings.widgets.trackMap.scale})`,
+                  "--hud-bg-alpha": widgetBgAlpha("trackMap"),
+                  transform: `translate3d(${settings.widgets.trackMap?.x ?? 0}px, ${settings.widgets.trackMap?.y ?? 0}px, 0) scale(${settings.widgets.trackMap?.scale ?? 1.0})`,
                   "transform-origin": "bottom left",
                 }}
-                class={`fixed bottom-8 left-64 z-30 select-none transition-shadow duration-150 ${
+                class={`fixed bottom-[210px] left-[320px] z-30 select-none transition-shadow duration-150 ${
                   settings.isEditMode
                     ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded"
                     : "pointer-events-none"
                 }`}
               >
                 <TrackMap
+                  trackName="Circuit de Spa-Francorchamps"
                   isEditMode={settings.isEditMode}
-                  scale={settings.widgets.trackMap.scale}
+                  scale={settings.widgets.trackMap?.scale ?? 1.0}
+                  width={settings.widgets.trackMap?.width ?? 460}
                   onScaleChange={(scale) => updateWidgetTransform("trackMap", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("trackMap", { width })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="trackMap" />
+                </Show>
+              </div>
+            </Show>
+
+            {/* 기능 16: 테마별 RPM 시프트 라이트 LED 바 (Top-Center) */}
+            <Show when={settings.widgets.shiftLight?.visible !== false}>
+              <div
+                onMouseDown={(e) => handleMouseDown("shiftLight", e)}
+                style={{
+                  "--hud-bg-alpha": widgetBgAlpha("shiftLight"),
+                  transform: `translate3d(calc(-50% + ${settings.widgets.shiftLight?.x ?? 0}px), ${settings.widgets.shiftLight?.y ?? 0}px, 0) scale(${settings.widgets.shiftLight?.scale ?? 1.0})`,
+                  "transform-origin": "top center",
+                }}
+                class={`fixed top-[136px] left-1/2 z-30 select-none transition-shadow duration-150 ${
+                  settings.isEditMode
+                    ? "pointer-events-auto cursor-grab active:cursor-grabbing ring-1 ring-white/25 hover:ring-white/50 shadow-[0_0_24px_rgba(255,255,255,0.08)] rounded-lg"
+                    : "pointer-events-none"
+                }`}
+              >
+                <ShiftLight
+                  isEditMode={settings.isEditMode}
+                  scale={settings.widgets.shiftLight?.scale ?? 1.0}
+                  width={settings.widgets.shiftLight?.width ?? 440}
+                  onScaleChange={(scale) => updateWidgetTransform("shiftLight", { scale })}
+                  onWidthChange={(width) => updateWidgetTransform("shiftLight", { width })}
+                />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="shiftLight" />
+                </Show>
               </div>
             </Show>
 
@@ -888,6 +1046,7 @@ export const SetupWizard: Component = () => {
               <div
                 onMouseDown={(e) => handleMouseDown("telemetryHub", e)}
                 style={{
+                  "--hud-bg-alpha": widgetBgAlpha("telemetryHub"),
                   transform: `translate3d(calc(-50% + ${settings.widgets.telemetryHub.x}px), ${settings.widgets.telemetryHub.y}px, 0) scale(${settings.widgets.telemetryHub.scale})`,
                   "transform-origin": "bottom center",
                 }}
@@ -910,6 +1069,9 @@ export const SetupWizard: Component = () => {
                   scale={settings.widgets.telemetryHub.scale}
                   onScaleChange={(scale) => updateWidgetTransform("telemetryHub", { scale })}
                 />
+                <Show when={settings.isEditMode}>
+                  <OpacityChip widgetKey="telemetryHub" />
+                </Show>
               </div>
             </Show>
           </div>

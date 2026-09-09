@@ -287,7 +287,7 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
     >
       {/* Edit Mode Top Shaded Bar: "순위표" + [RACE / QUAL / PRAC] + " - 100% + " */}
       <Show when={props.isEditMode}>
-        <div class="flex items-center justify-between px-3 py-1.5 bg-black/90 backdrop-blur-md border-t border-x border-white/20 rounded-t text-white select-none gap-2">
+        <div class="absolute bottom-full inset-x-0 flex items-center justify-between px-3 py-1.5 hud-surface-deep backdrop-blur-md border-t border-x border-white/20 rounded-t text-white select-none gap-2">
           <div class="flex items-center gap-2">
             <span class="text-[11px] font-bold tracking-wider text-white/95 shrink-0">
               {t().leaderboardTitle || "순위표"}
@@ -325,7 +325,7 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
 
       {/* 1. Broadcast title lockup: [logo] SESSION  |  LAP n/N  (F1 world-feed styling) */}
       <div
-        class={`flex items-center justify-between bg-[#15151E] px-2.5 py-2 ${
+        class={`flex items-center justify-between hud-surface-band px-2.5 py-2 ${
           props.isEditMode ? "border-x border-t border-white/20" : "border border-white/10 rounded-t-[3px]"
         }`}
       >
@@ -412,7 +412,7 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
                     ? "bg-[#1D2338] ring-1 ring-inset ring-[#30d158]/50"
                     : isLeader()
                     ? "bg-[#26262F]"
-                    : "bg-[#1B1B22] hover:bg-[#22222B]"
+                    : "hud-surface-raised hover:bg-[#22222B]"
                 }`}
               >
                 {/* 1. Pos with Gain/Loss Indicator (▲/▼/–) & F1 Quali P1 Solid Red Badge */}
@@ -537,7 +537,7 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
       </div>
 
       {/* Bottom Border Accent */}
-      <div class="h-[5px] bg-[#15151E] rounded-b-[3px] border-t border-white/[0.06]" />
+      <div class="h-[5px] hud-surface-band rounded-b-[3px] border-t border-white/[0.06]" />
 
       {/* 1. Horizontal Drag Resize Handle (Right Edge: Width) */}
       <Show when={props.isEditMode}>

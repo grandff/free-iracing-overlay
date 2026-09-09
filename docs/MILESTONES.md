@@ -83,16 +83,25 @@
     - 타깃 비교 모드 (`VS BEST` / `VS LAST`).
     - `Alt + J` 편집 모드: 가로 너비 드래그 핸들, 배율 조절 `[-] 100% [+]`, `[델타 모드]` 시뮬레이션 테스트 버튼.
   - SDK 변수: `LapDeltaToSessionLastlLap`(+`_OK`), `LapDeltaToBestLap`(+`_OK`), `LapDeltaToSessionBestLap`(+`_OK`), `LapLastLapTime`, `LapBestLapTime`, YAML `SplitTimeInfo`.
-- [ ] **M2.5: 위젯 11 - 실시간 2D 트랙 맵 (`TrackMap.tsx`)**
-  - 2D SVG 서킷 레이아웃 위 실시간 차량 위치(내 차량 네온 화살표, 상대 차량 클래스별 컬러 점).
-  - 피트 레인 진입 차량 반투명화 및 사고 섹터 옐로우 발광.
-  - SDK 변수: `CarIdxLapDistPct`, `CarIdxTrackSurface`, `CarIdxOnPitRoad`.
-- [ ] **M2.6: 위젯 16 - 테마별 RPM 시프트 라이트 LED 바 (`ShiftLight.tsx`)**
-  - **테마 적응형 디자인:** 단일 고정이 아닌, **선택된 테마(F1 수평 아치형 LED, WEC/GT3 시퀀셜 듀얼 LED, IndyCar 스타일 등)에 맞춰 외형과 점멸 스타일이 동적으로 적응**.
-  - 차종별 최적 변속 RPM 도달 시 고휘도 시프트 플래시.
-  - SDK 변수: `RPM`, `EngineWarnings`, YAML `DriverInfo.DriverCarSLFirstRPM`, `DriverCarSLShiftRPM`, `DriverCarSLBlinkRPM`.
-- [ ] **M2.7: 트리플 모니터(48:9) 뷰포트 센터 클램프**
-  - 가로 5760x1080 / 7680x1440 환경에서 중앙 16:9 모니터 영역 안전 배치 및 베젤 앵커링.
+- [x] **M2.5: 위젯 11 - 실시간 2D 트랙 맵 (`TrackMap.tsx`)**
+  - **iRacing 세션 트랙 정보 자동 연동:** 세션 YAML `WeekendInfo: TrackName` 기반 공식 2D 서킷 지오메트리 프리셋(Spa, Monza, Silverstone, Suzuka, Nürburgring, Generic GP) 자동 매핑.
+  - **0-종속성 네이티브 SVG 트랙 궤적 연동:** 브라우저 표준 `svgPath.getPointAtLength(lapDistPct * totalLength)`를 통해 외부 라이브러리 없이 0.01px 오차 없는 트랙 위 주행 및 탄젠트 방향 회전.
+  - **사고 발생 지점(Hazard Beacon) 표시:** `SessionFlags` 황기 및 코스아웃/스핀 차량(`CarIdxTrackSurface === 0`)의 위치에 고휘도 옐로우 점멸 비콘(🚨/⚠️ + 사고 차량 번호 태그) 렌더링. 사고 섹터 노란색 펄스 발광.
+  - **내 3섹터(S1/S2/S3) 퍼플/그린/옐로우 동적 트랙 라인 컬러링:** SVG `pathLength="100"` 기반 `stroke-dasharray` 분할 렌더링으로 세션 최고(보라), 개인 최고(초록), 지연(노랑), 주행 중(화이트 펄스) 트랙 라인 발광.
+  - **차량 클래스 도트 & 피트 투명도:** 플레이어(#7 YOU) 네온 인디케이터, 상대 차량 클래스 도트, 피트 진입 차량 반투명화 및 렌치(`IconPit`) 표기.
+  - **`Alt + J` 편집 모드:** 가로 너비 조절, 배율 조절 `[-] 100% [+]`, `[사고 테스트]` 토글, `[트랙 변경]` 테스트 버튼 탑재.
+  - SDK 변수: `WeekendInfo: TrackName/TrackID`, `CarIdxLapDistPct`, `CarIdxTrackSurface`, `CarIdxOnPitRoad`, `SessionFlags`, `SplitTimeInfo: Sectors`.
+- [x] **M2.6: 위젯 16 - 테마별 RPM 시프트 라이트 LED 바 (`ShiftLight.tsx`)**
+  - **테마 적응형 타코미터:** F1(수평 아치형 LED 리본), GT3/WEC(양끝 수렴 듀얼 윙), IndyCar(초광폭 슬림 바) 스타일 동적 지원.
+  - **15-LED 모터스포츠 프로그레션:** 5 Green ➔ 5 Red ➔ 5 Blue/Purple 고휘도 발광 인디케이터.
+  - **디지털 기어 & 텔레메트리:** 중앙 대형 기어(`1..8`, `N`, `R`), 실시간 속도(km/h), RPM 표시.
+  - **스트로브 플래시 & 피트 리미터:** 변속 한계(`blinkRpm`/`irsdk_revLimiterActive`) 도달 시 15개 전체 화이트 플래시, 피트 리미터(`irsdk_pitSpeedLimiter`) 시 청색/황색 교차 점멸 및 `PIT LIMITER / 60 KM/H` 배너.
+  - **`Alt + J` 편집 모드:** 가로 너비(300~680px) 실시간 조절, 배율 조절, `[RPM 테스트]`(LIVE/T1~T5), `[스타일 전환]`(F1/GT3/INDYCAR).
+  - SDK 변수: `RPM`, `EngineWarnings` (`0x10`, `0x20`), YAML `DriverInfo.DriverCarSLFirstRPM`, `DriverCarSLShiftRPM`, `DriverCarSLLastRPM`, `DriverCarSLBlinkRPM`.
+- [x] **M2.7: 트리플 모니터(48:9) 뷰포트 센터 클램프 & 베젤 정밀 정렬**
+  - **초광폭(5760x1080 / 7680x1440) 중앙 시야 클램프:** FHD(1920px) / QHD(2560px) 중앙 모니터 너비 옵션(`centerClampWidth`).
+  - **스포터 베젤 앵커링 (`spotterBezelAnchor`):** 좌/우 근접 스포터를 화면 최외곽 대신 중앙 모니터 좌/우 베젤 경계선에 정밀 정렬.
+  - **`Alt + J` 편집 모드 베젤 점선 가이드라인:** 중앙 모니터 좌/우 베젤 물리적 경계 위치에 옐로우 점선 가이드(`◀ LEFT BEZEL`, `RIGHT BEZEL ▶`) 표시.
 
 ---
 
@@ -101,15 +110,23 @@
 > **목표:** 모터스포츠 디자인 언어에 맞춰 독립 좌/우 근접 스포터, 연료 시뮬레이터, 전방 사고 경고, 날씨 정보, 디지플래그, 피트박스 카운트다운을 완성합니다.
 
 ### 세부 작업 항목
-- [ ] **M3.1: 위젯 5 - 독립 좌/우 근접 스포터 (`SpotterLeft.tsx`, `SpotterRight.tsx`)**
-  - 좌측/우측 개별 위젯 분리, 독립 감지 거리(1.5m~5m) 및 거리별 3단계(안전/경고/위험) 점멸.
+- [x] **M3.1: 위젯 5 - 독립 좌/우 근접 스포터 (`SpotterLeft.tsx`, `SpotterRight.tsx`)**
+  - **좌/우 완전 독립 제어:** 좌/우 위젯 분리, 독립 드래그 이동 및 자유로운 2D 크기 조절(가로 140~380px, 세로 44~160px, 배율 `[-] 100% [+]`).
+  - **iRacing 데이터 맞춤 2단계(경고/위험) 레이더:** 1단계 경고(Amber 1대 근접 `irsdk_LRCarLeft`/`Right`, 싱글 셰브론) / 2단계 위험(Red 2대 근접 `irsdk_LR2CarsLeft`/`Right`, 더블 셰브론, 고속 펄스).
+  - **`Alt + J` 편집 모드 인터랙티브 테스트:** 좌/우 각각 `[스포터 테스트]`(LIVE/WARN/DANGER) 독립 테스트 스위처 탑재.
   - SDK 변수: `CarLeftRight` bitfield.
-- [ ] **M3.2: 위젯 6 - 연료 시뮬레이터 (`FuelSimulator.tsx`)**
-  - 랩당 평균 소비량, 잔여 랩수 기준 완주 필요 연료량, 피트스탑 급유량 계산.
-  - SDK 변수: `FuelLevel`, `FuelLevelPct`, `FuelUsePerHour`, `SessionLapsRemainEx`.
-- [ ] **M3.3: 위젯 8 - 전방 사고 지점 경고 (`IncidentHazard.tsx`)**
-  - 전방 400m 이내 사고 감지 시 남은 거리(m) 실시간 카운트다운 & 고휘도 점멸.
-  - SDK 변수: `SessionFlags`, `CarIdxTrackSurface`, `CarIdxLapDistPct`.
+- [x] **M3.2: 위젯 6 - 연료 시뮬레이터 & 전략 계산기 (`FuelSimulator.tsx`)**
+  - **5대 킬러 차별화:** Clean Green Lap 필터링(황기/페이스랩 왜곡 배제), 선두 0:00 결승선 통과 기반 Extra Lap 수학적 판정, Lift & Coast 실시간 절약 타겟 바, Pit Window(Open/Optimal/Close) & Pit Loss 시간 예측, 인게임 F4 블랙박스(`PitSvFuel`, `irsdk_FuelFill`) 감사 경고.
+  - **F1 Broadcast + Apple Design:** 컴팩트 레이스 바 + 원클릭 확장 전략 서랍, `Alt + J` 5단계 인터랙티브 테스트 스위처 및 가로 너비(240~380px) 리사이즈 지원.
+  - SDK 변수: `FuelLevel`, `FuelLevelPct`, `FuelUsePerHour`, `PitSvFuel`, `PitSvFlags`, `SessionFlags`, `CarIdxPosition`, `CarIdxLapDistPct`, `CarIdxEstTime`, YAML `DriverCarFuelMaxLtr`.
+- [x] **M3.3: 위젯 8 - 전방 사고 지점 경고 (`IncidentHazard.tsx`)**
+  - **엄격한 사고 필터링 (Zero False Positives):** 단순 연석 밟기/경미한 트랙리밋 이탈(10cm 오프트랙, 고속 주행)은 완전 무시. 오직 방호벽/트랙리밋 충돌(`collision`), 차간 충돌(`collision`), 스핀/제어 상실(`spin` / lose control, 속도 < 40 km/h 또는 급감속), 트랙 위 정차(`stopped`, 속도 < 10 km/h), 공식 로컬 황기(`yellowFlag`) 수준의 실제 위험 사고만 선별 경보.
+  - **2단계 정밀 거리 감지 (0~400m):**
+    - **1단계 주의 (Caution Ahead, 200m~400m):** 레이싱 앰버(`#F59E0B`), ⚠️ 경고 아이콘, 실시간 거리(m) 카운트다운, 사고 유형 배지, 차량 번호 및 통과 속도, `PREPARE TO SLOW` 감속 대비 안내.
+    - **2단계 위험 (Critical Danger, 0m~200m):** F1 솔리드 레드(`#E10600`), 🚨 고속 점멸 비콘, 심홍색 슬래브, 24px 볼드 고대비 폰트, `SLOW DOWN NOW!` 긴급 감속 지시.
+  - **F1 브로드캐스트 + Apple Design:** 각진 슬래브, 좌측 세로 악센트 탭(3.5px), oblique(이탤릭) 타이포그래피, tabular-nums 고정폭 숫자(지터 방지), 주행 중 사고 미발생 시 완전 투명화(화면 가림 0).
+  - **`Alt + J` 편집 모드:** 가로 너비(280~480px) 마우스 드래그 리사이즈, 배율 조절 `[-] 100% [+]`, 5단계 인터랙티브 테스트 스위처(`LIVE` ➔ `SPIN (140m)` ➔ `CRASH (65m)` ➔ `STOPPED (280m)` ➔ `CLEAR`).
+  - SDK 변수: `SessionFlags` (`irsdk_yellow`, `irsdk_yellowWaving`, `irsdk_caution`, `irsdk_debris`), `CarIdxTrackSurface` (`irsdk_OffTrack`), `CarIdxLapDistPct`, 속도(Speed m/s $\times$ 3.6).
 - [ ] **M3.4: 위젯 9 - 날씨 & Tempest 정보 (`WeatherWidget.tsx`)**
   - 대기/노면 온도, 풍향 나침반, 우천 강수량 게이지.
   - SDK 변수: `AirTemp`, `TrackTempCrew`, `WindVel`, `WindDir`, `RelativeHumidity`.

@@ -28,7 +28,7 @@ export const TireAnalysis: Component<Props> = (props) => {
     <div class="relative flex flex-col w-[230px] font-sans select-none shadow-2xl">
       <Show when={editPresence.mounted()}>
         <div
-          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 bg-[#1c1c24]/95 border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
+          class={`absolute -top-9 left-1/2 -translate-x-1/2 z-40 flex items-center justify-between gap-3 px-3 py-1 hud-surface-raised border border-white/20 rounded-full shadow-lg text-white pointer-events-auto apple-pill-enter ${
             editPresence.visible() ? "is-visible" : "is-hidden"
           }`}
         >
@@ -51,8 +51,8 @@ export const TireAnalysis: Component<Props> = (props) => {
         </div>
       </Show>
 
-      <div class="bg-[#12131a]/95 border border-white/15 rounded-lg overflow-hidden shadow-2xl">
-        <div class="flex items-center justify-between bg-[#1a1b24] border-b border-white/10 px-3 py-1.5">
+      <div class="hud-surface border border-white/15 rounded-lg overflow-hidden shadow-2xl">
+        <div class="flex items-center justify-between hud-surface-band border-b border-white/10 px-3 py-1.5">
           <div class="flex items-center gap-1.5 text-white">
             <IconTirePSI size={13} class="text-[#ffd100]" />
             <span class="text-[10px] font-mono font-extrabold tracking-wider">TIRE ANALYSIS</span>
