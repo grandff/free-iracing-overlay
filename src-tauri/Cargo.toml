@@ -1,6 +1,6 @@
 [package]
 name = "free-iracing-overlay"
-version = "0.1.2"
+version = "0.1.3"
 description = "Ultra-lightweight 100% free iRacing broadcast overlay"
 authors = ["Kim Jeongmin"]
 edition = "2021"
