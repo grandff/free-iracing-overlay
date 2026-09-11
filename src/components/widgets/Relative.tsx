@@ -1,5 +1,4 @@
-import { Component, For, Show, createSignal, createMemo, onCleanup } from "solid-js";
-import { createReorderFlip } from "../../utils/reorderFlip.ts";
+import { Component, For, Index, Show, createSignal, createMemo, onCleanup } from "solid-js";
 import { CountryFlag } from "../../assets/icons/CountryFlags.tsx";
 import { SectorColor } from "../../services/telemetry/types.ts";
 import { calculateSOF } from "../../services/telemetry/iratingCalculator.ts";
@@ -303,19 +302,16 @@ export const Relative: Component<RelativeProps> = (props) => {
     setIsResizingCorner(false);
   });
 
-  // 순위 변동 시 행이 위아래로 자리를 바꾸는 애니메이션 (순위표와 동일 로직 공유)
-  const flip = createReorderFlip(() => visibleList().map((d) => d.carNumber));
-
   return (
     <div
-      class="relative flex flex-col font-sans select-none rounded-sm overflow-visible text-white shadow-2xl transition-all"
+      class="relative flex flex-col font-sans select-none rounded-sm overflow-visible text-white shadow-2xl"
       style={{
         width: `${currentWidth()}px`,
       }}
     >
       {/* Edit Mode Top Shaded Bar: 타이틀 일체 배제, 배율 조절 컨트롤만 깔끔하게 노출 */}
       <Show when={props.isEditMode}>
-        <div class="flex items-center justify-end px-3 py-1 hud-surface-deep backdrop-blur-md border-t border-x border-white/20 rounded-t text-white select-none">
+        <div class="flex items-center justify-end px-3 py-1 hud-surface-deep border-t border-x border-white/20 rounded-t text-white select-none">
           <div class="flex items-center gap-1.5 shrink-0" onMouseDown={(e) => e.stopPropagation()}>
             <button
               onClick={(e) => {
@@ -410,20 +406,20 @@ export const Relative: Component<RelativeProps> = (props) => {
         <span class="text-right pr-2 font-bold">GAP</span>
       </div>
 
-      {/* Rows */}
+      {/* Rows: using Index so table row DOM nodes are reused across 30Hz telemetry updates */}
       <div class="flex flex-col gap-[1px] bg-black/60">
-        <For each={visibleList()}>
+        <Index each={visibleList()}>
           {(d) => {
-            const isAhead = d.gapSeconds < 0;
-            const formattedGap = d.isPlayer
-              ? "0.000s"
-              : `${isAhead ? "" : "+"}${d.gapSeconds.toFixed(3)}s`;
+            const isAhead = () => d().gapSeconds < 0;
+            const formattedGap = () =>
+              d().isPlayer
+                ? "0.000s"
+                : `${isAhead() ? "" : "+"}${d().gapSeconds.toFixed(3)}s`;
 
             return (
               <div
-                ref={flip.row(d.carNumber)}
                 class={`grid ${gridColsClass()} items-center h-[28px] px-2 transition-colors duration-150 border-l-[3.5px] ${
-                  d.isPlayer
+                  d().isPlayer
                     ? "bg-[#00d26a]/10 ring-1 ring-inset ring-[#00d26a]/45 border-l-[#00d26a]"
                     : "bg-[#13141c]/95 hover:bg-[#181a24]/95 border-l-transparent"
                 }`}
@@ -432,10 +428,10 @@ export const Relative: Component<RelativeProps> = (props) => {
                 <div class="flex items-center justify-center h-full">
                   <span
                     class={`text-[10px] font-mono font-bold tabular-nums ${
-                      d.isPlayer ? "text-[#00d26a] font-black" : "text-white/60"
+                      d().isPlayer ? "text-[#00d26a] font-black" : "text-white/60"
                     }`}
                   >
-                    P{d.position ?? "-"}
+                    P{d().position ?? "-"}
                   </span>
                 </div>
 
@@ -443,44 +439,44 @@ export const Relative: Component<RelativeProps> = (props) => {
                 <div class="flex items-center justify-center h-full">
                   <span
                     class={`text-[10px] font-mono font-bold tabular-nums ${
-                      d.isPlayer ? "text-[#00d26a]" : "text-white/75"
+                      d().isPlayer ? "text-[#00d26a]" : "text-white/75"
                     }`}
                   >
-                    #{d.carNumber}
+                    #{d().carNumber}
                   </span>
                 </div>
 
                 {/* 3. Driver: Clear gap from car number, Team stripe, Flag, YOU badge, Name */}
                 <div class="flex items-center h-full pl-2 pr-1 relative overflow-hidden min-w-0 gap-1.5">
-                  <Show when={!d.isPlayer}>
+                  <Show when={!d().isPlayer}>
                     <div
                       class="w-[3px] h-3.5 shrink-0"
-                      style={{ "background-color": d.teamColor }}
+                      style={{ "background-color": d().teamColor }}
                     />
                   </Show>
                   <CountryFlag
-                    code={d.country || "US"}
+                    code={d().country || "US"}
                     class="w-4 h-2.5 rounded-[1.5px] border border-white/20 shadow-sm shrink-0"
                   />
-                  <Show when={d.isPlayer}>
+                  <Show when={d().isPlayer}>
                     <span class="text-[8px] font-mono font-black px-1 py-0.2 rounded bg-[#00d26a] text-black shrink-0 tracking-wider shadow-sm">
                       YOU
                     </span>
                   </Show>
                   <span
                     class={`text-[12px] truncate tracking-tight ${
-                      d.isPlayer
+                      d().isPlayer
                         ? "text-white font-black"
-                        : isAhead
+                        : isAhead()
                         ? "text-[#f5f5f7] font-medium"
                         : "text-white/80"
                     }`}
                   >
-                    {d.name}
+                    {d().name}
                   </span>
-                  <Show when={!showIRColumn() && d.irating}>
+                  <Show when={!showIRColumn() && d().irating}>
                     <span class="ml-auto text-[8.5px] font-mono text-white/40 shrink-0 tnum">
-                      {(d.irating! / 1000).toFixed(1)}k
+                      {((d().irating || 0) / 1000).toFixed(1)}k
                     </span>
                   </Show>
                 </div>
@@ -489,39 +485,39 @@ export const Relative: Component<RelativeProps> = (props) => {
                 <Show when={showIRColumn()}>
                   <div class="text-right pr-1 shrink-0">
                     <span class={`font-mono text-[10px] tabular-nums ${
-                      d.isPlayer ? "text-[#00d26a] font-bold" : "text-white/70"
+                      d().isPlayer ? "text-[#00d26a] font-bold" : "text-white/70"
                     }`}>
-                      {d.irating ? d.irating.toLocaleString() : "—"}
+                      {d().irating ? d().irating!.toLocaleString() : "—"}
                     </span>
                   </div>
                 </Show>
 
                 {/* 4. Sector Pills: [ S1 | S2 | S3 ] */}
                 <div class="flex items-center justify-center shrink-0">
-                  <SectorPillGroup sectors={d.sectors} currentSector={d.currentSector} />
+                  <SectorPillGroup sectors={d().sectors} currentSector={d().currentSector} />
                 </div>
 
                 {/* 5. Tyre badge: 100% Vector SVG */}
                 <div class="flex items-center justify-center shrink-0">
-                  <TireBadge compound={d.tireCompound} />
+                  <TireBadge compound={d().tireCompound} />
                 </div>
 
                 {/* 6. Gap: Tabular monospace delta */}
                 <div class="text-right pr-2 shrink-0">
                   <span
                     class={`font-mono text-xs font-bold tabular-nums tracking-wider ${
-                      d.isPlayer
+                      d().isPlayer
                         ? "text-[#00d26a] font-black"
                         : "text-white/90"
                     }`}
                   >
-                    {formattedGap}
+                    {formattedGap()}
                   </span>
                 </div>
               </div>
             );
           }}
-        </For>
+        </Index>
       </div>
 
       {/* Bottom Border Accent */}

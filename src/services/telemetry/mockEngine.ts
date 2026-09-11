@@ -1,13 +1,18 @@
 import { settings } from "../../stores/settingsStore.ts";
-import {
+import type {
   TelemetryFrame,
   CarTelemetry,
-  SystemEventKind,
   SectorColor,
+  SectorStatus,
   LapDeltaTelemetry,
-  IRSDK_FLAGS,
   PitLaneTelemetry,
+  PlayerTelemetry,
+  WeatherTelemetry,
+  SpotterState,
+  SkiesState,
+  SystemEventKind,
 } from "./types.ts";
+import { IRSDK_FLAGS } from "./types.ts";
 import {
   CarLeftRight,
   CarSpeedTracker,
@@ -63,6 +68,155 @@ export class MockTelemetryEngine {
     { carIdx: 23, carNumber: "98", driverName: "N. Yelloly", country: "GB", carBrand: "BMW", irating: 5890, safetyRating: { license: "D", value: 2.80 }, classPosition: 18, overallPosition: 23, positionDelta: 0, lap: 2, lapDistPct: 0.005, lastLapTime: 96.90, bestLapTime: 96.00, inPit: false, carClass: "GT3", carClassColor: "#00CC88", speedKmh: 227, gapToPlayerSeconds: -16.00, trackSurface: 3 },
   ];
 
+  // Cache calculations that do not change at 60Hz
+  private readonly cachedSof: number = calculateSOF(this.simulatedCars.map((c) => c.irating));
+  private lastPositionsKey = "";
+  private cachedEloResults = new Map<number, any>();
+  private readonly classSeenMap = new Map<string, number>();
+
+  // Persistent sub-objects to avoid 1,500+ heap allocations per second at 60Hz
+  private readonly cachedWeather: WeatherTelemetry = {
+    airTempC: 22.4,
+    trackTempC: 34.8,
+    windSpeedKmh: 14.2,
+    windDirDeg: 65,
+    windDirRad: 65 * (Math.PI / 180),
+    trackWetnessPct: 0,
+    relativeHumidityPct: 58,
+    fogLevelPct: 0,
+    skies: 1 as SkiesState, // partly cloudy
+    weatherType: 1, // dynamic Tempest
+    weatherVersion: 2,
+    trackWetness: 1, // irsdk_TrackWetness_Dry
+    precipitationPct: 0,
+    airPressureHg: 29.92,
+    airDensity: 1.198,
+  };
+
+  private readonly cachedMulticlass = {
+    hasApproachingFastCar: false,
+    carClass: "Hypercar",
+    carNumber: "1",
+    gapSeconds: 0,
+  };
+
+  private readonly cachedSpotter: {
+    leftState: SpotterState;
+    rightState: SpotterState;
+    carLeftRight: number;
+  } = {
+    leftState: "clear",
+    rightState: "clear",
+    carLeftRight: 1,
+  };
+
+  private readonly cachedShiftLight = {
+    rpm: 0,
+    gear: 0,
+    speedKmh: 0,
+    firstRpm: 10500,
+    shiftRpm: 12000,
+    lastRpm: 12400,
+    blinkRpm: 12500,
+    pitLimiterActive: false,
+    revLimiterActive: false,
+  };
+
+  private readonly cachedRadio = {
+    isTransmitting: false,
+    carIdx: -1,
+    radioIdx: 0,
+    frequencyIdx: 1,
+    channelName: "TEAM",
+    driverName: "K. Jeongmin",
+    carNumber: "7",
+    carBrand: "Porsche",
+    isPlayer: true,
+    messageText: "",
+  };
+
+  private readonly cachedSystemMessage = {
+    activeEvent: "none" as SystemEventKind,
+    rawText: "",
+    distanceMeters: undefined as number | undefined,
+    timestamp: 0,
+  };
+
+  private readonly cachedPlayer: PlayerTelemetry = {
+    carIdx: 1,
+    carNumber: "7",
+    driverName: "K. Jeongmin",
+    country: "KR",
+    carBrand: "Porsche",
+    irating: 6840,
+    projectedIratingGain: 38,
+    safetyRating: { license: "S", value: 4.98 },
+    speedKmh: 245,
+    rpm: 11000,
+    gear: 4,
+    fuelLevelLiters: 42.5,
+    lap: 3,
+    onPitRoad: false,
+    lastLapTime: 84.12,
+    bestLapTime: 83.89,
+    lastLapDelta: -0.24,
+    incidents: 4,
+    tirePressurePsi: [28.5, 28.6, 28.2, 28.3],
+    tireWearPct: [94, 91, 96, 93],
+    tireSurfaceLoadPct: [68, 74, 62, 65],
+    tireTempC: [88.5, 89.2, 85.1, 86.4],
+  };
+
+  private readonly cachedRevenge = {
+    hasTarget: true,
+    targetCarIdx: 2,
+    driverName: "M. Verstappen",
+    carNumber: "1",
+    country: "NL",
+    carBrand: "Red Bull",
+    position: 2,
+    gapSeconds: -0.42,
+    incidentCount: 4,
+    incidentTimestamp: Date.now() - 45_000,
+    lapDistPct: 0.145,
+    avgLapTime: 84.22,
+    lastLapDelta: 0.22,
+    targetLastLapTime: 84.34,
+    playerLastLapTime: 84.12,
+  };
+
+  private readonly sortBuffer: CarTelemetry[] = [];
+
+  private readonly cachedSectors: [SectorStatus, SectorStatus, SectorStatus] = [
+    { sectorNumber: 1 as const, status: "purple" as SectorColor, deltaSeconds: -0.185, isCurrent: true },
+    { sectorNumber: 2 as const, status: "green" as SectorColor, deltaSeconds: -0.062, isCurrent: false },
+    { sectorNumber: 3 as const, status: "yellow" as SectorColor, deltaSeconds: 0.104, isCurrent: false },
+  ];
+
+  private readonly cachedLapDelta: LapDeltaTelemetry = {
+    deltaToBest: -0.24,
+    deltaToBestValid: true,
+    deltaToLast: -0.06,
+    deltaToLastValid: true,
+    deltaToSessionBest: 0.11,
+    deltaToSessionBestValid: true,
+    lastLapTime: 84.12,
+    bestLapTime: 83.89,
+    currentSector: 1,
+    sectors: this.cachedSectors,
+    targetMode: "best",
+  };
+
+  private readonly cachedPitLane: PitLaneTelemetry = {
+    onPitRoad: false,
+    inPitStall: false,
+    approachingPits: false,
+    pitSpeedLimitKmh: 60,
+    distanceToStallMeters: undefined,
+    pitRepairRemainingSec: 0,
+    limiterActive: false,
+  };
+
   public start(onTick: (frame: TelemetryFrame) => void) {
     this.onTickCallback = onTick;
     if (this.timer) clearInterval(this.timer);
@@ -83,19 +237,32 @@ export class MockTelemetryEngine {
    * CarIdxClassPosition straight from shared memory). positionDelta is measured
    * against the grid so the ▲/▼ indicator stays steady instead of flickering.
    */
-  private recomputePositions() {
-    const byProgress = [...this.simulatedCars].sort(
+  private recomputePositions(): boolean {
+    this.sortBuffer.length = 0;
+    for (let i = 0; i < this.simulatedCars.length; i++) {
+      this.sortBuffer.push(this.simulatedCars[i]);
+    }
+    this.sortBuffer.sort(
       (a, b) => b.lap + b.lapDistPct - (a.lap + a.lapDistPct)
     );
-    const classSeen = new Map<string, number>();
-    byProgress.forEach((c, i) => {
-      c.overallPosition = i + 1;
-      const inClass = (classSeen.get(c.carClass) ?? 0) + 1;
-      classSeen.set(c.carClass, inClass);
-      c.classPosition = inClass;
+    this.classSeenMap.clear();
+    let positionsChanged = false;
+
+    for (let i = 0; i < this.sortBuffer.length; i++) {
+      const c = this.sortBuffer[i];
+      const overall = i + 1;
+      const inClass = (this.classSeenMap.get(c.carClass) ?? 0) + 1;
+      this.classSeenMap.set(c.carClass, inClass);
+
+      if (c.overallPosition !== overall || c.classPosition !== inClass) {
+        c.overallPosition = overall;
+        c.classPosition = inClass;
+        positionsChanged = true;
+      }
       const grid = this.gridPositions.get(c.carIdx);
       if (grid !== undefined) c.positionDelta = grid - c.overallPosition;
-    });
+    }
+    return positionsChanged;
   }
 
   private readonly gridPositions = new Map<number, number>(
@@ -135,8 +302,6 @@ export class MockTelemetryEngine {
       }
     });
 
-    this.recomputePositions();
-
     // Mock-only preview. The real reader must derive these boundaries from
     // session YAML SplitTimeInfo.Sectors[].SectorStartPct, never fixed thirds.
     const currentSector: 1 | 2 | 3 = this.lapDist < 0.33 ? 1 : this.lapDist < 0.67 ? 2 : 3;
@@ -146,23 +311,17 @@ export class MockTelemetryEngine {
     const s2Status: SectorColor = this.lapDist >= 0.33 ? "green" : "none";
     const s3Status: SectorColor = this.lapDist >= 0.67 ? "yellow" : "none";
 
-    const lapDeltaData: LapDeltaTelemetry = {
-      deltaToBest: dynamicDelta,
-      deltaToBestValid: true,
-      deltaToLast: dynamicDelta + 0.18,
-      deltaToLastValid: true,
-      deltaToSessionBest: dynamicDelta + 0.35,
-      deltaToSessionBestValid: true,
-      lastLapTime: 84.12,
-      bestLapTime: 83.89,
-      currentSector,
-      sectors: [
-        { sectorNumber: 1, status: s1Status, deltaSeconds: -0.185, isCurrent: currentSector === 1 },
-        { sectorNumber: 2, status: s2Status, deltaSeconds: -0.062, isCurrent: currentSector === 2 },
-        { sectorNumber: 3, status: s3Status, deltaSeconds: 0.104, isCurrent: currentSector === 3 },
-      ],
-      targetMode: "best",
-    };
+    this.cachedSectors[0].status = s1Status;
+    this.cachedSectors[0].isCurrent = currentSector === 1;
+    this.cachedSectors[1].status = s2Status;
+    this.cachedSectors[1].isCurrent = currentSector === 2;
+    this.cachedSectors[2].status = s3Status;
+    this.cachedSectors[2].isCurrent = currentSector === 3;
+
+    this.cachedLapDelta.deltaToBest = dynamicDelta;
+    this.cachedLapDelta.deltaToLast = dynamicDelta + 0.18;
+    this.cachedLapDelta.deltaToSessionBest = dynamicDelta + 0.35;
+    this.cachedLapDelta.currentSector = currentSector;
 
     // CarLeftRight is the raw enum the SDK publishes. 20s cycle:
     // clear -> car left -> two left -> car right -> both sides -> clear.
@@ -234,7 +393,7 @@ export class MockTelemetryEngine {
     // #51 loses it and beaches itself ahead of the player for 8s of every 30.
     // Only the raw CarIdx* state is faked here — detectHazardAhead does the real
     // work of deciding whether that counts as an incident worth warning about.
-    const incidentCar = this.simulatedCars.find((c) => c.carIdx === 4);
+    const incidentCar = this.simulatedCars[3]; // carIdx 4 is at index 3
     if (incidentCar) {
       if ((Date.now() / 1000) % 30 < 8) {
         incidentCar.lapDistPct = (this.lapDist + 0.03) % 1.0; // beached ~135m ahead
@@ -287,34 +446,32 @@ export class MockTelemetryEngine {
     // YAML DriverInfo.DriverPitTrkPct — where this driver's box sits on the lap.
     const driverPitTrkPct = 0.02;
     const pitDist = distanceToPitStall(this.lapDist, isPitActive ? driverPitTrkPct : undefined, this.trackLength);
-    const pitLane: PitLaneTelemetry = {
-      onPitRoad: isPitActive,
-      inPitStall: pitDist !== undefined && pitDist <= 1.0,
-      approachingPits: pitCycle >= 30 && pitCycle < 35,
-      pitSpeedLimitKmh: 60,
-      distanceToStallMeters: pitDist !== undefined ? Math.round(pitDist * 10) / 10 : undefined,
-      pitRepairRemainingSec: 0,
-      limiterActive: isPitActive || isPitLimiter,
-    };
+    this.cachedPitLane.onPitRoad = isPitActive;
+    this.cachedPitLane.inPitStall = pitDist !== undefined && pitDist <= 1.0;
+    this.cachedPitLane.approachingPits = pitCycle >= 30 && pitCycle < 35;
+    this.cachedPitLane.distanceToStallMeters = pitDist !== undefined ? Math.round(pitDist * 10) / 10 : undefined;
+    this.cachedPitLane.limiterActive = isPitActive || isPitLimiter;
 
-    // Calculate real-time ELO changes and SOF for the field
-    const eloInputs = this.simulatedCars.map((c) => ({
-      carIdx: c.carIdx,
-      irating: c.irating,
-      finishPosition: c.classPosition,
-      started: true,
-    }));
-    const eloResults = calculateEloChanges(eloInputs);
-    const calculatedSof = calculateSOF(this.simulatedCars.map((c) => c.irating));
-
-    for (const car of this.simulatedCars) {
-      const res = eloResults.get(car.carIdx);
-      if (res) {
-        car.projectedIratingGain = res.iratingChange;
+    // Calculate real-time ELO changes only when running order actually changes
+    const positionsChanged = this.recomputePositions();
+    if (positionsChanged || this.lastPositionsKey === "") {
+      this.lastPositionsKey = this.simulatedCars.map((c) => c.classPosition).join(",");
+      const eloInputs = this.simulatedCars.map((c) => ({
+        carIdx: c.carIdx,
+        irating: c.irating,
+        finishPosition: c.classPosition,
+        started: true,
+      }));
+      this.cachedEloResults = calculateEloChanges(eloInputs);
+      for (const car of this.simulatedCars) {
+        const res = this.cachedEloResults.get(car.carIdx);
+        if (res) {
+          car.projectedIratingGain = res.iratingChange;
+        }
       }
     }
 
-    const playerElo = eloResults.get(1);
+    const playerElo = this.cachedEloResults.get(1);
     const playerGain = playerElo?.iratingChange ?? 38;
 
     // Connect Revenge Target to simulated competitor #2 (M. Verstappen)
@@ -323,26 +480,56 @@ export class MockTelemetryEngine {
     const targetLastLap = targetCar?.lastLapTime ?? 84.34;
     const lastLapDelta = Number((targetLastLap - playerLastLap).toFixed(2));
 
-    const revenge = {
-      hasTarget: true,
-      targetCarIdx: targetCar?.carIdx ?? 2,
-      driverName: targetCar?.driverName ?? "M. Verstappen",
-      carNumber: targetCar?.carNumber ?? "1",
-      country: targetCar?.country ?? "NL",
-      carBrand: targetCar?.carBrand ?? "Red Bull",
-      position: targetCar?.classPosition ?? 2,
-      gapSeconds: targetCar?.gapToPlayerSeconds ?? -0.42,
-      incidentCount: 4,
-      incidentTimestamp: Date.now() - 45_000,
-      lapDistPct: targetCar?.lapDistPct ?? 0.145,
-      avgLapTime: 84.22,
-      lastLapDelta,
-      targetLastLapTime: targetLastLap,
-      playerLastLapTime: playerLastLap,
-    };
+    this.cachedRevenge.targetCarIdx = targetCar?.carIdx ?? 2;
+    this.cachedRevenge.driverName = targetCar?.driverName ?? "M. Verstappen";
+    this.cachedRevenge.carNumber = targetCar?.carNumber ?? "1";
+    this.cachedRevenge.country = targetCar?.country ?? "NL";
+    this.cachedRevenge.carBrand = targetCar?.carBrand ?? "Red Bull";
+    this.cachedRevenge.position = targetCar?.classPosition ?? 2;
+    this.cachedRevenge.gapSeconds = targetCar?.gapToPlayerSeconds ?? -0.42;
+    this.cachedRevenge.lapDistPct = targetCar?.lapDistPct ?? 0.145;
+    this.cachedRevenge.lastLapDelta = lastLapDelta;
+    this.cachedRevenge.targetLastLapTime = targetLastLap;
+    this.cachedRevenge.playerLastLapTime = playerLastLap;
+
+    // Update persistent player
+    this.cachedPlayer.speedKmh = playerSpeed;
+    this.cachedPlayer.rpm = playerRpm;
+    this.cachedPlayer.gear = gearNum;
+    this.cachedPlayer.fuelLevelLiters = this.fuelRemaining;
+    this.cachedPlayer.lap = this.currentLap;
+    this.cachedPlayer.onPitRoad = pitLaneActive;
+    this.cachedPlayer.lastLapDelta = dynamicDelta;
+    this.cachedPlayer.projectedIratingGain = playerGain;
+
+    // Update persistent spotter
+    this.cachedSpotter.leftState = spotterState.left;
+    this.cachedSpotter.rightState = spotterState.right;
+    this.cachedSpotter.carLeftRight = carLeftRight;
+
+    // Update persistent shiftLight
+    this.cachedShiftLight.rpm = playerRpm;
+    this.cachedShiftLight.gear = gearNum;
+    this.cachedShiftLight.speedKmh = playerSpeed;
+    this.cachedShiftLight.pitLimiterActive = isPitLimiter;
+    this.cachedShiftLight.revLimiterActive = isRevLimiter;
+
+    // Update persistent radio & system message
+    this.cachedRadio.isTransmitting = isTransmitting;
+    this.cachedRadio.carIdx = isTransmitting ? 1 : -1;
+    this.cachedRadio.channelName = radioChannel;
+    this.cachedRadio.driverName = radioDriver;
+    this.cachedRadio.carNumber = radioCarNumber;
+    this.cachedRadio.carBrand = radioCarBrand;
+    this.cachedRadio.messageText = radioMessage;
+
+    this.cachedSystemMessage.activeEvent = activeEvent;
+    this.cachedSystemMessage.rawText = rawSysText;
+    this.cachedSystemMessage.distanceMeters = sysDist;
+    this.cachedSystemMessage.timestamp = now;
 
     const frame: TelemetryFrame = {
-      timestamp: Date.now(),
+      timestamp: now,
       tickRateHz: 60,
       trackLengthMeters: this.trackLength,
       trackName: "Spa-Francorchamps GP",
@@ -353,95 +540,28 @@ export class MockTelemetryEngine {
       sessionLapsRemaining: fuel.lapsRemaining,
       sessionTimeRemainingSec,
       sessionFlags,
-      sof: calculatedSof,
+      sof: this.cachedSof,
       projectedIratingGain: playerGain,
-      player: {
-        carIdx: 1,
-        carNumber: "7",
-        driverName: "K. Jeongmin",
-        country: "KR",
-        carBrand: "Porsche",
-        irating: 6840,
-        projectedIratingGain: playerGain,
-        safetyRating: { license: "S", value: 4.98 },
-        speedKmh: playerSpeed,
-        rpm: playerRpm,
-        gear: gearNum,
-        fuelLevelLiters: this.fuelRemaining,
-        lap: this.currentLap,
-        onPitRoad: pitLaneActive,
-        lastLapTime: 84.12,
-        bestLapTime: 83.89,
-        lastLapDelta: dynamicDelta,
-        incidents: 4,
-        tirePressurePsi: [28.5, 28.6, 28.2, 28.3],
-        tireWearPct: [94, 91, 96, 93],
-        tireSurfaceLoadPct: [68, 74, 62, 65],
-        tireTempC: [88.5, 89.2, 85.1, 86.4],
-      },
+      player: { ...this.cachedPlayer },
       fuel,
-      cars: this.simulatedCars,
-      spotter: {
-        leftState: spotterState.left,
-        rightState: spotterState.right,
-        carLeftRight,
-      },
+      cars: this.simulatedCars.map((c) => ({ ...c })),
+      spotter: { ...this.cachedSpotter },
       hazard,
-      revenge,
-      weather: {
-        airTempC: 22.4,
-        trackTempC: 34.8,
-        windSpeedKmh: 14.2,
-        windDirDeg: 65,
-        windDirRad: 65 * (Math.PI / 180),
-        trackWetnessPct: 0,
-        relativeHumidityPct: 58,
-        fogLevelPct: 0,
-        skies: 1, // partly cloudy
-        weatherType: 1, // dynamic Tempest
-        weatherVersion: 2,
-        trackWetness: 1, // irsdk_TrackWetness_Dry
-        precipitationPct: 0,
-        airPressureHg: 29.92,
-        airDensity: 1.198,
+      revenge: { ...this.cachedRevenge },
+      weather: { ...this.cachedWeather },
+      multiclass: { ...this.cachedMulticlass },
+      radio: { ...this.cachedRadio },
+      systemMessage: { ...this.cachedSystemMessage },
+      lapDelta: {
+        ...this.cachedLapDelta,
+        sectors: [
+          { ...this.cachedSectors[0] },
+          { ...this.cachedSectors[1] },
+          { ...this.cachedSectors[2] },
+        ],
       },
-      multiclass: {
-        hasApproachingFastCar: false,
-        carClass: "Hypercar",
-        carNumber: "1",
-        gapSeconds: 0,
-      },
-      radio: {
-        isTransmitting,
-        carIdx: isTransmitting ? 1 : -1,
-        radioIdx: 0,
-        frequencyIdx: 1,
-        channelName: radioChannel,
-        driverName: radioDriver,
-        carNumber: radioCarNumber,
-        carBrand: radioCarBrand,
-        isPlayer: true,
-        messageText: radioMessage,
-      },
-      systemMessage: {
-        activeEvent,
-        rawText: rawSysText,
-        distanceMeters: sysDist,
-        timestamp: performance.now(),
-      },
-      lapDelta: lapDeltaData,
-      shiftLight: {
-        rpm: playerRpm,
-        gear: gearNum,
-        speedKmh: playerSpeed,
-        firstRpm: 10500,
-        shiftRpm: 12000,
-        lastRpm: 12400,
-        blinkRpm: 12500,
-        pitLimiterActive: isPitLimiter,
-        revLimiterActive: isRevLimiter,
-      },
-      pitLane,
+      shiftLight: { ...this.cachedShiftLight },
+      pitLane: { ...this.cachedPitLane },
     };
 
     if (this.onTickCallback) {

@@ -80,8 +80,8 @@ export const TelemetryHub: Component<Props> = (props) => {
 
         <div class="w-full h-2 bg-black/60 rounded-full overflow-hidden border border-white/10">
           <div
-            class="h-full bg-gradient-to-r from-[#00d26a] via-[#ffd100] to-[#e10600] transition-all duration-75"
-            style={{ width: `${rpmPct()}%` }}
+            class="h-full w-full bg-gradient-to-r from-[#00d26a] via-[#ffd100] to-[#e10600] origin-left"
+            style={{ transform: `scaleX(${rpmPct() / 100})` }}
           />
         </div>
       </div>

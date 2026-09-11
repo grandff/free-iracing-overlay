@@ -175,7 +175,7 @@ export const TeamRadio: Component<TeamRadioProps> = (props) => {
     >
       <Show when={props.isEditMode}>
         <div
-          class="flex items-center justify-between rounded-t border border-b-0 border-white/15 hud-surface-deep px-2.5 py-1 text-white backdrop-blur-md"
+          class="flex items-center justify-between rounded-t border border-b-0 border-white/15 hud-surface-deep px-2.5 py-1 text-white"
           onMouseDown={(event) => event.stopPropagation()}
         >
           <button
@@ -212,7 +212,7 @@ export const TeamRadio: Component<TeamRadioProps> = (props) => {
       <Show when={card()}>
         {(info) => (
           <section
-            class={`relative overflow-hidden border border-white/10 hud-surface text-white shadow-[0_14px_34px_rgba(0,0,0,0.58)] backdrop-blur-xl ${
+            class={`relative overflow-hidden border border-white/10 hud-surface text-white shadow-[0_14px_34px_rgba(0,0,0,0.58)] ${
               props.isEditMode ? "rounded-b" : "rounded-[6px]"
             }`}
             aria-label={`${getDriverLastName(info().driverName)} radio message`}

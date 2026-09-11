@@ -26,6 +26,8 @@ export interface DigiflagProps {
   onWidthChange?: (newWidth: number) => void;
 }
 
+const DIGIFLAG_LEDS = [0, 1, 2, 3, 4, 5, 6, 7] as const;
+
 /**
  * High-end aerodynamic waving flag graphic adhering to official F1 World-Feed
  * broadcast and trackside marshaling standards.
@@ -380,14 +382,14 @@ export const Digiflag: Component<DigiflagProps> = (props) => {
 
   return (
     <div
-      class="relative flex flex-col items-center select-none"
+      class="relative flex flex-col font-sans select-none"
       style={{
         width: `${currentWidth()}px`,
       }}
     >
       {/* Edit Mode Control Bar */}
       <Show when={props.isEditMode}>
-        <div class="w-full flex items-center justify-end px-2 py-1 mb-1.5 bg-black/85 backdrop-blur-md rounded border border-white/20 text-[10px] font-mono text-white/80 z-30 shadow-lg">
+        <div class="w-full flex items-center justify-end px-2 py-1 mb-1.5 bg-black/85 rounded border border-white/20 text-[10px] font-mono text-white/80 z-30 shadow-lg">
           <div class="flex items-center gap-1">
             <button
               onClick={cycleTest}
@@ -431,7 +433,7 @@ export const Digiflag: Component<DigiflagProps> = (props) => {
         fallback={
           <Show when={props.isEditMode}>
             {/* Ghost frame when no flag is active in Edit Mode */}
-            <div class="w-full h-24 rounded border border-dashed border-white/30 bg-black/40 backdrop-blur-sm flex flex-col items-center justify-center text-white/40 font-mono text-xs gap-1.5 shadow-inner">
+            <div class="w-full h-24 rounded border border-dashed border-white/30 bg-black/40 flex flex-col items-center justify-center text-white/40 font-mono text-xs gap-1.5 shadow-inner">
               <IconCheckeredFlag size={24} class="opacity-40" />
               <span class="tracking-widest uppercase text-[10px] font-bold">DIGIFLAG • NO ACTIVE FLAGS</span>
             </div>
@@ -440,13 +442,13 @@ export const Digiflag: Component<DigiflagProps> = (props) => {
       >
         {(meta) => (
           <div
-            class={`w-full relative overflow-hidden rounded bg-[rgb(12_14_20_/_var(--hud-bg-alpha,0.95))] border border-white/15 backdrop-blur-md p-2.5 transition-all ${
+            class={`w-full relative overflow-hidden rounded bg-[rgb(12_14_20_/_var(--hud-bg-alpha,0.95))] border border-white/15 p-2.5 transition-all ${
               meta().accentBorder
             } ${meta().glowShadow} ${meta().pulse ? "animate-pulse" : ""}`}
           >
             {/* Top High-Intensity FIA LED Light Bar */}
             <div class="w-full flex items-center justify-between px-1 mb-2">
-              <For each={Array.from({ length: 8 })}>
+              <For each={DIGIFLAG_LEDS}>
                 {(_) => (
                   <div
                     class="w-2 h-2 rounded-full animate-digiflag-led shadow-sm"

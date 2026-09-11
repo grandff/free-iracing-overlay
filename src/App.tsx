@@ -155,6 +155,7 @@ export const App: Component = () => {
       const aheadBehind = Math.max(2, Math.min(5, settings.widgets.relative?.maxRows || 3));
       const slice = sorted.slice(Math.max(0, pIdx - aheadBehind), Math.min(sorted.length, pIdx + aheadBehind + 1));
       const playerSectorData = frame.lapDelta?.sectors;
+
       const mappedRel = slice.map((c) => {
         const code = c.driverName.split(" ").pop()?.substring(0, 3).toUpperCase() || `P${c.overallPosition}`;
         const isPlayer = c.carIdx === playerIdx;
@@ -168,8 +169,6 @@ export const App: Component = () => {
           tireCompound: tireList[c.carIdx % tireList.length],
           gapSeconds: c.gapToPlayerSeconds,
           isPlayer,
-          // IRSDK exposes live lap deltas only for the player. Opponent split
-          // colors are deliberately omitted instead of being fabricated.
           sectors: isPlayer && playerSectorData
             ? [playerSectorData[0].status, playerSectorData[1].status, playerSectorData[2].status] as const
             : undefined,

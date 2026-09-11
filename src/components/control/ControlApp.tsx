@@ -18,7 +18,6 @@ import {
 import {
   Palette,
   Layers,
-  Monitor,
   Keyboard,
   Check,
   X,
@@ -27,6 +26,7 @@ import {
   Globe,
   User,
   FileText,
+  Monitor,
 } from "lucide-solid";
 import { t, setLanguage, SUPPORTED_LANGUAGES } from "../../i18n/index.ts";
 import { CountryFlag, getCountryInfo } from "../../assets/icons/CountryFlags.tsx";

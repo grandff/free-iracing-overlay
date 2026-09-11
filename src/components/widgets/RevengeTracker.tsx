@@ -1,4 +1,4 @@
-import { Component, Show, createSignal, createMemo, onCleanup } from "solid-js";
+import { Component, Show, createSignal, createMemo, createEffect, onCleanup } from "solid-js";
 import { RevengeTelemetry, SessionType } from "../../services/telemetry/types.ts";
 import { IconCrosshair, IconWarning } from "../../assets/icons/Icons.tsx";
 import { CountryFlag } from "../../assets/icons/CountryFlags.tsx";
@@ -27,8 +27,8 @@ export interface RevengeTrackerProps {
 }
 
 export const RevengeTracker: Component<RevengeTrackerProps> = (props) => {
-  // Width: default 340px, min 280px, max 460px
-  const currentWidth = () => Math.max(280, Math.min(460, props.width ?? 340));
+  // Width control: default 340px, min 280px, max 480px
+  const currentWidth = () => Math.max(280, Math.min(480, props.width ?? 340));
 
   // Current persistence setting: read from props, store, or default to "session"
   const persistenceSetting = () =>
@@ -46,17 +46,13 @@ export const RevengeTracker: Component<RevengeTrackerProps> = (props) => {
     props.onPersistenceModeChange?.(nextMode);
   };
 
-  // Interactive Edit-Mode Test Step:
-  // 0: LIVE
-  // 1: AHEAD (P2 M. Verstappen #1, +1.42s)
-  // 2: BEHIND (P5 J. Gordon #24, -3.85s)
-  // 3: 5-MIN COUNTDOWN (Auto-reset timer)
-  // 4: NO TARGET
-  const [testStep, setTestStep] = createSignal<number>(0);
+  // Edit Mode Test Cycling: 0=Live, 1=Target A (+1.4s), 2=Target B (-3.8s), 3=5min countdown test, 4=Disabled/None
+  const [testStep, setTestStep] = createSignal<0 | 1 | 2 | 3 | 4>(0);
+  const testBaseTime = Date.now();
 
   const cycleTest = (e: MouseEvent) => {
     e.stopPropagation();
-    setTestStep((prev) => (prev + 1) % 5);
+    setTestStep((prev) => ((prev + 1) % 5) as 0 | 1 | 2 | 3 | 4);
   };
 
   const testLabel = createMemo(() => {
@@ -72,8 +68,18 @@ export const RevengeTracker: Component<RevengeTrackerProps> = (props) => {
 
   // Current system clock for 5-minute countdown
   const [now, setNow] = createSignal(Date.now());
-  const timerInterval = setInterval(() => setNow(Date.now()), 1000);
-  onCleanup(() => clearInterval(timerInterval));
+
+  const hasActiveTarget = () => {
+    if (props.isEditMode) return true;
+    return !!(props.revenge?.hasTarget || props.hasTarget);
+  };
+
+  // Only run the 1-second countdown timer when a target is actually active
+  createEffect(() => {
+    if (!hasActiveTarget()) return;
+    const timerInterval = setInterval(() => setNow(Date.now()), 1000);
+    onCleanup(() => clearInterval(timerInterval));
+  });
 
   // Active data derived from live telemetry or edit-mode test steps
   const activeData = createMemo(() => {
@@ -89,7 +95,7 @@ export const RevengeTracker: Component<RevengeTrackerProps> = (props) => {
             position: 2,
             gapSeconds: 1.42,
             incidentCount: 4,
-            incidentTimestamp: now() - 30_000,
+            incidentTimestamp: testBaseTime - 30_000,
             avgLapTime: 84.22,
             lastLapDelta: +0.22,
             targetLastLapTime: 84.34,
@@ -105,7 +111,7 @@ export const RevengeTracker: Component<RevengeTrackerProps> = (props) => {
             position: 5,
             gapSeconds: -3.85,
             incidentCount: 4,
-            incidentTimestamp: now() - 90_000,
+            incidentTimestamp: testBaseTime - 90_000,
             avgLapTime: 87.55,
             lastLapDelta: +3.68,
             targetLastLapTime: 87.80,
@@ -121,7 +127,7 @@ export const RevengeTracker: Component<RevengeTrackerProps> = (props) => {
             position: 3,
             gapSeconds: -0.85,
             incidentCount: 2,
-            incidentTimestamp: now() - 145_000,
+            incidentTimestamp: testBaseTime - 145_000,
             avgLapTime: 84.50,
             lastLapDelta: -0.15,
             targetLastLapTime: 83.97,
@@ -159,7 +165,7 @@ export const RevengeTracker: Component<RevengeTrackerProps> = (props) => {
       position: rev?.position ?? props.targetPosition ?? 2,
       gapSeconds: rev?.gapSeconds ?? props.gapSeconds ?? 0,
       incidentCount: rev?.incidentCount ?? 4,
-      incidentTimestamp: rev?.incidentTimestamp || (now() - 45_000),
+      incidentTimestamp: rev?.incidentTimestamp || (testBaseTime - 45_000),
       avgLapTime: rev?.avgLapTime ?? 84.22,
       lastLapDelta: rev?.lastLapDelta ?? +0.22,
       targetLastLapTime: rev?.targetLastLapTime ?? 84.34,

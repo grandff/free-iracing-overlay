@@ -139,10 +139,45 @@ fn show_control_window(app: AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+/// Resizes and positions the transparent overlay to cover the entire usable monitor area.
+/// In single-monitor setups, it spans the full screen.
+/// In multi-monitor or triple-screen setups, it spans the combined bounding box of all displays.
+fn fit_overlay_to_monitors(overlay: &tauri::WebviewWindow) {
+    if let Ok(monitors) = overlay.available_monitors() {
+        if !monitors.is_empty() {
+            let mut min_x = i32::MAX;
+            let mut min_y = i32::MAX;
+            let mut max_x = i32::MIN;
+            let mut max_y = i32::MIN;
+
+            for m in &monitors {
+                let pos = m.position();
+                let size = m.size();
+                min_x = min_x.min(pos.x);
+                min_y = min_y.min(pos.y);
+                max_x = max_x.max(pos.x + size.width as i32);
+                max_y = max_y.max(pos.y + size.height as i32);
+            }
+
+            let width = (max_x - min_x).max(1) as u32;
+            let height = (max_y - min_y).max(1) as u32;
+
+            let _ = overlay.set_position(tauri::Position::Physical(tauri::PhysicalPosition::new(min_x, min_y)));
+            let _ = overlay.set_size(tauri::Size::Physical(tauri::PhysicalSize::new(width, height)));
+            return;
+        }
+    }
+    if let Ok(Some(mon)) = overlay.primary_monitor() {
+        let _ = overlay.set_position(tauri::Position::Physical(*mon.position()));
+        let _ = overlay.set_size(tauri::Size::Physical(*mon.size()));
+    }
+}
+
 #[tauri::command]
 fn set_overlay_visible(app: AppHandle, visible: bool) -> Result<(), String> {
     if let Some(window) = app.get_webview_window(OVERLAY) {
         if visible {
+            fit_overlay_to_monitors(&window);
             window.show().map_err(|e| e.to_string())?;
         } else {
             window.hide().map_err(|e| e.to_string())?;
@@ -262,6 +297,7 @@ fn main() {
         })
         .setup(|app| {
             if let Some(overlay) = app.get_webview_window(OVERLAY) {
+                fit_overlay_to_monitors(&overlay);
                 let _ = overlay.set_always_on_top(true);
                 // Driving mode by default: clicks pass through to the game.
                 let _ = overlay.set_ignore_cursor_events(true);

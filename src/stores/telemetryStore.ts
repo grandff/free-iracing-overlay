@@ -1,5 +1,5 @@
-import { createStore } from "solid-js/store";
-import { TelemetryFrame } from "../services/telemetry/types.ts";
+import { createStore, reconcile } from "solid-js/store";
+import type { TelemetryFrame } from "../services/telemetry/types.ts";
 import { lerpEngine } from "../services/telemetry/lerpEngine.ts";
 import { isBrowserPreview, watchConnection } from "../services/shell.ts";
 
@@ -52,17 +52,51 @@ export function initializeTelemetryPipeline() {
   void import("../services/telemetry/mockEngine.ts").then(({ mockEngine }) => {
     if (generation !== pipelineGeneration) return;
 
-    // 1. Connect mock generator to LERP engine (60Hz -> 144Hz+)
+    // 1. Connect mock generator to LERP engine and reconcile full frame at 60Hz
     mockEngine.start((incomingFrame) => {
       setTelemetry("telemetryTickRate", incomingFrame.tickRateHz);
       lerpEngine.feed(incomingFrame);
+      if (!telemetry.frame) {
+        setTelemetry("frame", incomingFrame);
+      } else {
+        // Prevent 60Hz un-interpolated speed and rpm from stomping on 144Hz+ LERP display loop
+        if (telemetry.frame.player) {
+          incomingFrame.player.speedKmh = telemetry.frame.player.speedKmh;
+          incomingFrame.player.rpm = telemetry.frame.player.rpm;
+        }
+        if (telemetry.frame.shiftLight && incomingFrame.shiftLight) {
+          incomingFrame.shiftLight.speedKmh = telemetry.frame.shiftLight.speedKmh;
+          incomingFrame.shiftLight.rpm = telemetry.frame.shiftLight.rpm;
+        }
+        setTelemetry("frame", reconcile(incomingFrame, { key: "carIdx" }));
+      }
     });
     stopTelemetrySource = () => mockEngine.stop();
 
-    // 2. Connect LERP engine output to Solid.js store (runs at display refresh rate)
-    lerpEngine.start((interpolatedFrame, currentFps) => {
-      setTelemetry("frame", interpolatedFrame);
-      setTelemetry("displayFps", currentFps);
+    // 2. High-refresh display loop (runs via rAF at display rate: 144Hz+)
+    // Directly updates only speedKmh and rpm with zero allocation and zero deep diffing
+    lerpEngine.start((speedKmh, rpm, currentFps) => {
+      const p = telemetry.frame?.player;
+      if (p) {
+        if (p.speedKmh !== speedKmh) {
+          setTelemetry("frame", "player", "speedKmh", speedKmh);
+        }
+        if (p.rpm !== rpm) {
+          setTelemetry("frame", "player", "rpm", rpm);
+        }
+      }
+      const sl = telemetry.frame?.shiftLight;
+      if (sl) {
+        if (sl.speedKmh !== speedKmh) {
+          setTelemetry("frame", "shiftLight", "speedKmh", speedKmh);
+        }
+        if (sl.rpm !== rpm) {
+          setTelemetry("frame", "shiftLight", "rpm", rpm);
+        }
+      }
+      if (telemetry.displayFps !== currentFps) {
+        setTelemetry("displayFps", currentFps);
+      }
     });
   });
 }

@@ -267,16 +267,16 @@ export const LapDelta: Component<LapDeltaProps> = (props) => {
             <div class="absolute left-1/2 -top-[2px] -bottom-[2px] w-px bg-white/70 -translate-x-1/2 z-20" />
             <Show when={activeDelta().isValid && activeDelta().isFaster}>
               <div
-                class={`absolute inset-y-0 right-1/2 transition-[width] duration-75 ${
+                class={`absolute inset-y-0 right-1/2 w-1/2 origin-right ${
                   activeDelta().isPurple ? "bg-[#B055F5]" : "bg-[#00D26A]"
                 }`}
-                style={{ width: `${barPercent()}%` }}
+                style={{ transform: `scaleX(${barPercent() / 50})` }}
               />
             </Show>
             <Show when={activeDelta().isValid && !activeDelta().isFaster}>
               <div
-                class="absolute inset-y-0 left-1/2 bg-[#FF3B30] transition-[width] duration-75"
-                style={{ width: `${barPercent()}%` }}
+                class="absolute inset-y-0 left-1/2 w-1/2 bg-[#FF3B30] origin-left"
+                style={{ transform: `scaleX(${barPercent() / 50})` }}
               />
             </Show>
           </div>

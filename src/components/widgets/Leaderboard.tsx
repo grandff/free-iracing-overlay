@@ -166,18 +166,31 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
 
   // 1등(P1)부터 순차 정렬 보장 (사용자가 설정한 currentRows 대수만큼 렌더링)
   // 예선(QUALIFY)에서는 베스트 랩타임 기준 정렬
-  const sortedCars = createMemo(() => {
-    const list = props.cars && props.cars.length > 0 ? [...props.cars] : defaultCars;
+  const sortedCars = createMemo<CarTelemetry[]>((prev) => {
+    const list = props.cars && props.cars.length > 0 ? props.cars : defaultCars;
+    let next: CarTelemetry[];
     if (currentSessionType() === "QUALIFY") {
-      return [...list]
+      next = [...list]
         .sort((a, b) => {
           const aTime = a.bestLapTime > 0 ? a.bestLapTime : 999999;
           const bTime = b.bestLapTime > 0 ? b.bestLapTime : 999999;
           return aTime - bTime;
         })
         .slice(0, currentRows());
+    } else {
+      next = [...list].sort((a, b) => a.overallPosition - b.overallPosition).slice(0, currentRows());
     }
-    return [...list].sort((a, b) => a.overallPosition - b.overallPosition).slice(0, currentRows());
+    if (prev && prev.length === next.length) {
+      let identical = true;
+      for (let i = 0; i < prev.length; i++) {
+        if (prev[i] !== next[i]) {
+          identical = false;
+          break;
+        }
+      }
+      if (identical) return prev;
+    }
+    return next;
   });
 
   // Real-time Strength of Field (SOF) and projected player iRating gain
@@ -306,14 +319,14 @@ export const Leaderboard: Component<LeaderboardProps> = (props) => {
 
   return (
     <div
-      class="relative flex flex-col font-sans select-none rounded-sm overflow-visible text-white shadow-2xl transition-all"
+      class="relative flex flex-col font-sans select-none rounded-sm overflow-visible text-white shadow-2xl"
       style={{
         width: `${currentWidth()}px`,
       }}
     >
       {/* Edit Mode Top Shaded Bar: "순위표" + [RACE / QUAL / PRAC] + " - 100% + " */}
       <Show when={props.isEditMode}>
-        <div class="absolute bottom-full inset-x-0 flex items-center justify-end px-3 py-1.5 hud-surface-deep backdrop-blur-md border-t border-x border-white/20 rounded-t text-white select-none gap-2">
+        <div class="absolute bottom-full inset-x-0 flex items-center justify-end px-3 py-1.5 hud-surface-deep border-t border-x border-white/20 rounded-t text-white select-none gap-2">
           <div class="flex items-center gap-1.5 shrink-0" onMouseDown={(e) => e.stopPropagation()}>
             <button
               onClick={(e) => {

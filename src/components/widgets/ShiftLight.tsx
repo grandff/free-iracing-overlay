@@ -15,6 +15,8 @@ export interface ShiftLightProps {
 
 export type ShiftLightStyle = "f1" | "gt3" | "indycar";
 
+const LED_INDICES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] as const;
+
 export const ShiftLight: Component<ShiftLightProps> = (props) => {
   // Interactive test states for Edit Mode
   const [testRpmStep, setTestRpmStep] = createSignal<number>(0);
@@ -72,50 +74,19 @@ export const ShiftLight: Component<ShiftLightProps> = (props) => {
     return { ...live, rpm: 4200, gear: 1, speedKmh: 60, pitLimiterActive: true, revLimiterActive: false };
   });
 
-  // Calculate LED states (15 LEDs total)
-  // Motorsport standard: 5 Green, 5 Red, 5 Blue/Purple
-  const leds = createMemo(() => {
+  // RPM progress ratio (0.0 to 1.0)
+  const rpmProgress = createMemo(() => {
     const d = current();
-    const totalLeds = 15;
-    const { rpm, firstRpm, lastRpm, blinkRpm, revLimiterActive, pitLimiterActive } = d;
-
-    // Is flashing active?
-    const isFlashing = revLimiterActive || rpm >= blinkRpm;
-
-    // Fractions
-    const span = Math.max(lastRpm - firstRpm, 1000);
-    const progress = Math.max(0, Math.min(1, (rpm - firstRpm) / span));
-    const litCount = Math.round(progress * totalLeds);
-
-    return Array.from({ length: totalLeds }, (_, index) => {
-      // Color group
-      let colorType: "green" | "red" | "blue" = "green";
-      if (index >= 10) {
-        colorType = "blue";
-      } else if (index >= 5) {
-        colorType = "red";
-      }
-
-      // GT3 style: converging inwards from both sides (0..7 and 14..7)
-      let isLit = false;
-      if (activeStyle() === "gt3") {
-        const distFromEdge = index < 8 ? index : totalLeds - 1 - index;
-        const maxDist = Math.ceil(progress * 8);
-        isLit = distFromEdge < maxDist;
-      } else {
-        // Standard left-to-right sequential
-        isLit = index < litCount;
-      }
-
-      return {
-        index,
-        colorType,
-        isLit,
-        isFlashing,
-        pitLimiterActive,
-      };
-    });
+    const span = Math.max(d.lastRpm - d.firstRpm, 1000);
+    return Math.max(0, Math.min(1, (d.rpm - d.firstRpm) / span));
   });
+
+  const isFlashing = () => {
+    const d = current();
+    return d.revLimiterActive || d.rpm >= d.blinkRpm;
+  };
+
+  const isPit = () => current().pitLimiterActive;
 
   const displayGear = createMemo(() => {
     const g = current().gear;
@@ -196,48 +167,40 @@ export const ShiftLight: Component<ShiftLightProps> = (props) => {
         <div class="px-2.5 pt-2 pb-2.5 flex flex-col gap-2.5">
           {/* LED Bar Row */}
           <div class="relative w-full flex items-center justify-between gap-[3px]">
-            <For each={leds()}>
-              {(led) => {
-                // Color styles
-                const isFlashing = led.isFlashing;
-                const isPit = led.pitLimiterActive;
+            <For each={LED_INDICES}>
+              {(index) => {
+                const colorType = index >= 10 ? "blue" : index >= 5 ? "red" : "green";
 
-                let litBg = "bg-[#00D26A] shadow-[0_0_10px_#00D26A]";
-                let offBg = "bg-[#00D26A]/10 border border-[#00D26A]/20";
+                const isLit = () => {
+                  const p = rpmProgress();
+                  if (activeStyle() === "gt3") {
+                    const distFromEdge = index < 8 ? index : 15 - 1 - index;
+                    const maxDist = Math.ceil(p * 8);
+                    return distFromEdge < maxDist;
+                  }
+                  return index < Math.round(p * 15);
+                };
 
-                if (led.colorType === "red") {
-                  litBg = "bg-[#E10600] shadow-[0_0_12px_#E10600]";
-                  offBg = "bg-[#E10600]/10 border border-[#E10600]/20";
-                } else if (led.colorType === "blue") {
-                  litBg = "bg-[#B055F5] shadow-[0_0_12px_#B055F5]";
-                  offBg = "bg-[#B055F5]/10 border border-[#B055F5]/20";
-                }
+                const ledClass = () => {
+                  if (isFlashing()) {
+                    return "bg-white shadow-[0_0_14px_#ffffff] scale-105";
+                  }
+                  if (isPit()) {
+                    return index % 2 === 0
+                      ? "bg-[#0090FF] shadow-[0_0_10px_#0090FF]"
+                      : "bg-[#FFD100] shadow-[0_0_10px_#FFD100]";
+                  }
+                  if (isLit()) {
+                    if (colorType === "red") return "bg-[#E10600] shadow-[0_0_12px_#E10600]";
+                    if (colorType === "blue") return "bg-[#B055F5] shadow-[0_0_12px_#B055F5]";
+                    return "bg-[#00D26A] shadow-[0_0_10px_#00D26A]";
+                  }
+                  if (colorType === "red") return "bg-[#E10600]/10 border border-[#E10600]/20";
+                  if (colorType === "blue") return "bg-[#B055F5]/10 border border-[#B055F5]/20";
+                  return "bg-[#00D26A]/10 border border-[#00D26A]/20";
+                };
 
-                // Pit Limiter override
-                if (isPit) {
-                  litBg = "bg-[#0090FF] animate-pulse shadow-[0_0_12px_#0090FF]";
-                }
-
-                // Rev Limiter strobe override
-                if (isFlashing) {
-                  litBg = "bg-white shadow-[0_0_15px_#ffffff] animate-ping";
-                }
-
-                return (
-                  <div
-                    class={`flex-1 h-[9px] transition-all duration-75 ${
-                      isFlashing
-                        ? "bg-white shadow-[0_0_14px_#ffffff] scale-105"
-                        : isPit
-                        ? led.index % 2 === 0
-                          ? "bg-[#0090FF] shadow-[0_0_10px_#0090FF]"
-                          : "bg-[#FFD100] shadow-[0_0_10px_#FFD100]"
-                        : led.isLit
-                        ? litBg
-                        : offBg
-                    }`}
-                  />
-                );
+                return <div class={`flex-1 h-[9px] ${ledClass()}`} />;
               }}
             </For>
           </div>

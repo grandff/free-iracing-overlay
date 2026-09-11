@@ -1,4 +1,4 @@
-import { Component, Show, createSignal, createMemo, onCleanup } from "solid-js";
+import { Component, Show, createSignal, createMemo, createEffect, onCleanup } from "solid-js";
 import { IconWarning } from "../../assets/icons/Icons.tsx";
 import type { HazardTelemetry, HazardType } from "../../services/telemetry/types.ts";
 import { t } from "../../i18n/index.ts";
@@ -37,9 +37,6 @@ export const IncidentHazard: Component<IncidentHazardProps> = (props) => {
   const [testStep, setTestStep] = createSignal(0); // 0 = live
   const [blinkOn, setBlinkOn] = createSignal(true);
 
-  const timer = setInterval(() => setBlinkOn((b) => !b), BLINK_MS);
-  onCleanup(() => clearInterval(timer));
-
   const hazard = createMemo<HazardTelemetry | undefined>(() => {
     if (props.isEditMode && testStep() > 0) return TESTS[testStep() - 1].hazard;
     return props.hazard ?? (props.isEditMode ? TESTS[0].hazard : undefined);
@@ -49,6 +46,16 @@ export const IncidentHazard: Component<IncidentHazardProps> = (props) => {
   const distance = () => hazard()?.distanceMeters ?? 0;
   const isCritical = () => distance() <= CRITICAL_M;
   const width = () => Math.max(280, Math.min(480, props.width ?? 340));
+
+  // Only run the blink timer when there is an active critical incident ahead
+  createEffect(() => {
+    if (!isCritical() || props.isEditMode) {
+      setBlinkOn(true);
+      return;
+    }
+    const timer = setInterval(() => setBlinkOn((b) => !b), BLINK_MS);
+    onCleanup(() => clearInterval(timer));
+  });
 
   const typeLabel = (type: HazardType | undefined) => {
     switch (type) {

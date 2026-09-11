@@ -128,6 +128,7 @@ function migrateSpotter(saved: WidgetTransform | undefined, fallback: WidgetTran
 
 function loadInitialSettings(): SettingsState {
   try {
+    if (typeof localStorage === "undefined") return defaultSettings;
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
@@ -138,6 +139,7 @@ function loadInitialSettings(): SettingsState {
         showThemeLogo: parsed.showThemeLogo !== undefined ? parsed.showThemeLogo : true,
         sessionType: parsed.sessionType || "RACE",
         translateSystemMessages: parsed.translateSystemMessages !== undefined ? parsed.translateSystemMessages : false,
+        tripleMonitorMode: parsed.tripleMonitorMode || "center-clamp",
         centerClampWidth: parsed.centerClampWidth || 1920,
         spotterBezelAnchor: parsed.spotterBezelAnchor || "center-bezel",
         debugLogging: parsed.debugLogging === true,
@@ -185,6 +187,7 @@ export async function hydrateFromDiskConfig() {
         showThemeLogo: parsed.showThemeLogo !== undefined ? parsed.showThemeLogo : true,
         sessionType: parsed.sessionType || "RACE",
         translateSystemMessages: parsed.translateSystemMessages !== undefined ? parsed.translateSystemMessages : false,
+        tripleMonitorMode: parsed.tripleMonitorMode || "center-clamp",
         centerClampWidth: parsed.centerClampWidth || 1920,
         spotterBezelAnchor: parsed.spotterBezelAnchor || "center-bezel",
         debugLogging: parsed.debugLogging === true,
@@ -221,7 +224,9 @@ function persistableSnapshot(): SettingsState {
 
 async function writeConfig(snapshot: SettingsState) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+    }
   } catch (e) {
     console.error("Failed to save to localStorage:", e);
   }

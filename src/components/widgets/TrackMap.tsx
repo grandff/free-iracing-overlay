@@ -1,5 +1,5 @@
 // ponytail: native SVG getPointAtLength and pathLength="100" stroke-dasharray for zero-dep track mapping
-import { Component, For, Show, createSignal, createMemo, createEffect, onCleanup } from "solid-js";
+import { Component, For, Index, Show, createSignal, createMemo, createEffect, onCleanup } from "solid-js";
 import { SectorStatus, SectorColor, HazardTelemetry, RevengeTelemetry } from "../../services/telemetry/types.ts";
 import { getTrackLayout, TRACK_PRESETS, TrackLayout } from "../../services/track/trackPresets.ts";
 import { IconPit } from "../../assets/icons/Icons.tsx";
@@ -81,6 +81,7 @@ export const TrackMap: Component<TrackMapProps> = (props) => {
 
   // Effective Cars list
   const cars = () => props.cars || defaultCars;
+  const competitorCars = createMemo(() => cars().filter((c) => !c.isPlayer));
 
   // Effective Hazard Info
   const activeHazard = createMemo(() => {
@@ -101,13 +102,25 @@ export const TrackMap: Component<TrackMapProps> = (props) => {
   const s3Status = () => props.sectors?.find((s) => s.sectorNumber === 3)?.status || "yellow";
   const currentSec = () => props.currentSector || 2;
 
+  // Cache path totalLength to avoid expensive browser SVG geometry recalculations every frame
+  const totalLength = createMemo(() => {
+    const el = pathElement();
+    currentLayout(); // trigger when track layout changes
+    if (!el) return 0;
+    try {
+      return el.getTotalLength();
+    } catch {
+      return 0;
+    }
+  });
+
   // Native SVG point calculator (C++ browser engine, zero allocation)
   const getCoordinates = (pct: number) => {
     const el = pathElement();
-    if (!el) return { x: 200, y: 150, angle: 0 };
+    const len = totalLength();
+    if (!el || len <= 0) return { x: 200, y: 150, angle: 0 };
 
     try {
-      const len = el.getTotalLength();
       const clampedPct = (((pct % 1.0) + 1.0) % 1.0);
       const p = el.getPointAtLength(clampedPct * len);
 
@@ -136,12 +149,12 @@ export const TrackMap: Component<TrackMapProps> = (props) => {
     setViewBox(`${b.x - pad} ${b.y - pad} ${b.width + pad * 2} ${b.height + pad * 2}`);
   });
 
-  // Start/Finish Line Point
-  const sfCoords = () => getCoordinates(0.0);
+  // Start/Finish Line Point (Memoized per layout)
+  const sfCoords = createMemo(() => getCoordinates(0.0));
 
-  // Sector Splits Points
-  const s2SplitCoords = () => getCoordinates(currentLayout().sectorSplits[0]);
-  const s3SplitCoords = () => getCoordinates(currentLayout().sectorSplits[1]);
+  // Sector Splits Points (Memoized per layout)
+  const s2SplitCoords = createMemo(() => getCoordinates(currentLayout().sectorSplits[0]));
+  const s3SplitCoords = createMemo(() => getCoordinates(currentLayout().sectorSplits[1]));
 
   // Sector Stroke Lengths (SVG pathLength="100")
   const s1Len = () => currentLayout().sectorSplits[0] * 100;
@@ -250,7 +263,7 @@ export const TrackMap: Component<TrackMapProps> = (props) => {
       <div
         class={`relative flex flex-col transition-all duration-150 ${
           props.isEditMode
-            ? "border-b border-x border-white/10 hud-surface-deep backdrop-blur-md"
+            ? "border-b border-x border-white/10 hud-surface-deep"
             : "bg-transparent"
         }`}
       >
@@ -398,22 +411,22 @@ export const TrackMap: Component<TrackMapProps> = (props) => {
             </g>
 
             {/* 6. Competitor Cars Layer */}
-            <For each={cars().filter((c) => !c.isPlayer)}>
+            <Index each={competitorCars()}>
               {(c) => {
-                const pos = () => getCoordinates(c.lapDistPct);
-                const isInPit = () => c.inPit || c.trackSurface === 1 || c.trackSurface === 2;
+                const pos = createMemo(() => getCoordinates(c().lapDistPct));
+                const isInPit = () => c().inPit || c().trackSurface === 1 || c().trackSurface === 2;
 
                 return (
                   <g
                     transform={`translate(${pos().x}, ${pos().y})`}
-                    class={`transition-transform duration-75 ${isInPit() ? "opacity-40" : "opacity-95"}`}
+                    class={isInPit() ? "opacity-40" : "opacity-95"}
                   >
                     <rect
                       x="-3.6"
                       y="-3.6"
                       width="7.2"
                       height="7.2"
-                      fill={c.color}
+                      fill={c().color}
                       stroke="#0a0c11"
                       stroke-width="1"
                     />
@@ -427,7 +440,7 @@ export const TrackMap: Component<TrackMapProps> = (props) => {
                         font-style="italic"
                         class="drop-shadow-[0_1px_2px_rgba(0,0,0,0.95)] select-none"
                       >
-                        {c.carNumber}
+                        {c().carNumber}
                       </text>
                     </Show>
                     <Show when={isInPit()}>
@@ -438,13 +451,13 @@ export const TrackMap: Component<TrackMapProps> = (props) => {
                   </g>
                 );
               }}
-            </For>
+            </Index>
 
             {/* 7. Incident Hazard Beacon (사고 발생 지점) */}
             <Show when={activeHazard()?.hasIncident && activeHazard()?.incidentLapDistPct !== undefined}>
               {(() => {
                 const hz = activeHazard()!;
-                const hPos = () => getCoordinates(hz.incidentLapDistPct ?? 0.21);
+                const hPos = createMemo(() => getCoordinates(hz.incidentLapDistPct ?? 0.21));
 
                 return (
                   <g transform={`translate(${hPos().x}, ${hPos().y})`} class="z-40">
@@ -504,7 +517,7 @@ export const TrackMap: Component<TrackMapProps> = (props) => {
             <Show when={props.revenge?.hasTarget && props.revenge?.lapDistPct !== undefined}>
               {(() => {
                 const rev = props.revenge!;
-                const rPos = () => getCoordinates(rev.lapDistPct ?? 0.46);
+                const rPos = createMemo(() => getCoordinates(rev.lapDistPct ?? 0.46));
 
                 return (
                   <g transform={`translate(${rPos().x}, ${rPos().y})`} class="z-50">
@@ -549,13 +562,13 @@ export const TrackMap: Component<TrackMapProps> = (props) => {
 
             {/* 9. Player Car High-Contrast Neon Indicator (#7 YOU) */}
             {(() => {
-              const playerCar = () => cars().find((c) => c.isPlayer) || cars()[0];
-              const pPos = () => getCoordinates(playerCar().lapDistPct);
+              const playerCar = createMemo(() => cars().find((c) => c.isPlayer) || cars()[0]);
+              const pPos = createMemo(() => getCoordinates(playerCar()?.lapDistPct ?? 0));
 
               return (
                 <g
                   transform={`translate(${pPos().x}, ${pPos().y})`}
-                  class="z-50 transition-transform duration-75"
+                  class="z-50"
                 >
                   {/* Outer Pulsing Neon Aura */}
                   <circle
@@ -603,7 +616,7 @@ export const TrackMap: Component<TrackMapProps> = (props) => {
                       font-weight="900"
                       font-style="italic"
                     >
-                      YOU #{playerCar().carNumber}
+                      YOU #{playerCar()?.carNumber ?? "7"}
                     </text>
                   </g>
                 </g>
